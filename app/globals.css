@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  background-color: #0a0b0d;
+  color: #f4f4f2;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Text stroke utility for hero "POTENTIAL." */
+.text-stroke-accent {
+  -webkit-text-stroke: 2px #57c7d6;
+  color: transparent;
+}
+@media (min-width: 768px) {
+  .text-stroke-accent {
+    -webkit-text-stroke: 3px #57c7d6;
+  }
+}
+
+/* Grain / noise overlay */
+.grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.06;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  animation: grain 8s steps(6) infinite;
+}
+@keyframes grain {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-5%, -5%); }
+  30% { transform: translate(3%, -10%); }
+  50% { transform: translate(-15%, 5%); }
+  70% { transform: translate(10%, 5%); }
+  90% { transform: translate(-5%, 10%); }
+}
+
+/* Hide scrollbar on filter pills row */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Link underline slide-in */
+.nav-link {
+  position: relative;
+}
+.nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  width: 100%;
+  height: 1.5px;
+  background: #57c7d6;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 200ms ease;
+}
+.nav-link:hover::after {
+  transform: scaleX(1);
+}
