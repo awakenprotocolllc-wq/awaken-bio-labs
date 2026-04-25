@@ -1,7 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import type { Product } from "@/lib/products";
+import Link from "next/link";
+import { type Product, slugify } from "@/lib/products";
 
 export default function ProductCard({ product, index }: { product: Product; index: number }) {
   return (
@@ -11,8 +12,13 @@ export default function ProductCard({ product, index }: { product: Product; inde
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-40px" }}
       transition={{ duration: 0.4, delay: (index % 8) * 0.05 }}
-      className="group relative bg-carbon border border-slate hover:border-accent transition-all duration-200 hover:-translate-y-1 overflow-hidden cursor-pointer flex flex-col"
+      className="group relative bg-carbon border border-slate hover:border-accent transition-all duration-200 hover:-translate-y-1 overflow-hidden flex flex-col"
     >
+      <Link
+        href={`/shop/${slugify(product.name)}`}
+        className="absolute inset-0 z-10"
+        aria-label={product.name}
+      />
       <div className="p-5 sm:p-6 flex flex-col gap-4 flex-1">
         <div className="flex items-start justify-between gap-3">
           <h3 className="font-sans font-bold text-paper text-base sm:text-lg leading-tight">

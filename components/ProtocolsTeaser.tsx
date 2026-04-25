@@ -74,7 +74,7 @@ export default function ProtocolsTeaser() {
 
         <div className="mt-14">
           <a
-            href="#"
+            href="/protocols"
             className="inline-flex items-center border border-accent text-accent font-semibold px-7 h-12 min-h-[44px] hover:bg-accent/10 transition-colors"
           >
             Learn More About Protocols

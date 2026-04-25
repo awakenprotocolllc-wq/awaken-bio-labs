@@ -45,13 +45,13 @@ export default function Hero() {
             className="mt-8 flex flex-wrap gap-4"
           >
             <a
-              href="#catalog"
+              href="/shop"
               className="inline-flex items-center justify-center bg-accent text-obsidian font-semibold px-7 h-12 min-h-[44px] hover:bg-accent/80 transition-colors"
             >
               Shop Products
             </a>
             <a
-              href="#protocols"
+              href="/protocols"
               className="inline-flex items-center justify-center border border-accent text-accent font-semibold px-7 h-12 min-h-[44px] hover:bg-accent/10 transition-colors"
             >
               View Protocols

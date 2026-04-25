@@ -1,12 +1,18 @@
 import Logo from "./Logo";
 
-const quick = ["Home", "Shop", "COAs", "Protocols", "Contact"];
+const quick = [
+  { label: "Home", href: "/" },
+  { label: "Shop", href: "/shop" },
+  { label: "COAs", href: "/coas" },
+  { label: "Protocols", href: "/protocols" },
+  { label: "Contact", href: "/contact" },
+];
 const support = [
-  "My Account",
-  "FAQ",
-  "Shipping Policy",
-  "Return Policy",
-  "Affiliate Portal",
+  { label: "My Account", href: "#" },
+  { label: "FAQ", href: "/contact#faq" },
+  { label: "Shipping Policy", href: "#" },
+  { label: "Return Policy", href: "#" },
+  { label: "Affiliate Portal", href: "/affiliates" },
 ];
 
 export default function Footer() {
@@ -38,12 +44,12 @@ export default function Footer() {
           </h4>
           <ul className="space-y-3">
             {quick.map((l) => (
-              <li key={l}>
+              <li key={l.label}>
                 <a
-                  href="#"
+                  href={l.href}
                   className="font-sans text-paper hover:text-accent transition-colors"
                 >
-                  {l}
+                  {l.label}
                 </a>
               </li>
             ))}
@@ -56,12 +62,12 @@ export default function Footer() {
           </h4>
           <ul className="space-y-3">
             {support.map((l) => (
-              <li key={l}>
+              <li key={l.label}>
                 <a
-                  href="#"
+                  href={l.href}
                   className="font-sans text-paper hover:text-accent transition-colors"
                 >
-                  {l}
+                  {l.label}
                 </a>
               </li>
             ))}

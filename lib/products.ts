@@ -11,6 +11,18 @@ export type Product = {
     | "Blends";
 };
 
+export function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/\+/g, "-plus-")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+export function getProductBySlug(slug: string): Product | undefined {
+  return products.find((p) => slugify(p.name) === slug);
+}
+
 export const categories = [
   "All",
   "GH Axis",

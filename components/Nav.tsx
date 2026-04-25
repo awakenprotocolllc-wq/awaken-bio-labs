@@ -5,12 +5,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import Logo from "./Logo";
 
 const links = [
-  { label: "Home", href: "#" },
-  { label: "Shop", href: "#catalog" },
-  { label: "Protocols", href: "#protocols" },
-  { label: "COAs", href: "#" },
-  { label: "Affiliates", href: "#affiliate" },
-  { label: "Contact", href: "#" },
+  { label: "Home", href: "/" },
+  { label: "Shop", href: "/shop" },
+  { label: "Protocols", href: "/protocols" },
+  { label: "COAs", href: "/coas" },
+  { label: "Affiliates", href: "/affiliates" },
+  { label: "Contact", href: "/contact" },
 ];
 
 export default function Nav() {
@@ -69,7 +69,7 @@ export default function Nav() {
           </button>
 
           <a
-            href="#catalog"
+            href="/shop"
             className="hidden sm:inline-flex items-center bg-accent text-obsidian font-sans font-semibold text-sm px-5 h-11 hover:bg-accent/80 transition-colors"
           >
             Shop Now
@@ -125,7 +125,7 @@ export default function Nav() {
                 </motion.a>
               ))}
               <a
-                href="#catalog"
+                href="/shop"
                 onClick={() => setOpen(false)}
                 className="mt-8 bg-accent text-obsidian font-semibold px-6 py-4 text-center hover:bg-accent/80 transition-colors"
               >

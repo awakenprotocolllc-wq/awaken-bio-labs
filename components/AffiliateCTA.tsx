@@ -17,7 +17,7 @@ export default function AffiliateCTA() {
         </p>
         <div className="mt-10">
           <a
-            href="#"
+            href="/affiliates"
             className="inline-flex items-center justify-center bg-accent text-obsidian font-semibold px-8 h-12 min-h-[44px] hover:bg-accent/80 transition-colors"
           >
             Apply To Become An Affiliate
