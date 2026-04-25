@@ -4,7 +4,7 @@ const quick = [
   { label: "Home", href: "/" },
   { label: "Shop", href: "/shop" },
   { label: "COAs", href: "/coas" },
-  { label: "Protocols", href: "/protocols" },
+  { label: "Affiliates", href: "/affiliates" },
   { label: "Contact", href: "/contact" },
 ];
 const support = [

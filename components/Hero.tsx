@@ -51,10 +51,10 @@ export default function Hero() {
               Shop Products
             </a>
             <a
-              href="/protocols"
+              href="/coas"
               className="inline-flex items-center justify-center border border-accent text-accent font-semibold px-7 h-12 min-h-[44px] hover:bg-accent/10 transition-colors"
             >
-              View Protocols
+              View COAs
             </a>
           </motion.div>
         </div>

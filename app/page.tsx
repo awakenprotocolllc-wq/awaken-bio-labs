@@ -3,7 +3,6 @@ import Hero from "@/components/Hero";
 import TrustBar from "@/components/TrustBar";
 import ProductGrid from "@/components/ProductGrid";
 import WhyAwaken from "@/components/WhyAwaken";
-import ProtocolsTeaser from "@/components/ProtocolsTeaser";
 import AffiliateCTA from "@/components/AffiliateCTA";
 
 export default function Home() {
@@ -13,7 +12,6 @@ export default function Home() {
       <TrustBar />
       <ProductGrid />
       <WhyAwaken />
-      <ProtocolsTeaser />
       <AffiliateCTA />
     </SiteShell>
   );
