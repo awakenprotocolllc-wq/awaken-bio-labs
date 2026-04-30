@@ -45,6 +45,55 @@ body {
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* Legal page typography */
+.legal-content h2 {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: #f4f4f2;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+  letter-spacing: -0.01em;
+}
+.legal-content h3 {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 600;
+  font-size: 1.125rem;
+  color: #f4f4f2;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+.legal-content p {
+  color: #d9d9dc;
+  line-height: 1.7;
+  margin-bottom: 1rem;
+}
+.legal-content ul {
+  color: #d9d9dc;
+  list-style: none;
+  margin-bottom: 1rem;
+  padding-left: 0;
+}
+.legal-content ul li {
+  position: relative;
+  padding-left: 1.5rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.7;
+}
+.legal-content ul li::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: #57c7d6;
+}
+.legal-content a {
+  color: #57c7d6;
+  text-decoration: underline;
+}
+.legal-content strong {
+  color: #f4f4f2;
+}
+
 /* Link underline slide-in */
 .nav-link {
   position: relative;

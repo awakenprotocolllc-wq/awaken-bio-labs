@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import SiteShell from "@/components/SiteShell";
 import PageHeader from "@/components/PageHeader";
 
@@ -33,6 +34,20 @@ export default function AffiliatesPage() {
         title="Grow With Awaken."
         subtitle="If you have an audience that takes their training, recovery, or longevity seriously — we want to work with you. Built to run automatically once you're approved."
       />
+
+      <div className="bg-carbon border-b border-slate">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="font-mono text-xs text-bone tracking-wider">
+            ALREADY AN AFFILIATE?
+          </p>
+          <Link
+            href="/affiliates/login"
+            className="font-mono text-xs tracking-wider uppercase border border-accent text-accent px-4 h-10 min-h-[44px] inline-flex items-center hover:bg-accent/10 transition-colors"
+          >
+            Sign In →
+          </Link>
+        </div>
+      </div>
 
       <section className="bg-obsidian py-16 md:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-px bg-slate">

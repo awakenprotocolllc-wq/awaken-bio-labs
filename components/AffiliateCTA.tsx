@@ -15,12 +15,18 @@ export default function AffiliateCTA() {
           Your own portal. Unique tracking links. Real-time commission reporting.
           Built to run automatically.
         </p>
-        <div className="mt-10">
+        <div className="mt-10 flex flex-wrap justify-center gap-4">
           <a
             href="/affiliates"
             className="inline-flex items-center justify-center bg-accent text-obsidian font-semibold px-8 h-12 min-h-[44px] hover:bg-accent/80 transition-colors"
           >
             Apply To Become An Affiliate
+          </a>
+          <a
+            href="/affiliates/login"
+            className="inline-flex items-center justify-center border border-accent text-accent font-semibold px-8 h-12 min-h-[44px] hover:bg-accent/10 transition-colors"
+          >
+            Affiliate Sign In
           </a>
         </div>
       </div>
