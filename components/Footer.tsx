@@ -4,6 +4,7 @@ import { business, fullAddress } from "@/lib/business";
 const quick = [
   { label: "Home", href: "/" },
   { label: "Shop", href: "/shop" },
+  { label: "About", href: "/about" },
   { label: "COAs", href: "/coas" },
   { label: "Affiliates", href: "/affiliates" },
   { label: "Contact", href: "/contact" },

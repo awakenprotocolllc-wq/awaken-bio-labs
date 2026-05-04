@@ -33,6 +33,34 @@ const faqs = [
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    const fd = new FormData(e.currentTarget);
+    const payload = {
+      name: fd.get("name"),
+      email: fd.get("email"),
+      reason: fd.get("reason"),
+      message: fd.get("message"),
+    };
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error("Failed");
+      setSubmitted(true);
+    } catch {
+      setError("Something went wrong. Please email us directly at support@awakenbiolabs.com.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <SiteShell>
@@ -84,10 +112,7 @@ export default function ContactPage() {
               </div>
             ) : (
               <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  setSubmitted(true);
-                }}
+                onSubmit={handleSubmit}
                 className="bg-carbon border border-slate p-6 sm:p-8 space-y-5"
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -121,11 +146,17 @@ export default function ContactPage() {
                     className="w-full bg-obsidian border border-slate text-paper font-sans px-4 py-3 focus:border-accent focus:outline-none transition-colors resize-none"
                   />
                 </div>
+                {error && (
+                  <p className="font-mono text-[11px] text-red-400 tracking-wide">
+                    {error}
+                  </p>
+                )}
                 <button
                   type="submit"
-                  className="bg-accent text-obsidian font-semibold px-8 h-12 min-h-[44px] inline-flex items-center hover:bg-accent/80 transition-colors"
+                  disabled={submitting}
+                  className="bg-accent text-obsidian font-semibold px-8 h-12 min-h-[44px] inline-flex items-center hover:bg-accent/80 transition-colors disabled:opacity-60"
                 >
-                  Send Message
+                  {submitting ? "Sending…" : "Send Message"}
                 </button>
               </form>
             )}

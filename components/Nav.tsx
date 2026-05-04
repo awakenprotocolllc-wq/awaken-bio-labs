@@ -5,9 +5,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import Logo from "./Logo";
 
 const links = [
-  { label: "Home", href: "/" },
   { label: "Shop", href: "/shop" },
   { label: "COAs", href: "/coas" },
+  { label: "About", href: "/about" },
   { label: "Affiliates", href: "/affiliates" },
   { label: "Contact", href: "/contact" },
 ];

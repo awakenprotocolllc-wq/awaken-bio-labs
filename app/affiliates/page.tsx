@@ -26,6 +26,35 @@ const benefits = [
 
 export default function AffiliatesPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    const fd = new FormData(e.currentTarget);
+    const payload = {
+      name: fd.get("name"),
+      email: fd.get("email"),
+      platform: fd.get("platform"),
+      audience: fd.get("audience"),
+      about: fd.get("about"),
+    };
+    try {
+      const res = await fetch("/api/affiliates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error("Failed");
+      setSubmitted(true);
+    } catch {
+      setError("Something went wrong. Please email affiliates@awakenbiolabs.com directly.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <SiteShell>
@@ -86,13 +115,7 @@ export default function AffiliatesPage() {
               </p>
             </div>
           ) : (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                setSubmitted(true);
-              }}
-              className="space-y-5"
-            >
+            <form onSubmit={handleSubmit} className="space-y-5">
               <Field label="Full Name" name="name" required />
               <Field label="Email" name="email" type="email" required />
               <Field label="Primary Platform URL (Instagram, YouTube, Site)" name="platform" required />
@@ -108,11 +131,17 @@ export default function AffiliatesPage() {
                   placeholder="Niche, demographics, why you're a fit for Awaken…"
                 />
               </div>
+              {error && (
+                <p className="font-mono text-[11px] text-red-400 tracking-wide">
+                  {error}
+                </p>
+              )}
               <button
                 type="submit"
-                className="bg-accent text-obsidian font-semibold px-8 h-12 min-h-[44px] inline-flex items-center hover:bg-accent/80 transition-colors"
+                disabled={submitting}
+                className="bg-accent text-obsidian font-semibold px-8 h-12 min-h-[44px] inline-flex items-center hover:bg-accent/80 transition-colors disabled:opacity-60"
               >
-                Submit Application
+                {submitting ? "Submitting…" : "Submit Application"}
               </button>
             </form>
           )}

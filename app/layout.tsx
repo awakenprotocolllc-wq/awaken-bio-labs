@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import AgeGate from "@/components/AgeGate";
+import CookieBanner from "@/components/CookieBanner";
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -29,6 +31,8 @@ export default function RootLayout({
     <html lang="en" className={`${spaceGrotesk.variable} ${jetbrainsMono.variable}`}>
       <body className="bg-obsidian text-paper font-sans antialiased">
         {children}
+        <AgeGate />
+        <CookieBanner />
       </body>
     </html>
   );
