@@ -1,5 +1,5 @@
 import LegalPage from "@/components/LegalPage";
-import { business, fullAddress } from "@/lib/business";
+import { business } from "@/lib/business";
 
 export const metadata = { title: `Terms of Use · ${business.name}` };
 
@@ -94,8 +94,7 @@ export default function TermsPage() {
       <h2>11. Contact</h2>
       <p>
         Questions about these Terms? Contact us at{" "}
-        <a href={`mailto:${business.email}`}>{business.email}</a> or by mail at{" "}
-        {fullAddress()}.
+        <a href={`mailto:${business.email}`}>{business.email}</a>.
       </p>
     </LegalPage>
   );

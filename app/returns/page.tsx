@@ -73,8 +73,8 @@ export default function ReturnsPage() {
       <h2>8. Contact</h2>
       <p>
         Returns or refund questions? Email{" "}
-        <a href={`mailto:${business.email}`}>{business.email}</a> or call{" "}
-        {business.phone} during business hours ({business.hours}).
+        <a href={`mailto:${business.email}`}>{business.email}</a> during business
+        hours ({business.hours}).
       </p>
     </LegalPage>
   );

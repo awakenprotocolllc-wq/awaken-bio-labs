@@ -85,36 +85,33 @@ export default function Footer() {
           </h4>
           <ul className="space-y-4 font-mono text-xs text-bone leading-relaxed">
             <li>
+              <p className="font-mono text-[10px] text-bone tracking-[0.2em] uppercase mb-1">
+                Support
+              </p>
               <a
                 href={`mailto:${business.email}`}
-                className="text-paper hover:text-accent transition-colors block mb-1"
+                className="text-paper hover:text-accent transition-colors break-all"
               >
                 {business.email}
               </a>
             </li>
             <li>
+              <p className="font-mono text-[10px] text-bone tracking-[0.2em] uppercase mb-1">
+                Affiliates
+              </p>
               <a
-                href={`tel:${business.phone.replace(/\D/g, "")}`}
-                className="text-paper hover:text-accent transition-colors block mb-1"
+                href={`mailto:${business.affiliateEmail}`}
+                className="text-paper hover:text-accent transition-colors break-all"
               >
-                {business.phone}
+                {business.affiliateEmail}
               </a>
             </li>
-            <li className="pt-1 border-t border-slate">
-              <p className="text-paper not-italic mt-3">
-                {business.address.line1}
-                {business.address.line2 && (
-                  <>
-                    <br />
-                    {business.address.line2}
-                  </>
-                )}
-                <br />
-                {business.address.city}, {business.address.state}{" "}
-                {business.address.zip}
+            <li>
+              <p className="font-mono text-[10px] text-bone tracking-[0.2em] uppercase mb-1">
+                Hours
               </p>
+              <p className="text-paper">{business.hours}</p>
             </li>
-            <li className="pt-1">{business.hours}</li>
           </ul>
         </div>
       </div>
