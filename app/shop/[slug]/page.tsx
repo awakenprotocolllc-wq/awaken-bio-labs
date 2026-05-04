@@ -104,9 +104,14 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
             <h1 className="font-sans font-bold text-paper text-4xl sm:text-5xl md:text-6xl leading-[1] tracking-tight">
               {product.name}
             </h1>
-            <p className="font-mono text-bone text-xs mt-4 tracking-wider">
-              RESEARCH USE ONLY · NOT FOR HUMAN CONSUMPTION
-            </p>
+            <div className="flex items-baseline gap-4 mt-4">
+              <span className="font-mono text-accent text-2xl font-semibold">
+                {product.price ?? "—"}
+              </span>
+              <span className="font-mono text-bone text-xs tracking-wider">
+                RESEARCH USE ONLY
+              </span>
+            </div>
 
             <div className="mt-8">
               <p className="font-mono text-bone text-xs tracking-wider uppercase mb-3">
@@ -129,9 +134,12 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
             </div>
 
             <div className="mt-8 grid grid-cols-2 gap-3">
-              <button className="bg-accent text-obsidian font-semibold h-12 min-h-[44px] hover:bg-accent/80 transition-colors">
-                Add To Cart
-              </button>
+              <a
+                href={`mailto:support@awakenbiolabs.com?subject=Order%20Inquiry%3A%20${encodeURIComponent(product.name)}&body=Hi%2C%20I%27d%20like%20to%20order%20${encodeURIComponent(product.name)}%20(${encodeURIComponent(product.strengths[0])}).%20Please%20let%20me%20know%20how%20to%20proceed.`}
+                className="bg-accent text-obsidian font-semibold h-12 min-h-[44px] flex items-center justify-center hover:bg-accent/80 transition-colors"
+              >
+                Place an Order
+              </a>
               <Link
                 href="/coas"
                 className="border border-accent text-accent font-semibold h-12 min-h-[44px] flex items-center justify-center hover:bg-accent/10 transition-colors"

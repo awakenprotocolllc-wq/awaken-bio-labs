@@ -35,8 +35,20 @@ export default function Hero() {
             transition={{ delay: 0.55, duration: 0.6 }}
             className="mt-8 max-w-xl text-bone font-sans font-light text-base sm:text-lg"
           >
-            62 research compounds. Verified purity. Built for serious work.
+            Research-grade peptides. Made in the USA. Tested in the USA. Built for serious work.
           </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.65, duration: 0.5 }}
+            className="mt-4 flex items-center gap-2"
+          >
+            <span className="text-lg">🇺🇸</span>
+            <span className="font-mono text-[11px] text-accent tracking-[0.2em] uppercase">
+              Domestic Manufacturing · US Lab Verified
+            </span>
+          </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -59,7 +71,7 @@ export default function Hero() {
           </motion.div>
         </div>
 
-        {/* Right 40% — vial placeholder */}
+        {/* Right 40% — vial visual */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -67,56 +79,63 @@ export default function Hero() {
           className="lg:col-span-2 relative h-[320px] sm:h-[420px] lg:h-[520px] w-full"
         >
           <div className="absolute inset-0 bg-gradient-to-b from-carbon to-obsidian border border-slate overflow-hidden">
-            {/* Bottom accent glow */}
+            {/* Glow */}
             <div
-              className="absolute left-1/2 -translate-x-1/2 bottom-0 w-[80%] h-[40%] blur-3xl opacity-60 rounded-full"
-              style={{
-                background: "radial-gradient(ellipse at center, #57C7D6 0%, transparent 70%)",
-              }}
+              className="absolute left-1/2 -translate-x-1/2 bottom-0 w-[90%] h-[50%] blur-3xl opacity-40 rounded-full"
+              style={{ background: "radial-gradient(ellipse at center, #57C7D6 0%, transparent 70%)" }}
             />
-            {/* Vial silhouette */}
-            <svg
-              className="absolute inset-0 m-auto h-[70%] w-auto"
-              viewBox="0 0 120 300"
-              fill="none"
-            >
-              <rect x="45" y="10" width="30" height="14" stroke="#2A2D33" strokeWidth="1.5" />
-              <rect x="40" y="24" width="40" height="10" fill="#2A2D33" />
-              <path
-                d="M42 34 L42 270 Q42 285 60 285 Q78 285 78 270 L78 34 Z"
-                stroke="#2A2D33"
-                strokeWidth="1.5"
-                fill="url(#vialGrad)"
-              />
+            {/* Molecular lines background */}
+            <svg className="absolute inset-0 w-full h-full opacity-10" viewBox="0 0 400 520" fill="none">
+              <circle cx="200" cy="260" r="120" stroke="#57C7D6" strokeWidth="0.5" strokeDasharray="4 6" />
+              <circle cx="200" cy="260" r="80" stroke="#57C7D6" strokeWidth="0.5" strokeDasharray="2 8" />
+              <line x1="80" y1="140" x2="200" y2="260" stroke="#57C7D6" strokeWidth="0.5" />
+              <line x1="320" y1="140" x2="200" y2="260" stroke="#57C7D6" strokeWidth="0.5" />
+              <line x1="80" y1="380" x2="200" y2="260" stroke="#57C7D6" strokeWidth="0.5" />
+              <line x1="320" y1="380" x2="200" y2="260" stroke="#57C7D6" strokeWidth="0.5" />
+              <circle cx="80" cy="140" r="4" fill="#57C7D6" />
+              <circle cx="320" cy="140" r="4" fill="#57C7D6" />
+              <circle cx="80" cy="380" r="4" fill="#57C7D6" />
+              <circle cx="320" cy="380" r="4" fill="#57C7D6" />
+              <circle cx="200" cy="260" r="6" fill="#57C7D6" />
+            </svg>
+            {/* Vial */}
+            <svg className="absolute inset-0 m-auto h-[78%] w-auto" viewBox="0 0 120 320" fill="none">
               <defs>
-                <linearGradient id="vialGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#141518" />
-                  <stop offset="100%" stopColor="#57C7D6" stopOpacity="0.25" />
+                <linearGradient id="vialGrad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#1a1c20" />
+                  <stop offset="100%" stopColor="#57C7D6" stopOpacity="0.2" />
+                </linearGradient>
+                <linearGradient id="capGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#2A2D33" />
+                  <stop offset="100%" stopColor="#1a1c20" />
                 </linearGradient>
               </defs>
-              <text
-                x="60"
-                y="160"
-                textAnchor="middle"
-                fill="#57C7D6"
-                fontSize="9"
-                fontFamily="monospace"
-                letterSpacing="2"
-              >
-                AWAKEN
-              </text>
-              <text
-                x="60"
-                y="175"
-                textAnchor="middle"
-                fill="#D9D9DC"
-                fontSize="6"
-                fontFamily="monospace"
-                letterSpacing="1"
-              >
-                10mg · LYOPHILIZED
-              </text>
+              {/* Cap */}
+              <rect x="44" y="8" width="32" height="16" rx="2" fill="url(#capGrad)" stroke="#3a3d45" strokeWidth="1" />
+              {/* Crimp ring */}
+              <rect x="40" y="24" width="40" height="8" fill="#2A2D33" stroke="#3a3d45" strokeWidth="0.5" />
+              {/* Body */}
+              <path d="M42 32 L42 278 Q42 294 60 294 Q78 294 78 278 L78 32 Z" fill="url(#vialGrad)" stroke="#3a3d45" strokeWidth="1" />
+              {/* Label band */}
+              <rect x="42" y="110" width="36" height="90" fill="#1e2024" stroke="#3a3d45" strokeWidth="0.5" />
+              {/* Label content */}
+              <text x="60" y="132" textAnchor="middle" fill="#57C7D6" fontSize="7" fontFamily="monospace" letterSpacing="2" fontWeight="bold">AWAKEN</text>
+              <text x="60" y="144" textAnchor="middle" fill="#57C7D6" fontSize="4.5" fontFamily="monospace" letterSpacing="1">BIO LABS</text>
+              <line x1="46" y1="150" x2="74" y2="150" stroke="#3a3d45" strokeWidth="0.5" />
+              <text x="60" y="162" textAnchor="middle" fill="#D9D9DC" fontSize="5.5" fontFamily="monospace" letterSpacing="1">LYOPHILIZED</text>
+              <text x="60" y="174" textAnchor="middle" fill="#D9D9DC" fontSize="5" fontFamily="monospace" letterSpacing="0.5">PURITY ≥ 99%</text>
+              <line x1="46" y1="180" x2="74" y2="180" stroke="#3a3d45" strokeWidth="0.5" />
+              <text x="60" y="192" textAnchor="middle" fill="#57C7D6" fontSize="4.5" fontFamily="monospace" letterSpacing="1">🇺🇸 MFG IN USA</text>
+              {/* Liquid fill glow at bottom */}
+              <path d="M43 240 L43 278 Q43 293 60 293 Q77 293 77 278 L77 240 Z" fill="#57C7D6" fillOpacity="0.08" />
+              {/* Shine */}
+              <line x1="48" y1="36" x2="48" y2="260" stroke="white" strokeWidth="0.5" strokeOpacity="0.06" />
             </svg>
+            {/* USA badge */}
+            <div className="absolute top-4 right-4 bg-carbon border border-accent/40 px-3 py-1.5">
+              <p className="font-mono text-[9px] text-accent tracking-[0.2em]">MADE & TESTED</p>
+              <p className="font-mono text-[9px] text-accent tracking-[0.2em]">IN THE USA 🇺🇸</p>
+            </div>
           </div>
         </motion.div>
       </div>

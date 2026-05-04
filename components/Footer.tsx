@@ -6,6 +6,7 @@ const quick = [
   { label: "Shop", href: "/shop" },
   { label: "About", href: "/about" },
   { label: "COAs", href: "/coas" },
+  { label: "FAQ", href: "/faq" },
   { label: "Affiliates", href: "/affiliates" },
   { label: "Contact", href: "/contact" },
 ];
@@ -119,11 +120,8 @@ export default function Footer() {
 
       <div className="border-t border-slate">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex flex-col gap-5">
-          <p className="font-mono text-[10px] sm:text-[11px] text-bone leading-relaxed max-w-4xl">
-            All products sold by {business.name} are intended for research purposes
-            only. Not for human consumption. These statements have not been
-            evaluated by the FDA. Not intended to diagnose, treat, cure, or prevent
-            any disease.
+          <p className="font-mono text-[10px] sm:text-[11px] text-bone leading-relaxed max-w-5xl">
+            {business.name} is not a compounding pharmacy, licensed medical facility, or outsourcing facility as defined under Section 503B of the Federal Food, Drug, and Cosmetic Act. All products sold on this website are intended strictly for in-vitro research, laboratory analysis, and scientific experimentation by qualified professionals. Products are not for human consumption, veterinary use, or therapeutic application of any kind. All products are manufactured and third-party tested in the United States. Statements made on this website have not been evaluated by the U.S. Food and Drug Administration. Products are not intended to diagnose, treat, cure, or prevent any disease or medical condition. By purchasing from {business.name}, you acknowledge that you are a qualified researcher aged 21 or older and agree to use all products exclusively for lawful research purposes.
           </p>
           <p className="font-mono text-[10px] sm:text-[11px] text-bone">
             © {new Date().getFullYear()} {business.legalName}. All Rights Reserved.

@@ -24,6 +24,9 @@ export default function ProductCard({ product, index }: { product: Product; inde
           <h3 className="font-sans font-bold text-paper text-base sm:text-lg leading-tight">
             {product.name}
           </h3>
+          <span className="font-mono text-accent text-sm font-semibold shrink-0">
+            {product.price ?? "—"}
+          </span>
         </div>
 
         {/* Molecular decoration */}
@@ -56,8 +59,8 @@ export default function ProductCard({ product, index }: { product: Product; inde
           <span className="font-mono text-[9px] sm:text-[10px] text-bone tracking-[0.15em]">
             RESEARCH USE ONLY
           </span>
-          <span className="font-mono text-[9px] sm:text-[10px] text-bone tracking-wide">
-            {product.category}
+          <span className="font-mono text-[9px] sm:text-[10px] text-accent tracking-wide flex items-center gap-1">
+            🇺🇸 MFG IN USA
           </span>
         </div>
       </div>

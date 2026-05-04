@@ -5,13 +5,15 @@ import SiteShell from "@/components/SiteShell";
 import PageHeader from "@/components/PageHeader";
 import { products, slugify } from "@/lib/products";
 
+const coaProducts = products.filter((p) => p.coa !== undefined);
+
 export default function COAsPage() {
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return products;
-    return products.filter(
+    if (!q) return coaProducts;
+    return coaProducts.filter(
       (p) =>
         p.name.toLowerCase().includes(q) ||
         p.category.toLowerCase().includes(q)
@@ -23,7 +25,7 @@ export default function COAsPage() {
       <PageHeader
         eyebrow="TRANSPARENCY"
         title="Certificates of Analysis."
-        subtitle="Every batch independently tested by a US third-party laboratory. Search the library by compound name or category — full PDF reports available for every product we ship."
+        subtitle="Every batch independently tested by a US third-party laboratory. Full PDF reports published for every product we ship."
       />
 
       <section className="bg-obsidian py-12 md:py-16">
@@ -34,7 +36,7 @@ export default function COAsPage() {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search compounds (e.g. BPC-157, Metabolic, Tirzepatide)…"
+              placeholder="Search compounds (e.g. BPC-157, NAD+)…"
               className="w-full bg-carbon border border-slate text-paper placeholder:text-bone/60 font-sans px-4 h-12 min-h-[44px] focus:border-accent focus:outline-none transition-colors"
             />
             <svg
@@ -50,7 +52,7 @@ export default function COAsPage() {
           </div>
 
           <p className="font-mono text-bone text-xs tracking-wider mb-6">
-            {filtered.length} {filtered.length === 1 ? "RESULT" : "RESULTS"}
+            {filtered.length} {filtered.length === 1 ? "COMPOUND" : "COMPOUNDS"}
           </p>
 
           {/* Table */}
@@ -58,9 +60,10 @@ export default function COAsPage() {
             <div className="hidden sm:grid grid-cols-12 gap-4 px-5 py-4 border-b border-slate font-mono text-[11px] text-bone tracking-[0.15em] uppercase">
               <div className="col-span-5">Compound</div>
               <div className="col-span-3">Category</div>
-              <div className="col-span-2">Strengths</div>
+              <div className="col-span-2">Strength</div>
               <div className="col-span-2 text-right">COA</div>
             </div>
+
             <div>
               {filtered.map((p) => (
                 <div
@@ -75,9 +78,11 @@ export default function COAsPage() {
                       {p.name}
                     </a>
                   </div>
+
                   <div className="col-span-6 sm:col-span-3 font-mono text-xs text-bone tracking-wide">
                     {p.category}
                   </div>
+
                   <div className="col-span-6 sm:col-span-2 flex flex-wrap gap-1">
                     {p.strengths.map((s) => (
                       <span
@@ -88,16 +93,30 @@ export default function COAsPage() {
                       </span>
                     ))}
                   </div>
+
                   <div className="col-span-12 sm:col-span-2 sm:text-right">
-                    <button className="inline-flex items-center gap-2 font-mono text-xs text-accent border border-accent/40 hover:border-accent hover:bg-accent/10 px-3 h-9 transition-colors">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                        <path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" strokeWidth="1.5" />
-                      </svg>
-                      DOWNLOAD
-                    </button>
+                    {p.coa === "pending" ? (
+                      <span className="inline-flex items-center gap-1.5 font-mono text-xs text-bone border border-slate px-3 h-9">
+                        <span className="w-1.5 h-1.5 rounded-full bg-accent/60 animate-pulse" />
+                        COMING SOON
+                      </span>
+                    ) : (
+                      <a
+                        href={p.coa}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 font-mono text-xs text-accent border border-accent/40 hover:border-accent hover:bg-accent/10 px-3 h-9 transition-colors"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                          <path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" strokeWidth="1.5" />
+                        </svg>
+                        DOWNLOAD
+                      </a>
+                    )}
                   </div>
                 </div>
               ))}
+
               {filtered.length === 0 && (
                 <div className="px-5 py-12 text-center text-bone font-mono text-sm">
                   No results. Try another term.

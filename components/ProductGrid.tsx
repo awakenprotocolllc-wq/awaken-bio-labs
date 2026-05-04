@@ -21,7 +21,7 @@ export default function ProductGrid() {
             — CATALOG —
           </p>
           <h2 className="font-sans font-bold text-paper text-4xl sm:text-5xl md:text-6xl tracking-tight leading-[1]">
-            62 Research Compounds.
+            {products.length} Research Compounds.
           </h2>
           <p className="text-bone mt-4 text-base sm:text-lg">
             Zero compromises on purity or potency.

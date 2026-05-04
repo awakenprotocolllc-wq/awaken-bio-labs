@@ -4,7 +4,7 @@ import ProductGrid from "@/components/ProductGrid";
 
 export const metadata = {
   title: "Shop · Awaken Bio Labs",
-  description: "62 research compounds. Verified purity. Third-party tested.",
+  description: "Research-grade peptides. Verified purity. Third-party tested.",
 };
 
 export default function ShopPage() {
@@ -13,7 +13,7 @@ export default function ShopPage() {
       <PageHeader
         eyebrow="CATALOG"
         title="The Full Catalog."
-        subtitle="62 research compounds. Filter by category, click any product for full details, dosing references, and Certificate of Analysis."
+        subtitle="Research-grade compounds. Filter by category, click any product for full details and Certificate of Analysis."
       />
       <ProductGrid />
     </SiteShell>

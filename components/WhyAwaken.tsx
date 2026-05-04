@@ -5,19 +5,19 @@ import { AnimatePresence, motion } from "framer-motion";
 
 const items = [
   {
-    title: "Verified Purity",
+    title: "Made in the USA",
     body:
-      "Every batch independently tested by a US third-party laboratory. Certificate of Analysis available for every product.",
+      "Every compound we carry is manufactured domestically — not sourced overseas. US-based production means tighter quality control, shorter supply chains, and no mystery about what goes into your research material.",
   },
   {
-    title: "Research-Grade Manufacturing",
+    title: "Tested in the USA",
     body:
-      "Manufactured under strict GMP standard facilities. Consistent, reliable, uncompromising.",
+      "Third-party testing is completed right here in the US by independent, accredited laboratories. We don't send samples abroad for analysis. Every Certificate of Analysis is issued by a domestic lab you can verify.",
   },
   {
-    title: "Full COA Transparency",
+    title: "99%+ Purity Guaranteed",
     body:
-      "Every product ships with its own Certificate of Analysis. No black boxes. No guessing.",
+      "Every batch independently tested by a US third-party laboratory. Certificate of Analysis available for every product. No guessing, no black boxes.",
   },
   {
     title: "Fast Reliable Fulfillment",
@@ -27,7 +27,7 @@ const items = [
   {
     title: "Built For Serious Researchers",
     body:
-      "No gimmicks. No fillers. No compromises. Just the compounds you need at the purity you demand.",
+      "No gimmicks. No fillers. No compromises. Just the compounds you need at the purity you demand — at prices that don't penalize you for buying American.",
   },
 ];
 

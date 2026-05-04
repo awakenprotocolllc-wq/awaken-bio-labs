@@ -4,8 +4,19 @@ import { motion } from "framer-motion";
 
 const items = [
   {
-    label: "Third-Party Tested",
-    sub: "US Laboratory Verified",
+    label: "Made in the USA",
+    sub: "Domestic Manufacturing Only",
+    icon: (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+        <path d="M3 6h18v12H3z" stroke="#57C7D6" strokeWidth="1.5" />
+        <path d="M3 6h7v5H3z" fill="#57C7D6" fillOpacity="0.2" stroke="#57C7D6" strokeWidth="1.5" />
+        <path d="M5 8h1m2 0h1M5 10h1m2 0h1" stroke="#57C7D6" strokeWidth="1" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    label: "Third-Party Tested in the USA",
+    sub: "Independent US Lab Every Batch",
     icon: (
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
         <path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z" stroke="#57C7D6" strokeWidth="1.5" />
@@ -20,18 +31,6 @@ const items = [
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
         <path d="M8 2h8l-1 6a4 4 0 0 1 1 2.5V20a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-9.5A4 4 0 0 1 9 8L8 2z" stroke="#57C7D6" strokeWidth="1.5" />
         <path d="M9 14h6" stroke="#57C7D6" strokeWidth="1.5" />
-      </svg>
-    ),
-  },
-  {
-    label: "FedEx 2-Day Shipping",
-    sub: "Order Before 1PM Ships Today",
-    icon: (
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-        <rect x="2" y="7" width="13" height="10" stroke="#57C7D6" strokeWidth="1.5" />
-        <path d="M15 10h4l3 3v4h-7" stroke="#57C7D6" strokeWidth="1.5" />
-        <circle cx="7" cy="19" r="2" stroke="#57C7D6" strokeWidth="1.5" />
-        <circle cx="17" cy="19" r="2" stroke="#57C7D6" strokeWidth="1.5" />
       </svg>
     ),
   },
