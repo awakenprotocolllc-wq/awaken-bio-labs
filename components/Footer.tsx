@@ -129,6 +129,7 @@ export default function Footer() {
           </p>
           <p className="font-mono text-[10px] sm:text-[11px] text-bone">
             © {new Date().getFullYear()} {business.legalName}. All Rights Reserved.
+            {" · "}NV Business ID: {business.nvBusinessId}
           </p>
         </div>
       </div>
