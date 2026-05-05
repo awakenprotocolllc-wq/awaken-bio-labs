@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import SiteShell from "@/components/SiteShell";
-import { getProductBySlug, products, slugify } from "@/lib/products";
+import { getProductBySlug, getProductImage, products, slugify } from "@/lib/products";
 
 export function generateStaticParams() {
   return products.map((p) => ({ slug: slugify(p.name) }));
@@ -44,56 +45,15 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
 
       <section className="bg-obsidian">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 md:py-20 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
-          {/* Visual */}
-          <div className="relative aspect-square bg-gradient-to-b from-carbon to-obsidian border border-slate overflow-hidden">
-            <div
-              className="absolute left-1/2 -translate-x-1/2 bottom-0 w-[80%] h-[40%] blur-3xl opacity-50 rounded-full"
-              style={{
-                background: "radial-gradient(ellipse at center, #57C7D6 0%, transparent 70%)",
-              }}
+          <div className="relative aspect-square bg-white border border-slate overflow-hidden">
+            <Image
+              src={getProductImage(product)}
+              alt={product.name}
+              fill
+              priority
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              className="object-contain p-10 sm:p-16"
             />
-            <svg
-              className="absolute inset-0 m-auto h-[70%] w-auto"
-              viewBox="0 0 120 300"
-              fill="none"
-            >
-              <rect x="45" y="10" width="30" height="14" stroke="#2A2D33" strokeWidth="1.5" />
-              <rect x="40" y="24" width="40" height="10" fill="#2A2D33" />
-              <path
-                d="M42 34 L42 270 Q42 285 60 285 Q78 285 78 270 L78 34 Z"
-                stroke="#2A2D33"
-                strokeWidth="1.5"
-                fill="url(#vialGradDetail)"
-              />
-              <defs>
-                <linearGradient id="vialGradDetail" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#141518" />
-                  <stop offset="100%" stopColor="#57C7D6" stopOpacity="0.25" />
-                </linearGradient>
-              </defs>
-              <text
-                x="60"
-                y="160"
-                textAnchor="middle"
-                fill="#57C7D6"
-                fontSize="9"
-                fontFamily="monospace"
-                letterSpacing="2"
-              >
-                AWAKEN
-              </text>
-              <text
-                x="60"
-                y="175"
-                textAnchor="middle"
-                fill="#D9D9DC"
-                fontSize="6"
-                fontFamily="monospace"
-                letterSpacing="1"
-              >
-                {product.strengths[0].toUpperCase()} · LYOPHILIZED
-              </text>
-            </svg>
           </div>
 
           {/* Info */}
