@@ -17,10 +17,24 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
+const OG_DESCRIPTION =
+  "Made in the USA · Third-Party Tested · 99%+ Purity · Research Use Only";
+
 export const metadata: Metadata = {
   title: "Awaken Bio Labs — Research-Grade Peptide Compounds",
   description:
     "Research-grade peptide compounds for in-vitro laboratory use. Third-party tested, US-manufactured. Not for human or veterinary use.",
+  openGraph: {
+    title: "Awaken Bio Labs — Research-Grade Peptide Compounds",
+    description: OG_DESCRIPTION,
+    siteName: "Awaken Bio Labs",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Awaken Bio Labs — Research-Grade Peptide Compounds",
+    description: OG_DESCRIPTION,
+  },
 };
 
 export default function RootLayout({
