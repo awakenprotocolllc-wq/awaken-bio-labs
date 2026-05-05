@@ -37,7 +37,7 @@ const values = [
   {
     n: "02",
     title: "Quality Over Quantity",
-    body: "We carry 47 of the most-researched compounds — not 200. Every SKU earns its place.",
+    body: "We carry a focused catalog of the most-researched compounds — not 200. Every SKU earns its place based on verified purity and research relevance.",
   },
   {
     n: "03",
@@ -154,10 +154,10 @@ export default function AboutPage() {
       <section className="bg-obsidian py-16 md:py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <h2 className="font-sans font-bold text-paper text-3xl sm:text-4xl md:text-5xl leading-[1] tracking-tight mb-6">
-            Run with serious. Or run blind.
+            Serious compounds. Verifiable standards.
           </h2>
           <p className="text-bone text-lg mb-10 max-w-xl mx-auto">
-            47 verified compounds. Independent COAs. Built for the people doing the work.
+            A focused catalog of verified research compounds. Independent COAs. For qualified in-vitro research only.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link

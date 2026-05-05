@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import SiteShell from "@/components/SiteShell";
+import ResearchDisclaimer from "@/components/ResearchDisclaimer";
 import { getProductBySlug, getProductImage, products, slugify } from "@/lib/products";
 
 export function generateStaticParams() {
@@ -13,7 +14,7 @@ export function generateMetadata({ params }: { params: { slug: string } }) {
   if (!product) return { title: "Not Found" };
   return {
     title: `${product.name} · Awaken Bio Labs`,
-    description: `${product.name} — ${product.category}. Research use only. Third-party tested for 99%+ purity.`,
+    description: `${product.name} — ${product.category}. For in-vitro research use only. Not for human or veterinary use. Third-party tested, ≥99% purity.`,
   };
 }
 
@@ -61,7 +62,7 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
             <p className="font-mono text-accent text-xs tracking-[0.25em] mb-4">
               — {product.category.toUpperCase()} —
             </p>
-            <h1 className="font-sans font-bold text-paper text-4xl sm:text-5xl md:text-6xl leading-[1] tracking-tight">
+            <h1 className="font-sans font-bold text-paper text-3xl sm:text-4xl md:text-5xl lg:text-6xl leading-[1.05] tracking-tight break-words">
               {product.name}
             </h1>
             <div className="flex items-baseline gap-4 mt-4">
@@ -69,7 +70,7 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
                 {product.price ?? "—"}
               </span>
               <span className="font-mono text-bone text-xs tracking-wider">
-                RESEARCH USE ONLY
+                IN-VITRO RESEARCH USE ONLY
               </span>
             </div>
 
@@ -93,7 +94,7 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
               </div>
             </div>
 
-            <div className="mt-8 grid grid-cols-2 gap-3">
+            <div className="mt-8 grid grid-cols-1 xs:grid-cols-2 gap-3">
               <a
                 href={`mailto:support@awakenbiolabs.com?subject=Order%20Inquiry%3A%20${encodeURIComponent(product.name)}&body=Hi%2C%20I%27d%20like%20to%20order%20${encodeURIComponent(product.name)}%20(${encodeURIComponent(product.strengths[0])}).%20Please%20let%20me%20know%20how%20to%20proceed.`}
                 className="bg-accent text-obsidian font-semibold h-12 min-h-[44px] flex items-center justify-center hover:bg-accent/80 transition-colors"
@@ -108,7 +109,9 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
               </Link>
             </div>
 
-            <div className="mt-10 border-t border-slate pt-8 space-y-5">
+            <ResearchDisclaimer variant="inline" className="mt-4" />
+
+            <div className="mt-8 border-t border-slate pt-8 space-y-5">
               <Detail label="Form" value="Lyophilized powder" />
               <Detail label="Purity" value="≥ 99% (HPLC verified)" />
               <Detail label="Storage" value="Refrigerate after reconstitution" />
@@ -120,9 +123,10 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
                 — DISCLAIMER —
               </p>
               <p className="text-bone text-sm leading-relaxed">
-                {product.name} is sold strictly for in-vitro research and laboratory
-                experimentation. Not for human consumption, ingestion, or therapeutic use.
-                Statements have not been evaluated by the FDA.
+                {product.name} is intended solely for in-vitro research and laboratory
+                experimentation by qualified professionals. Not for human consumption, veterinary use,
+                or therapeutic application of any kind. Statements have not been evaluated by the FDA.
+                Not intended to diagnose, treat, cure, or prevent any disease or medical condition.
               </p>
             </div>
           </div>

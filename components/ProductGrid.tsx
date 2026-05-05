@@ -24,7 +24,7 @@ export default function ProductGrid() {
             {products.length} Research Compounds.
           </h2>
           <p className="text-bone mt-4 text-base sm:text-lg">
-            Zero compromises on purity or potency.
+            All compounds intended for in-vitro research use only. Not for human or veterinary use.
           </p>
         </div>
 

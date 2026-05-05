@@ -3,6 +3,7 @@ import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import AgeGate from "@/components/AgeGate";
 import CookieBanner from "@/components/CookieBanner";
+import ResearchDisclaimer from "@/components/ResearchDisclaimer";
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -17,9 +18,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Awaken Bio Labs — Peptide Science. Human Potential.",
+  title: "Awaken Bio Labs — Research-Grade Peptide Compounds",
   description:
-    "62 research compounds. Verified purity. Third-party tested. Built for serious researchers.",
+    "Research-grade peptide compounds for in-vitro laboratory use. Third-party tested, US-manufactured. Not for human or veterinary use.",
 };
 
 export default function RootLayout({
@@ -30,6 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${spaceGrotesk.variable} ${jetbrainsMono.variable}`}>
       <body className="bg-obsidian text-paper font-sans antialiased">
+        <ResearchDisclaimer variant="banner" />
         {children}
         <AgeGate />
         <CookieBanner />

@@ -7,6 +7,9 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      screens: {
+        xs: "480px",
+      },
       colors: {
         obsidian: "#0A0B0D",
         carbon: "#141518",
@@ -25,5 +28,7 @@ const config: Config = {
     },
   },
   plugins: [],
+  // Prevent JIT from purging arbitrary transition class used in accordions
+  safelist: ["transition-[grid-template-rows]"],
 };
 export default config;
