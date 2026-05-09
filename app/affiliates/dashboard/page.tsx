@@ -8,7 +8,7 @@ type Stats = {
   affiliateCode: string;
   commissionRate: number;
   referrals: ReferralOrder[];
-  totalEarnings: string;
+  confirmedEarnings: string;
   pendingEarnings: string;
   totalConversions: number;
 };
@@ -54,13 +54,25 @@ export default function DashboardOverview() {
 
   const kpis = stats
     ? [
-        { label: "Total Earnings", value: stats.totalEarnings, hint: "All attributed orders" },
-        { label: "Pending Payout", value: stats.pendingEarnings, hint: "Awaiting clearance" },
-        { label: "Conversions", value: String(stats.totalConversions), hint: "Orders via your link" },
+        {
+          label: "Confirmed Earnings",
+          value: stats.confirmedEarnings,
+          hint: "Fulfilled orders only",
+        },
+        {
+          label: "Pending",
+          value: stats.pendingEarnings,
+          hint: "Confirmed when order ships",
+        },
+        {
+          label: "Conversions",
+          value: String(stats.totalConversions),
+          hint: "Active referred orders",
+        },
         {
           label: "Commission Rate",
           value: `${Math.round(stats.commissionRate * 100)}%`,
-          hint: "Per sale earned",
+          hint: "Per fulfilled sale",
         },
       ]
     : [];
