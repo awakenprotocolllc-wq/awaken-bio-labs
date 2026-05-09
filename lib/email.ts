@@ -1,37 +1,27 @@
 // =============================================================================
-// EMAIL DELIVERY
+// EMAIL DELIVERY — Resend
 // =============================================================================
-// If RESEND_API_KEY is set in env (Vercel project settings → Environment
-// Variables), submissions are sent via Resend. Otherwise we log them to the
-// server console — useful for local dev and so the form still works without
-// keys configured.
-//
-// To enable real email delivery:
-//   1. Sign up at resend.com (free tier: 3000 emails/mo)
-//   2. Verify a sending domain (or use onboarding@resend.dev for testing)
-//   3. Get an API key from resend.com/api-keys
-//   4. In Vercel: Project → Settings → Environment Variables, add:
-//        RESEND_API_KEY = re_...
-//        EMAIL_TO       = your_inbox@gmail.com
-//        EMAIL_FROM     = noreply@awakenbiolabs.com   (must be on verified domain)
-//   5. Redeploy.
+// Env vars required in Vercel project settings:
+//   RESEND_API_KEY  = re_...
+//   EMAIL_FROM      = noreply@awakenbiolabs.com  (must be on verified domain)
+//   EMAIL_TO        = fallback recipient for contact form (default: support@awakenbiolabs.com)
 // =============================================================================
 
 type SendArgs = {
+  to?: string;       // override recipient (defaults to EMAIL_TO env)
   subject: string;
   html: string;
   replyTo?: string;
 };
 
-export async function sendEmail({ subject, html, replyTo }: SendArgs) {
+export async function sendEmail({ to, subject, html, replyTo }: SendArgs) {
   const apiKey = process.env.RESEND_API_KEY;
-  const to = process.env.EMAIL_TO || "support@awakenbiolabs.com";
+  const recipient = to || process.env.EMAIL_TO || "support@awakenbiolabs.com";
   const from = process.env.EMAIL_FROM || "onboarding@resend.dev";
 
   if (!apiKey) {
-    // Dev / unconfigured fallback — still "succeeds" so the UI flow works.
     console.log("[email:fallback] No RESEND_API_KEY set. Would have sent:");
-    console.log({ to, from, subject, replyTo, html });
+    console.log({ to: recipient, from, subject, replyTo });
     return { ok: true, fallback: true };
   }
 
@@ -43,7 +33,7 @@ export async function sendEmail({ subject, html, replyTo }: SendArgs) {
     },
     body: JSON.stringify({
       from,
-      to: [to],
+      to: [recipient],
       subject,
       html,
       reply_to: replyTo,
