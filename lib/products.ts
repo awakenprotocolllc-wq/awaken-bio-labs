@@ -121,7 +121,7 @@ export const products: Product[] = [
 
   // Blends
   { name: "BPC Blend",              strengths: ["70mg"],       price: "$110.50",         category: "Blends" },
-  { name: "Wolverine Blend",        strengths: ["20mg"],       price: "Contact Seller",  coa: "pending", category: "Blends" },
+  { name: "Wolverine Blend",        strengths: ["20mg"],       price: "$135.00",         coa: "pending", category: "Blends" },
   { name: "KLOW",                   strengths: ["80mg"],       price: "$145.00",         category: "Blends" },
 
   // Supplies
