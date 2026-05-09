@@ -1,5 +1,7 @@
 export type Product = {
   name: string;
+  /** Short composition or tagline shown on cards and detail pages */
+  subtitle?: string;
   strengths: string[];
   price: string | null; // null = price not set; "Contact Seller" = no online checkout
   /** Per-strength prices for multi-strength products */
@@ -121,7 +123,7 @@ export const products: Product[] = [
 
   // Blends
   { name: "BPC Blend",              strengths: ["70mg"],       price: "$110.50",         category: "Blends" },
-  { name: "Wolverine Blend",        strengths: ["20mg"],       price: "$135.00",         coa: "pending", category: "Blends" },
+  { name: "Wolverine Blend",        subtitle: "TB-500 + BPC-157", strengths: ["20mg"], price: "$135.00", coa: "pending", category: "Blends" },
   { name: "KLOW",                   strengths: ["80mg"],       price: "$145.00",         category: "Blends" },
 
   // Supplies

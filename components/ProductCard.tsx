@@ -33,9 +33,16 @@ export default function ProductCard({ product, index }: { product: Product; inde
 
       <div className="p-5 sm:p-6 flex flex-col gap-4 flex-1">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="font-sans font-bold text-paper text-base sm:text-lg leading-tight">
-            {product.name}
-          </h3>
+          <div>
+            <h3 className="font-sans font-bold text-paper text-base sm:text-lg leading-tight">
+              {product.name}
+            </h3>
+            {product.subtitle && (
+              <p className="font-mono text-bone/60 text-[10px] tracking-wider mt-0.5">
+                {product.subtitle}
+              </p>
+            )}
+          </div>
           <span className="font-mono text-accent text-sm font-semibold shrink-0">
             {product.price ?? "—"}
           </span>

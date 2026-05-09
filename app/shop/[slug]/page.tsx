@@ -63,6 +63,11 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
             <h1 className="font-sans font-bold text-paper text-3xl sm:text-4xl md:text-5xl lg:text-6xl leading-[1.05] tracking-tight break-words">
               {product.name}
             </h1>
+            {product.subtitle && (
+              <p className="font-mono text-accent/70 text-sm tracking-widest mt-2">
+                {product.subtitle}
+              </p>
+            )}
 
             {/* Interactive: strength selector + CTA — client component */}
             <ProductOrderSection product={product} />
