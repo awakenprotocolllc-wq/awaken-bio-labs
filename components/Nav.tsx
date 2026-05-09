@@ -23,71 +23,85 @@ export default function Nav() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
+
   return (
-    <header
-      className={`sticky top-0 z-50 w-full backdrop-blur-md transition-colors duration-200 ${
-        scrolled
-          ? "bg-carbon/90 border-b border-slate"
-          : "bg-obsidian/70 border-b border-transparent"
-      }`}
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-6">
-        <a href="#" className="flex-shrink-0" aria-label="Awaken Bio Labs home">
-          <Logo compact />
-        </a>
-
-        {/* Desktop links */}
-        <nav className="hidden lg:flex items-center gap-8">
-          {links.map((l) => (
-            <a
-              key={l.label}
-              href={l.href}
-              className="nav-link font-sans text-sm text-paper hover:text-paper"
-            >
-              {l.label}
-            </a>
-          ))}
-        </nav>
-
-        <div className="flex items-center gap-3 sm:gap-4">
-          {/* Cart icon */}
-          <button
-            aria-label="Cart"
-            className="text-paper hover:text-accent transition-colors h-11 w-11 flex items-center justify-center"
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M3 4h2l2.4 12.2a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 2-1.6L21 8H6"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="square"
-              />
-              <circle cx="10" cy="21" r="1.3" fill="currentColor" />
-              <circle cx="17" cy="21" r="1.3" fill="currentColor" />
-            </svg>
-          </button>
-
-          <a
-            href="/shop"
-            className="hidden sm:inline-flex items-center bg-accent text-obsidian font-sans font-semibold text-sm px-5 h-11 hover:bg-accent/80 transition-colors"
-          >
-            Shop Now
+    <>
+      <header
+        className={`sticky top-0 z-50 w-full transition-colors duration-200 ${
+          scrolled
+            ? "bg-carbon/90 border-b border-slate"
+            : "bg-obsidian/70 border-b border-transparent"
+        }`}
+        style={{ backdropFilter: "blur(12px)" }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-6">
+          {/* Logo — goes home */}
+          <a href="/" className="flex-shrink-0" aria-label="Awaken Bio Labs home">
+            <Logo compact />
           </a>
 
-          {/* Hamburger */}
-          <button
-            aria-label="Open menu"
-            onClick={() => setOpen(true)}
-            className="lg:hidden text-paper h-11 w-11 flex items-center justify-center"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="1.5" />
-            </svg>
-          </button>
-        </div>
-      </div>
+          {/* Desktop links */}
+          <nav className="hidden lg:flex items-center gap-8">
+            {links.map((l) => (
+              <a
+                key={l.label}
+                href={l.href}
+                className="nav-link font-sans text-sm text-paper hover:text-paper"
+              >
+                {l.label}
+              </a>
+            ))}
+          </nav>
 
-      {/* Mobile full-screen nav */}
+          <div className="flex items-center gap-3 sm:gap-4">
+            {/* Cart icon */}
+            <button
+              aria-label="Cart"
+              className="text-paper hover:text-accent transition-colors h-11 w-11 flex items-center justify-center"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M3 4h2l2.4 12.2a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 2-1.6L21 8H6"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="square"
+                />
+                <circle cx="10" cy="21" r="1.3" fill="currentColor" />
+                <circle cx="17" cy="21" r="1.3" fill="currentColor" />
+              </svg>
+            </button>
+
+            <a
+              href="/shop"
+              className="hidden sm:inline-flex items-center bg-accent text-obsidian font-sans font-semibold text-sm px-5 h-11 hover:bg-accent/80 transition-colors"
+            >
+              Shop Now
+            </a>
+
+            {/* Hamburger */}
+            <button
+              aria-label="Open menu"
+              onClick={() => setOpen(true)}
+              className="lg:hidden text-paper h-11 w-11 flex items-center justify-center"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="1.5" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/*
+        Mobile full-screen nav rendered as a SIBLING to <header>, not a child.
+        This avoids the backdrop-filter stacking context trap that prevents
+        position:fixed children from covering the full viewport.
+      */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -95,10 +109,12 @@ export default function Nav() {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="fixed inset-0 z-[60] bg-obsidian flex flex-col"
+            className="fixed inset-0 z-[200] bg-obsidian flex flex-col"
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate">
-              <Logo compact />
+              <a href="/" onClick={() => setOpen(false)} aria-label="Awaken Bio Labs home">
+                <Logo compact />
+              </a>
               <button
                 aria-label="Close menu"
                 onClick={() => setOpen(false)}
@@ -134,6 +150,6 @@ export default function Nav() {
           </motion.div>
         )}
       </AnimatePresence>
-    </header>
+    </>
   );
 }

@@ -26,7 +26,7 @@ export default function Footer() {
         <div className="md:col-span-1">
           <Logo />
           <p className="font-mono text-bone text-xs tracking-wider mt-6 max-w-[240px]">
-            Peptide Science. Human Potential.
+            Research-Grade Peptide Compounds. In-Vitro Use Only.
           </p>
           <div className="flex gap-3 mt-6">
             {["IG", "X", "YT"].map((s) => (

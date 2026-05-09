@@ -9,11 +9,11 @@ export default function PageHeader({
 }) {
   return (
     <section className="relative bg-obsidian border-b border-slate overflow-hidden grain">
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-20 md:py-28">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-14 sm:py-20 md:py-28">
         <p className="font-mono text-accent text-xs tracking-[0.25em] mb-5">
           — {eyebrow} —
         </p>
-        <h1 className="font-sans font-bold text-paper text-5xl sm:text-6xl md:text-7xl leading-[0.95] tracking-tight max-w-4xl">
+        <h1 className="font-sans font-bold text-paper text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-[0.95] tracking-tight max-w-4xl break-words">
           {title}
         </h1>
         {subtitle && (

@@ -31,7 +31,7 @@ function FAQItem({ q, a }: { q: string; a: string }) {
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between text-left py-6 px-1 min-h-[44px]"
       >
-        <span className="font-sans font-medium text-paper text-lg pr-4">{q}</span>
+        <span className="font-sans font-medium text-paper text-base sm:text-lg pr-4">{q}</span>
         <span
           className="font-mono text-accent text-2xl leading-none ml-4 shrink-0 transition-transform duration-200"
           style={{ transform: open ? "rotate(45deg)" : "none" }}
@@ -39,9 +39,15 @@ function FAQItem({ q, a }: { q: string; a: string }) {
           +
         </span>
       </button>
-      {open && (
-        <p className="text-bone pb-6 px-1 leading-relaxed max-w-3xl">{a}</p>
-      )}
+      {/* CSS grid-rows: GPU-composited expand with no layout reflow */}
+      <div
+        className="grid transition-[grid-template-rows] duration-300 ease-out"
+        style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
+      >
+        <div className="overflow-hidden">
+          <p className="text-bone pb-6 px-1 leading-relaxed max-w-3xl">{a}</p>
+        </div>
+      </div>
     </div>
   );
 }

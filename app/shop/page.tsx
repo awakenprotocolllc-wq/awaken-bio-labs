@@ -4,7 +4,7 @@ import ProductGrid from "@/components/ProductGrid";
 
 export const metadata = {
   title: "Shop · Awaken Bio Labs",
-  description: "Research-grade peptides. Verified purity. Third-party tested.",
+  description: "Research-grade peptide compounds for in-vitro laboratory use. Verified purity. Third-party tested. Not for human or veterinary use.",
 };
 
 export default function ShopPage() {
