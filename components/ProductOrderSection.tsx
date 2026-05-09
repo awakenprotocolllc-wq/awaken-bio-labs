@@ -3,18 +3,33 @@
 import { useState } from "react";
 import Link from "next/link";
 import { type Product, getPriceForStrength, isOrderable } from "@/lib/products";
+import { useCart } from "@/lib/cart";
 
 export default function ProductOrderSection({ product }: { product: Product }) {
   const [selectedStrength, setSelectedStrength] = useState(product.strengths[0]);
+  const [added, setAdded] = useState(false);
+  const { addItem, openDrawer } = useCart();
 
   const price = getPriceForStrength(product, selectedStrength);
   const canOrder = isOrderable(product, selectedStrength);
 
-  const checkoutUrl = canOrder
-    ? `/checkout?product=${encodeURIComponent(product.name)}&strength=${encodeURIComponent(selectedStrength)}&price=${encodeURIComponent(price!)}`
-    : null;
+  const contactUrl = `mailto:support@awakenbiolabs.com?subject=${encodeURIComponent(
+    `Order Inquiry: ${product.name}`
+  )}&body=${encodeURIComponent(
+    `Hi, I'd like to inquire about ordering ${product.name} (${selectedStrength}). Please let me know pricing and availability.`
+  )}`;
 
-  const contactUrl = `mailto:support@awakenbiolabs.com?subject=${encodeURIComponent(`Order Inquiry: ${product.name}`)}&body=${encodeURIComponent(`Hi, I'd like to inquire about ordering ${product.name} (${selectedStrength}). Please let me know pricing and availability.`)}`;
+  function handleAddToCart() {
+    addItem({
+      product: product.name,
+      strength: selectedStrength,
+      price: price!,
+    });
+    // Flash confirmation, then open drawer
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
+    openDrawer();
+  }
 
   return (
     <>
@@ -53,12 +68,16 @@ export default function ProductOrderSection({ product }: { product: Product }) {
       {/* CTA buttons */}
       <div className="mt-6 grid grid-cols-1 xs:grid-cols-2 gap-3">
         {canOrder ? (
-          <Link
-            href={checkoutUrl!}
-            className="bg-accent text-obsidian font-semibold h-12 min-h-[44px] flex items-center justify-center hover:bg-accent/80 transition-colors"
+          <button
+            onClick={handleAddToCart}
+            className={`h-12 min-h-[44px] flex items-center justify-center font-semibold transition-colors ${
+              added
+                ? "bg-green-500/20 border border-green-500/60 text-green-400"
+                : "bg-accent text-obsidian hover:bg-accent/80"
+            }`}
           >
-            Place an Order
-          </Link>
+            {added ? "✓ Added to Cart" : "Add to Cart"}
+          </button>
         ) : (
           <a
             href={contactUrl}

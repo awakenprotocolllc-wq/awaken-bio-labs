@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import SiteShell from "@/components/SiteShell";
 import CheckoutForm from "./CheckoutForm";
 
@@ -25,10 +24,7 @@ export default function CheckoutPage() {
 
       <section className="bg-obsidian py-12 md:py-20">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">
-          {/* Suspense required by Next.js for useSearchParams() */}
-          <Suspense fallback={<div className="text-bone font-mono text-sm animate-pulse">Loading…</div>}>
-            <CheckoutForm />
-          </Suspense>
+          <CheckoutForm />
         </div>
       </section>
     </SiteShell>

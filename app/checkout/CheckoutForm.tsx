@@ -1,39 +1,18 @@
 "use client";
 
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-
-type Item = {
-  product: string;
-  strength: string;
-  price: string;
-  qty: number;
-};
+import { useCart } from "@/lib/cart";
 
 function parsePrice(p: string): number {
   const n = parseFloat(p.replace(/[^0-9.]/g, ""));
   return isNaN(n) ? 0 : n;
 }
 
-function formatTotal(items: Item[]): string {
-  const t = items.reduce((s, i) => s + parsePrice(i.price) * i.qty, 0);
-  return `$${t.toFixed(2)}`;
-}
-
 export default function CheckoutForm() {
-  const params = useSearchParams();
   const router = useRouter();
+  const { items, updateQty, removeItem, subtotal, clearCart } = useCart();
 
-  const initialItem: Item = {
-    product: params.get("product") ?? "",
-    strength: params.get("strength") ?? "",
-    price: params.get("price") ?? "",
-    qty: 1,
-  };
-
-  const [items, setItems] = useState<Item[]>(
-    initialItem.product ? [initialItem] : []
-  );
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -47,16 +26,6 @@ export default function CheckoutForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  function setQty(idx: number, qty: number) {
-    setItems((prev) =>
-      prev.map((it, i) => (i === idx ? { ...it, qty: Math.max(1, qty) } : it))
-    );
-  }
-
-  function removeItem(idx: number) {
-    setItems((prev) => prev.filter((_, i) => i !== idx));
-  }
-
   function handleField(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
   }
@@ -66,7 +35,7 @@ export default function CheckoutForm() {
     setError("");
 
     if (!items.length) {
-      setError("No items in your order.");
+      setError("Your cart is empty. Add some products before checking out.");
       return;
     }
     if (!form.name || !form.email || !form.line1 || !form.city || !form.state || !form.zip) {
@@ -82,7 +51,12 @@ export default function CheckoutForm() {
         body: JSON.stringify({
           customer: { name: form.name, email: form.email, phone: form.phone || undefined },
           shipping: { line1: form.line1, city: form.city, state: form.state, zip: form.zip },
-          items,
+          items: items.map((i) => ({
+            product: i.product,
+            strength: i.strength,
+            price: i.price,
+            qty: i.qty,
+          })),
           notes: form.notes || undefined,
         }),
       });
@@ -90,14 +64,13 @@ export default function CheckoutForm() {
       const data = await res.json();
       if (!data.ok) throw new Error(data.error ?? "Unknown error");
 
+      clearCart();
       router.push(`/order-confirmation?id=${data.orderId}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
       setLoading(false);
     }
   }
-
-  const total = formatTotal(items);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-10">
@@ -107,56 +80,69 @@ export default function CheckoutForm() {
 
         {items.length === 0 && (
           <p className="text-bone text-sm">
-            No items selected.{" "}
+            Your cart is empty.{" "}
             <a href="/shop" className="text-accent hover:underline">
               Browse the catalog →
             </a>
           </p>
         )}
 
-        {items.map((item, idx) => (
-          <div key={idx} className="flex items-center gap-4 bg-carbon border border-slate p-4 mb-3">
-            <div className="flex-1 min-w-0">
-              <p className="font-sans font-semibold text-paper text-sm truncate">{item.product}</p>
-              <p className="font-mono text-accent text-xs mt-0.5">{item.strength}</p>
+        {items.map((item) => {
+          const lineTotal = (parsePrice(item.price) * item.qty).toFixed(2);
+          return (
+            <div
+              key={`${item.product}-${item.strength}`}
+              className="flex items-center gap-4 bg-carbon border border-slate p-4 mb-3"
+            >
+              <div className="flex-1 min-w-0">
+                <p className="font-sans font-semibold text-paper text-sm truncate">{item.product}</p>
+                <p className="font-mono text-accent text-xs mt-0.5">{item.strength}</p>
+              </div>
+              <div className="flex items-center gap-0">
+                <button
+                  type="button"
+                  onClick={() => updateQty(item.product, item.strength, item.qty - 1)}
+                  disabled={item.qty <= 1}
+                  className="h-8 w-9 border border-slate text-paper hover:border-accent hover:text-accent transition-colors font-mono text-base flex items-center justify-center disabled:opacity-30"
+                  aria-label="Decrease quantity"
+                >
+                  −
+                </button>
+                <span className="h-8 w-10 border-y border-slate text-paper font-mono text-sm flex items-center justify-center">
+                  {item.qty}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => updateQty(item.product, item.strength, item.qty + 1)}
+                  className="h-8 w-9 border border-slate text-paper hover:border-accent hover:text-accent transition-colors font-mono text-base flex items-center justify-center"
+                  aria-label="Increase quantity"
+                >
+                  +
+                </button>
+              </div>
+              <span className="font-mono text-accent text-sm font-semibold w-20 text-right shrink-0">
+                ${lineTotal}
+              </span>
+              {items.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => removeItem(item.product, item.strength)}
+                  className="text-bone hover:text-accent transition-colors ml-1"
+                  aria-label={`Remove ${item.product}`}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="square" />
+                  </svg>
+                </button>
+              )}
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setQty(idx, item.qty - 1)}
-                className="h-8 w-8 border border-slate text-paper hover:border-accent hover:text-accent transition-colors font-mono text-lg flex items-center justify-center"
-              >
-                −
-              </button>
-              <span className="font-mono text-paper text-sm w-6 text-center">{item.qty}</span>
-              <button
-                type="button"
-                onClick={() => setQty(idx, item.qty + 1)}
-                className="h-8 w-8 border border-slate text-paper hover:border-accent hover:text-accent transition-colors font-mono text-lg flex items-center justify-center"
-              >
-                +
-              </button>
-            </div>
-            <span className="font-mono text-accent text-sm font-semibold w-20 text-right shrink-0">
-              {item.price !== "" ? `$${(parsePrice(item.price) * item.qty).toFixed(2)}` : "—"}
-            </span>
-            {items.length > 1 && (
-              <button
-                type="button"
-                onClick={() => removeItem(idx)}
-                className="text-bone hover:text-accent transition-colors font-mono text-xs ml-2"
-                aria-label="Remove item"
-              >
-                ✕
-              </button>
-            )}
-          </div>
-        ))}
+          );
+        })}
 
         {items.length > 0 && (
           <div className="flex justify-between items-center border-t border-slate pt-4 mt-2">
-            <span className="font-mono text-bone text-xs tracking-wider uppercase">Total</span>
-            <span className="font-mono text-accent text-xl font-bold">{total}</span>
+            <span className="font-mono text-bone text-xs tracking-wider uppercase">Subtotal</span>
+            <span className="font-mono text-accent text-xl font-bold">{subtotal}</span>
           </div>
         )}
       </div>
@@ -218,7 +204,7 @@ export default function CheckoutForm() {
         disabled={loading || items.length === 0}
         className="w-full bg-accent text-obsidian font-semibold h-14 min-h-[44px] text-base hover:bg-accent/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {loading ? "Placing Order..." : `Place Order — ${total}`}
+        {loading ? "Placing Order..." : `Place Order — ${subtotal}`}
       </button>
     </form>
   );
