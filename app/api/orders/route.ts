@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createOrder, listOrders, calcSubtotal, type OrderItem } from "@/lib/db";
 import { sendCustomerOrderEmail, sendAdminOrderEmail } from "@/lib/order-emails";
 
 // ---------------------------------------------------------------------------
 // POST /api/orders — create new order
 // ---------------------------------------------------------------------------
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { customer, shipping, items, notes } = body ?? {};
@@ -29,12 +29,16 @@ export async function POST(req: Request) {
     const typedItems = items as OrderItem[];
     const subtotal = calcSubtotal(typedItems);
 
+    // Read affiliate referral code from cookie (set by middleware on ?ref= visits)
+    const refCode = req.cookies.get("awaken_ref")?.value || undefined;
+
     const order = await createOrder({
       customer,
       shipping,
       items: typedItems,
       subtotal,
       notes: notes || undefined,
+      refCode,
     });
 
     // Fire both emails — non-blocking, don't fail the order if email errors
@@ -57,7 +61,7 @@ export async function POST(req: Request) {
 // ---------------------------------------------------------------------------
 // GET /api/orders — list all orders (admin only)
 // ---------------------------------------------------------------------------
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   const cookie = req.headers.get("cookie") ?? "";
   const token = cookie.match(/awaken_admin=([^;]+)/)?.[1];
   const expected = process.env.ADMIN_SESSION_TOKEN;

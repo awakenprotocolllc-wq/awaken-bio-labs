@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import Logo from "./Logo";
-import { getCurrentUser, logout, type AffiliateUser } from "@/lib/affiliate-auth";
+import { getCurrentUser, refreshUser, logout, type AffiliateUser } from "@/lib/affiliate-auth";
 
 const nav = [
   { label: "Overview", href: "/affiliates/dashboard", icon: "▦" },
@@ -27,16 +27,22 @@ export default function AffiliateDashboardShell({
   const [mobileNav, setMobileNav] = useState(false);
 
   useEffect(() => {
-    const u = getCurrentUser();
-    if (!u) {
-      router.replace("/affiliates/login");
-      return;
-    }
-    setUser(u);
+    // Fast path: show cached user immediately
+    const cached = getCurrentUser();
+    if (cached) setUser(cached);
+
+    // Then verify the session is still valid with the server
+    refreshUser().then((fresh) => {
+      if (!fresh) {
+        router.replace("/affiliates/login");
+      } else {
+        setUser(fresh);
+      }
+    });
   }, [router]);
 
-  function handleLogout() {
-    logout();
+  async function handleLogout() {
+    await logout();
     router.push("/affiliates/login");
   }
 

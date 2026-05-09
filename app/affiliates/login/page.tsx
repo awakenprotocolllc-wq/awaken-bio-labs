@@ -12,12 +12,12 @@ export default function AffiliateLoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    const user = login(email.trim(), password);
+    const user = await login(email.trim(), password);
     if (!user) {
-      setError("Invalid email or password. Password must be at least 6 characters.");
+      setError("Invalid email or password.");
       return;
     }
     router.push("/affiliates/dashboard");
