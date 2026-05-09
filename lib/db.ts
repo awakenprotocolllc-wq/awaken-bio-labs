@@ -31,6 +31,7 @@ export type Order = {
   items: OrderItem[];
   subtotal: string; // formatted total, e.g. "$104.50"
   notes?: string;
+  refCode?: string; // affiliate tracking code from ?ref= cookie
 };
 
 // ---------------------------------------------------------------------------

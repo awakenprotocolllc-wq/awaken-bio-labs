@@ -1,63 +1,79 @@
 "use client";
 
-// =============================================================================
-// DEMO AUTH — REPLACE BEFORE PRODUCTION
-// =============================================================================
-// This is a localStorage-based "demo" auth for processor approval review.
-// Any email + password (>= 6 chars) creates a session. Real auth + a database
-// must be wired before launching commercially.
-//
-// Recommended swap:
-//   - Auth: NextAuth.js, Supabase Auth, or Clerk
-//   - DB: Supabase (Postgres), PlanetScale, or Neon
-//   - Affiliate engine: Tapfiliate / Rewardful, OR a custom table that tracks
-//     clicks, conversions, payouts per affiliate_id.
-//
-// All UI components reference this module — replace the FUNCTIONS, keep the
-// SHAPES (AffiliateUser type), and the dashboard keeps working.
-// =============================================================================
+// ---------------------------------------------------------------------------
+// Real affiliate auth — backed by Vercel KV + httpOnly cookie session.
+// Client code still reads from localStorage for the dashboard shell;
+// the httpOnly cookie is what middleware and API routes actually trust.
+// ---------------------------------------------------------------------------
 
-const KEY = "awaken_affiliate_session";
+const KEY = "awaken_affiliate_user";
 
 export type AffiliateUser = {
   id: string;
   name: string;
   email: string;
-  affiliateCode: string; // their unique discount/tracking code
-  status: "approved" | "pending";
-  joinedAt: string; // ISO date
+  affiliateCode: string;
+  status: "active" | "suspended";
+  commissionRate: number;
+  joinedAt: string;
 };
 
-export function login(email: string, password: string): AffiliateUser | null {
-  if (!email.includes("@") || password.length < 6) return null;
-  const namePart = email.split("@")[0];
-  const code =
-    namePart.replace(/[^a-z0-9]/gi, "").toUpperCase().slice(0, 8) || "PARTNER";
-  const user: AffiliateUser = {
-    id: `aff_${Date.now()}`,
-    name: namePart
-      .split(/[._-]/)
-      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
-      .join(" "),
-    email,
-    affiliateCode: code,
-    status: "approved",
-    joinedAt: new Date().toISOString(),
-  };
-  localStorage.setItem(KEY, JSON.stringify(user));
-  return user;
+/** POST to the real login API, then cache the user in localStorage. */
+export async function login(email: string, password: string): Promise<AffiliateUser | null> {
+  try {
+    const res = await fetch("/api/affiliate/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!data.ok || !data.user) return null;
+    // Cache in localStorage so dashboard client components can read synchronously
+    localStorage.setItem(KEY, JSON.stringify(data.user));
+    return data.user as AffiliateUser;
+  } catch {
+    return null;
+  }
 }
 
-export function logout() {
+/** Clear the httpOnly cookie via API + remove localStorage cache. */
+export async function logout(): Promise<void> {
+  try {
+    await fetch("/api/affiliate/logout", { method: "POST" });
+  } catch { /* best-effort */ }
   localStorage.removeItem(KEY);
 }
 
+/**
+ * Read the cached user from localStorage.
+ * Dashboard components call this on mount; middleware enforces the real session.
+ */
 export function getCurrentUser(): AffiliateUser | null {
   if (typeof window === "undefined") return null;
   const raw = localStorage.getItem(KEY);
   if (!raw) return null;
   try {
     return JSON.parse(raw) as AffiliateUser;
+  } catch {
+    return null;
+  }
+}
+
+/** Refresh localStorage from the server session (call after page load). */
+export async function refreshUser(): Promise<AffiliateUser | null> {
+  try {
+    const res = await fetch("/api/affiliate/me");
+    if (!res.ok) {
+      localStorage.removeItem(KEY);
+      return null;
+    }
+    const data = await res.json();
+    if (!data.ok || !data.user) {
+      localStorage.removeItem(KEY);
+      return null;
+    }
+    localStorage.setItem(KEY, JSON.stringify(data.user));
+    return data.user as AffiliateUser;
   } catch {
     return null;
   }

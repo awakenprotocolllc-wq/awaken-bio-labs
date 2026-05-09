@@ -102,7 +102,14 @@ export const products: Product[] = [
 
   // Longevity
   { name: "Epithalon",              strengths: ["10mg"],       price: "$40.00",          category: "Longevity" },
-  { name: "MOTS-C",                 strengths: ["10mg"],       price: "$48.50",          coa: "pending", category: "Longevity" },
+  {
+    name: "MOTS-C",
+    strengths: ["10mg", "40mg"],
+    price: "$48.50 – $120.00",
+    priceMap: { "10mg": "$48.50", "40mg": "$120.00" },
+    coa: "pending",
+    category: "Longevity",
+  },
   { name: "SS-31",                  strengths: ["50mg"],       price: "$150.00",         category: "Longevity" },
   { name: "FOX-04",                 strengths: ["10mg"],       price: "$217.50",         category: "Longevity" },
   { name: "NAD+",                   strengths: ["500mg"],      price: "$82.00",          coa: "pending", category: "Longevity" },

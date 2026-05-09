@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Logo from "./Logo";
+import { useCart } from "@/lib/cart";
 
 const links = [
   { label: "Shop", href: "/shop" },
@@ -15,6 +16,7 @@ const links = [
 export default function Nav() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const { totalItems, openDrawer } = useCart();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 80);
@@ -59,10 +61,11 @@ export default function Nav() {
           </nav>
 
           <div className="flex items-center gap-3 sm:gap-4">
-            {/* Cart icon */}
+            {/* Cart icon with badge */}
             <button
-              aria-label="Cart"
-              className="text-paper hover:text-accent transition-colors h-11 w-11 flex items-center justify-center"
+              aria-label="Open cart"
+              onClick={openDrawer}
+              className="relative text-paper hover:text-accent transition-colors h-11 w-11 flex items-center justify-center"
             >
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
                 <path
@@ -74,6 +77,11 @@ export default function Nav() {
                 <circle cx="10" cy="21" r="1.3" fill="currentColor" />
                 <circle cx="17" cy="21" r="1.3" fill="currentColor" />
               </svg>
+              {totalItems > 0 && (
+                <span className="absolute top-1.5 right-1.5 h-4 min-w-4 px-0.5 bg-accent text-obsidian font-mono font-bold text-[9px] rounded-full flex items-center justify-center leading-none">
+                  {totalItems > 99 ? "99+" : totalItems}
+                </span>
+              )}
             </button>
 
             <a

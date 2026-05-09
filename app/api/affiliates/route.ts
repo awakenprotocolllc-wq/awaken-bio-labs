@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { sendEmail, escape } from "@/lib/email";
+import { createApplication } from "@/lib/affiliate-db";
+import { sendApplicationReceivedEmail } from "@/lib/affiliate-emails";
 
 export async function POST(req: Request) {
   try {
@@ -13,6 +15,15 @@ export async function POST(req: Request) {
       );
     }
 
+    // Save to KV so admin can review and approve
+    await createApplication({ name, email, platform, audience, about });
+
+    // Send confirmation to applicant (non-blocking)
+    sendApplicationReceivedEmail(name, email).catch((err) =>
+      console.error("[affiliates] confirmation email error:", err)
+    );
+
+    // Also email admin
     const html = `
       <h2>New Affiliate Application</h2>
       <p><strong>Name:</strong> ${escape(name)}</p>
@@ -22,17 +33,14 @@ export async function POST(req: Request) {
       <hr />
       <p><strong>About their audience:</strong></p>
       <p style="white-space: pre-line;">${escape(about || "—")}</p>
+      <p><a href="${process.env.NEXT_PUBLIC_SITE_URL ?? "https://awakenbiolabs.com"}/admin/affiliates">Review in admin dashboard →</a></p>
     `;
 
-    const result = await sendEmail({
+    await sendEmail({
       subject: `[Awaken Affiliate] New application — ${name}`,
       html,
       replyTo: email,
     });
-
-    if (!result.ok) {
-      return NextResponse.json({ ok: false }, { status: 500 });
-    }
 
     return NextResponse.json({ ok: true });
   } catch (err) {

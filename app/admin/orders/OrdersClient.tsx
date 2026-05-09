@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { type Order, type OrderStatus } from "@/lib/db";
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
@@ -49,10 +50,22 @@ export default function OrdersClient({ initialOrders }: { initialOrders: Order[]
   return (
     <div className="min-h-screen bg-obsidian text-paper">
       {/* Header */}
-      <div className="bg-carbon border-b border-slate px-4 sm:px-6 py-4 flex items-center justify-between">
-        <div>
-          <p className="font-mono text-accent text-[10px] tracking-[0.2em] uppercase">Awaken Bio Labs</p>
-          <h1 className="font-sans font-bold text-paper text-xl">Orders Dashboard</h1>
+      <div className="bg-carbon border-b border-slate px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-6">
+          <div>
+            <p className="font-mono text-accent text-[10px] tracking-[0.2em] uppercase">Awaken Bio Labs</p>
+            <h1 className="font-sans font-bold text-paper text-xl">Orders Dashboard</h1>
+          </div>
+          <div className="hidden sm:flex items-center gap-3">
+            <span className="font-mono text-accent text-xs tracking-wider">Orders</span>
+            <span className="text-slate">·</span>
+            <Link
+              href="/admin/affiliates"
+              className="font-mono text-bone text-xs tracking-wider hover:text-accent transition-colors"
+            >
+              Affiliates
+            </Link>
+          </div>
         </div>
         <button
           onClick={handleLogout}
