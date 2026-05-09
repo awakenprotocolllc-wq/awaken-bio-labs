@@ -5,6 +5,7 @@ import {
   createAffiliateAccount,
   generateAffiliateCode,
 } from "@/lib/affiliate-db";
+import { sendAffiliateApprovedEmail } from "@/lib/affiliate-emails";
 
 function isAdmin(req: NextRequest): boolean {
   const token = req.cookies.get("awaken_admin")?.value;
@@ -53,6 +54,15 @@ export async function PATCH(
       rate
     );
     await updateApplicationStatus(params.id, "approved");
+
+    // Email the affiliate their credentials (non-blocking)
+    sendAffiliateApprovedEmail({
+      name: app.name,
+      email: app.email,
+      affiliateCode: account.affiliateCode,
+      password,
+      commissionRate: account.commissionRate,
+    }).catch((err) => console.error("[affiliates/approve] email error:", err));
 
     return NextResponse.json({ ok: true, account });
   }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { sendEmail, escape } from "@/lib/email";
 import { createApplication } from "@/lib/affiliate-db";
+import { sendApplicationReceivedEmail } from "@/lib/affiliate-emails";
 
 export async function POST(req: Request) {
   try {
@@ -16,6 +17,11 @@ export async function POST(req: Request) {
 
     // Save to KV so admin can review and approve
     await createApplication({ name, email, platform, audience, about });
+
+    // Send confirmation to applicant (non-blocking)
+    sendApplicationReceivedEmail(name, email).catch((err) =>
+      console.error("[affiliates] confirmation email error:", err)
+    );
 
     // Also email admin
     const html = `
