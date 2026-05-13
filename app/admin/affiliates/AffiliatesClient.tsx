@@ -9,7 +9,14 @@ const STATUS_COLORS: Record<string, string> = {
   approved: "bg-green-500/20 text-green-400 border-green-500/40",
   denied: "bg-red-500/20 text-red-400 border-red-500/40",
   active: "bg-green-500/20 text-green-400 border-green-500/40",
+  pending_contract: "bg-yellow-500/20 text-yellow-400 border-yellow-500/40",
   suspended: "bg-red-500/20 text-red-400 border-red-500/40",
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  active: "ACTIVE",
+  pending_contract: "PENDING CONTRACT",
+  suspended: "SUSPENDED",
 };
 
 export default function AffiliatesClient({
@@ -86,6 +93,36 @@ export default function AffiliatesClient({
     setWorking(null);
   }
 
+  async function handleSuspend(id: string) {
+    setWorking(id);
+    const res = await fetch(`/api/admin/affiliates/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "suspend" }),
+    });
+    if ((await res.json()).ok) {
+      setAffiliates((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, status: "suspended" as const } : a))
+      );
+    }
+    setWorking(null);
+  }
+
+  async function handleReactivate(id: string) {
+    setWorking(id);
+    const res = await fetch(`/api/admin/affiliates/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "reactivate" }),
+    });
+    if ((await res.json()).ok) {
+      setAffiliates((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, status: "active" as const } : a))
+      );
+    }
+    setWorking(null);
+  }
+
   const pending = applications.filter((a) => a.status === "pending");
   const reviewed = applications.filter((a) => a.status !== "pending");
 
@@ -121,11 +158,12 @@ export default function AffiliatesClient({
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-10">
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { label: "Pending Review", value: pending.length },
             { label: "Active Affiliates", value: affiliates.filter((a) => a.status === "active").length },
-            { label: "Total Applications", value: applications.length },
+            { label: "Pending Contract", value: affiliates.filter((a) => a.status === "pending_contract").length },
+            { label: "Suspended", value: affiliates.filter((a) => a.status === "suspended").length },
           ].map((s) => (
             <div key={s.label} className="bg-carbon border border-slate p-4">
               <p className="font-mono text-bone text-[10px] tracking-wider uppercase mb-1">{s.label}</p>
@@ -265,7 +303,7 @@ export default function AffiliatesClient({
                             </div>
                           </div>
                           <p className="font-mono text-bone/50 text-[10px] leading-relaxed">
-                            Email {app.email} their login: email = {app.email}, password = what you set above, login URL = awakenbiolabs.com/affiliates/login
+                            Affiliate will receive a contract signing link at {app.email}. Credentials are sent automatically after they sign.
                           </p>
                           <div className="flex gap-3">
                             <button
@@ -273,7 +311,7 @@ export default function AffiliatesClient({
                               disabled={working === app.id}
                               className="bg-accent text-obsidian font-semibold font-mono text-xs tracking-wider px-5 h-10 min-h-[44px] hover:bg-accent/80 transition-colors disabled:opacity-50"
                             >
-                              {working === app.id ? "Creating…" : "Create Account & Approve"}
+                              {working === app.id ? "Creating…" : "Send Contract →"}
                             </button>
                             <button
                               type="button"
@@ -293,10 +331,10 @@ export default function AffiliatesClient({
           </div>
         </div>
 
-        {/* Active affiliates */}
+        {/* All affiliate accounts */}
         <div>
           <p className="font-mono text-accent text-xs tracking-[0.25em] mb-4">
-            — ACTIVE AFFILIATES ({affiliates.length}) —
+            — AFFILIATE ACCOUNTS ({affiliates.length}) —
           </p>
 
           {affiliates.length === 0 && (
@@ -305,7 +343,7 @@ export default function AffiliatesClient({
 
           <div className="space-y-3">
             {affiliates.map((aff) => (
-              <div key={aff.id} className="bg-carbon border border-slate px-5 py-4 grid grid-cols-1 sm:grid-cols-[1fr_140px_100px_120px] gap-3 items-center">
+              <div key={aff.id} className="bg-carbon border border-slate px-5 py-4 grid grid-cols-1 sm:grid-cols-[1fr_140px_100px_120px_auto] gap-3 items-center">
                 <div>
                   <p className="font-sans font-semibold text-paper text-sm">{aff.name}</p>
                   <p className="font-mono text-bone text-xs mt-0.5">{aff.email}</p>
@@ -328,15 +366,39 @@ export default function AffiliatesClient({
 
                 <div>
                   <span className={`font-mono text-[10px] px-2 py-1 border tracking-wider ${STATUS_COLORS[aff.status]}`}>
-                    {aff.status.toUpperCase()}
+                    {STATUS_LABEL[aff.status] ?? aff.status.toUpperCase()}
                   </span>
+                </div>
+
+                {/* Offboarding controls */}
+                <div className="flex gap-2">
+                  {aff.status === "active" && (
+                    <button
+                      onClick={() => handleSuspend(aff.id)}
+                      disabled={working === aff.id}
+                      className="font-mono text-[10px] tracking-wider text-red-400 border border-red-500/30 px-3 py-1.5 hover:bg-red-500/10 transition-colors disabled:opacity-40"
+                      title="Suspend affiliate"
+                    >
+                      Suspend
+                    </button>
+                  )}
+                  {aff.status === "suspended" && (
+                    <button
+                      onClick={() => handleReactivate(aff.id)}
+                      disabled={working === aff.id}
+                      className="font-mono text-[10px] tracking-wider text-green-400 border border-green-500/30 px-3 py-1.5 hover:bg-green-500/10 transition-colors disabled:opacity-40"
+                      title="Reactivate affiliate"
+                    >
+                      Reactivate
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Reviewed / denied */}
+        {/* Denied applications */}
         {reviewed.filter((a) => a.status === "denied").length > 0 && (
           <div>
             <p className="font-mono text-bone text-xs tracking-[0.25em] mb-4">

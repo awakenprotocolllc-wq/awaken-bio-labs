@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useCart } from "@/lib/cart";
 
 function parsePrice(p: string): number {
@@ -9,9 +9,11 @@ function parsePrice(p: string): number {
   return isNaN(n) ? 0 : n;
 }
 
+const BAC_WATER = { product: "BAC Water", strength: "10ml", price: "$9.50" } as const;
+
 export default function CheckoutForm() {
   const router = useRouter();
-  const { items, updateQty, removeItem, subtotal, clearCart } = useCart();
+  const { items, addItem, updateQty, removeItem, clearCart } = useCart();
 
   const [form, setForm] = useState({
     name: "",
@@ -26,8 +28,70 @@ export default function CheckoutForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Discount code state
+  const [discountInput, setDiscountInput] = useState("");
+  const [appliedCode, setAppliedCode] = useState<string | null>(null);
+  const [discountRate, setDiscountRate] = useState(0);
+  const [codeError, setCodeError] = useState("");
+  const [validating, setValidating] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const hasBacWater = items.some((i) => i.product === "BAC Water");
+
   function handleField(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+  }
+
+  // Calculate totals
+  const rawSubtotal = items.reduce((sum, i) => sum + parsePrice(i.price) * i.qty, 0);
+  const discountAmount = appliedCode ? rawSubtotal * discountRate : 0;
+  const finalTotal = rawSubtotal - discountAmount;
+
+  function fmtPrice(n: number) {
+    return `$${n.toFixed(2)}`;
+  }
+
+  async function applyCode(code: string) {
+    const trimmed = code.trim().toUpperCase();
+    if (!trimmed) {
+      setAppliedCode(null);
+      setDiscountRate(0);
+      setCodeError("");
+      return;
+    }
+
+    setValidating(true);
+    setCodeError("");
+    try {
+      const res = await fetch(`/api/affiliate/validate-code?code=${encodeURIComponent(trimmed)}`);
+      const data = await res.json();
+      if (data.valid) {
+        setAppliedCode(trimmed);
+        setDiscountRate(data.discountRate);
+        setCodeError("");
+      } else {
+        setAppliedCode(null);
+        setDiscountRate(0);
+        setCodeError("Code not found or no longer active.");
+      }
+    } catch {
+      setCodeError("Could not validate code. Try again.");
+    } finally {
+      setValidating(false);
+    }
+  }
+
+  function handleCodeInput(e: React.ChangeEvent<HTMLInputElement>) {
+    const val = e.target.value;
+    setDiscountInput(val);
+    // Clear applied code if user edits
+    if (appliedCode && val.trim().toUpperCase() !== appliedCode) {
+      setAppliedCode(null);
+      setDiscountRate(0);
+    }
+    // Debounce validation
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => applyCode(val), 600);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -58,6 +122,8 @@ export default function CheckoutForm() {
             qty: i.qty,
           })),
           notes: form.notes || undefined,
+          discountCode: appliedCode || undefined,
+          discountAmount: discountAmount > 0 ? fmtPrice(discountAmount) : undefined,
         }),
       });
 
@@ -139,10 +205,83 @@ export default function CheckoutForm() {
           );
         })}
 
+        {/* BAC Water upsell */}
+        {items.length > 0 && !hasBacWater && (
+          <div className="border border-accent/30 bg-accent/5 p-4 flex items-center gap-4 mb-3">
+            <div className="flex-1 min-w-0">
+              <p className="font-mono text-accent text-[10px] tracking-[0.2em] uppercase mb-1">— ADD-ON —</p>
+              <p className="font-sans font-semibold text-paper text-sm">BAC Water <span className="text-bone font-normal">· 10ml</span></p>
+              <p className="font-sans text-bone text-xs mt-0.5">Bacteriostatic water for reconstitution — required for all lyophilized peptides.</p>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="font-mono text-accent text-sm font-bold mb-2">$9.50</p>
+              <button
+                type="button"
+                onClick={() => addItem({ product: BAC_WATER.product, strength: BAC_WATER.strength, price: BAC_WATER.price })}
+                className="font-mono text-xs text-obsidian bg-accent px-4 py-2 hover:bg-accent/80 transition-colors tracking-wider"
+              >
+                Add +
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Discount code */}
         {items.length > 0 && (
-          <div className="flex justify-between items-center border-t border-slate pt-4 mt-2">
-            <span className="font-mono text-bone text-xs tracking-wider uppercase">Subtotal</span>
-            <span className="font-mono text-accent text-xl font-bold">{subtotal}</span>
+          <div className="mt-4 pt-4 border-t border-slate">
+            <label className="block font-mono text-bone text-[10px] tracking-wider uppercase mb-2">
+              Affiliate / Discount Code (optional)
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={discountInput}
+                onChange={handleCodeInput}
+                placeholder="e.g. JOHNDOE"
+                maxLength={20}
+                className="flex-1 bg-carbon border border-slate text-paper placeholder-bone/30 font-mono text-sm px-4 h-11 focus:outline-none focus:border-accent transition-colors uppercase"
+              />
+              <button
+                type="button"
+                onClick={() => applyCode(discountInput)}
+                disabled={validating || !discountInput.trim()}
+                className="font-mono text-xs text-obsidian bg-accent px-5 h-11 hover:bg-accent/80 transition-colors disabled:opacity-40 tracking-wider"
+              >
+                {validating ? "…" : "Apply"}
+              </button>
+            </div>
+            {codeError && (
+              <p className="font-mono text-red-400 text-[11px] mt-2">{codeError}</p>
+            )}
+            {appliedCode && (
+              <p className="font-mono text-green-400 text-[11px] mt-2">
+                ✓ Code <strong>{appliedCode}</strong> applied — {Math.round(discountRate * 100)}% off
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Totals */}
+        {items.length > 0 && (
+          <div className="mt-4 space-y-2">
+            {appliedCode && (
+              <>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="font-mono text-bone text-xs tracking-wider uppercase">Subtotal</span>
+                  <span className="font-mono text-bone text-sm">{fmtPrice(rawSubtotal)}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="font-mono text-green-400 text-xs tracking-wider uppercase">
+                    Discount ({Math.round(discountRate * 100)}% — {appliedCode})
+                  </span>
+                  <span className="font-mono text-green-400 text-sm">−{fmtPrice(discountAmount)}</span>
+                </div>
+              </>
+            )}
+            <div className="flex justify-between items-center border-t border-slate pt-3">
+              <span className="font-mono text-bone text-xs tracking-wider uppercase">Total</span>
+              <span className="font-mono text-accent text-xl font-bold">{fmtPrice(finalTotal)}</span>
+            </div>
           </div>
         )}
       </div>
@@ -204,7 +343,7 @@ export default function CheckoutForm() {
         disabled={loading || items.length === 0}
         className="w-full bg-accent text-obsidian font-semibold h-14 min-h-[44px] text-base hover:bg-accent/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {loading ? "Placing Order..." : `Place Order — ${subtotal}`}
+        {loading ? "Placing Order..." : `Place Order — ${fmtPrice(finalTotal)}`}
       </button>
     </form>
   );
