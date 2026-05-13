@@ -8,7 +8,7 @@ import { sendCustomerOrderEmail, sendAdminOrderEmail } from "@/lib/order-emails"
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { customer, shipping, items, notes } = body ?? {};
+    const { customer, shipping, items, notes, discountCode, discountAmount } = body ?? {};
 
     // Validate required fields
     if (
@@ -29,8 +29,8 @@ export async function POST(req: NextRequest) {
     const typedItems = items as OrderItem[];
     const subtotal = calcSubtotal(typedItems);
 
-    // Read affiliate referral code from cookie (set by middleware on ?ref= visits)
-    const refCode = req.cookies.get("awaken_ref")?.value || undefined;
+    // Referral attribution: cookie ref takes priority; discount code used as fallback
+    const refCode = req.cookies.get("awaken_ref")?.value || discountCode || undefined;
 
     const order = await createOrder({
       customer,
@@ -39,6 +39,8 @@ export async function POST(req: NextRequest) {
       subtotal,
       notes: notes || undefined,
       refCode,
+      discountCode: discountCode || undefined,
+      discountAmount: discountAmount || undefined,
     });
 
     // Fire both emails — non-blocking, don't fail the order if email errors

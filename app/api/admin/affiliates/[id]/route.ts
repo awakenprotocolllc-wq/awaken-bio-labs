@@ -4,8 +4,13 @@ import {
   updateApplicationStatus,
   createAffiliateAccount,
   generateAffiliateCode,
+  createContractToken,
+  updateAffiliateStatus,
+  listAffiliates,
 } from "@/lib/affiliate-db";
-import { sendAffiliateApprovedEmail } from "@/lib/affiliate-emails";
+import { sendContractSigningEmail } from "@/lib/affiliate-emails";
+
+const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://awakenbiolabs.com";
 
 function isAdmin(req: NextRequest): boolean {
   const token = req.cookies.get("awaken_admin")?.value;
@@ -16,6 +21,8 @@ function isAdmin(req: NextRequest): boolean {
 // PATCH /api/admin/affiliates/[id]
 // body: { action: "approve", password: string, affiliateCode?: string, commissionRate?: number }
 //     | { action: "deny" }
+//     | { action: "suspend" }
+//     | { action: "reactivate" }
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -25,6 +32,20 @@ export async function PATCH(
   const body = await req.json();
   const { action, password, affiliateCode, commissionRate } = body ?? {};
 
+  // --- Suspend / Reactivate (operates on affiliate account, not application) ---
+  if (action === "suspend" || action === "reactivate") {
+    const affiliates = await listAffiliates();
+    const aff = affiliates.find((a) => a.id === params.id);
+    if (!aff) return NextResponse.json({ ok: false, error: "Affiliate not found" }, { status: 404 });
+
+    await updateAffiliateStatus(
+      params.id,
+      action === "suspend" ? "suspended" : "active"
+    );
+    return NextResponse.json({ ok: true });
+  }
+
+  // --- Approve / Deny (operates on application) ---
   const apps = await listApplications();
   const app = apps.find((a) => a.id === params.id);
   if (!app) return NextResponse.json({ ok: false, error: "Application not found" }, { status: 404 });
@@ -45,6 +66,7 @@ export async function PATCH(
     const code = (affiliateCode || generateAffiliateCode(app.name)).toUpperCase();
     const rate = typeof commissionRate === "number" ? commissionRate : 0.25;
 
+    // Create account in pending_contract state (not active yet)
     const account = await createAffiliateAccount(
       params.id,
       app.name,
@@ -55,12 +77,15 @@ export async function PATCH(
     );
     await updateApplicationStatus(params.id, "approved");
 
-    // Email the affiliate their credentials (non-blocking)
-    sendAffiliateApprovedEmail({
+    // Generate contract token (stores password temporarily for post-sign email)
+    const token = await createContractToken(account.id, app.name, app.email, password);
+    const contractUrl = `${SITE}/affiliates/contract?token=${token}`;
+
+    // Send contract signing email (non-blocking)
+    sendContractSigningEmail({
       name: app.name,
       email: app.email,
-      affiliateCode: account.affiliateCode,
-      password,
+      contractUrl,
       commissionRate: account.commissionRate,
     }).catch((err) => console.error("[affiliates/approve] email error:", err));
 
