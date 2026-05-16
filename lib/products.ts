@@ -63,7 +63,7 @@ export const products: Product[] = [
   { name: "CJC-1295 (without DAC)", strengths: ["10mg"],       price: "$55.00",          category: "GH Axis" },
   { name: "Ipamorelin",             strengths: ["10mg"],       price: "$60.00",          category: "GH Axis" },
   { name: "GHRP-6 Acetate",         strengths: ["10mg"],       price: "$45.00",          category: "GH Axis" },
-  { name: "Sermorelin Acetate",     strengths: ["10mg"],       price: "Contact Seller",  category: "GH Axis" },
+  { name: "Sermorelin Acetate",     strengths: ["10mg"],       price: "$75.00",          category: "GH Axis" },
   { name: "AOD-9604",               strengths: ["5mg"],        price: "$50.00",          category: "GH Axis" },
   { name: "IGF-1 LR3",              strengths: ["1mg"],        price: "$65.00",          category: "GH Axis" },
   { name: "IGF-DES",                strengths: ["1mg"],        price: "$74.50",          category: "GH Axis" },
@@ -92,7 +92,7 @@ export const products: Product[] = [
   },
   { name: "Snap-8",                 strengths: ["10mg"],       price: "$35.00",          category: "Repair & Recovery" },
   { name: "SLU-PP-322",             strengths: ["5mg"],        price: "$65.00",          category: "Repair & Recovery" },
-  { name: "KPV (Lysine-Proline-Valine)", strengths: ["10mg"], price: "Contact Seller",  category: "Repair & Recovery" },
+  { name: "KPV (Lysine-Proline-Valine)", strengths: ["10mg"], price: "$75.00",          category: "Repair & Recovery" },
   { name: "PNC-27",                 strengths: ["10mg"],       price: "$150.00",         category: "Repair & Recovery" },
 
   // Cognitive
