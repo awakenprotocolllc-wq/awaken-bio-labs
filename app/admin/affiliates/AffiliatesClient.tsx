@@ -239,7 +239,7 @@ export default function AffiliatesClient({
                                 id: app.id,
                                 password: "",
                                 code: app.name.replace(/[^a-z0-9]/gi, "").toUpperCase().slice(0, 8) || "PARTNER",
-                                rate: "25",
+                                rate: "20",
                               })
                             }
                             className="bg-accent text-obsidian font-semibold font-mono text-xs tracking-wider px-5 h-10 min-h-[44px] hover:bg-accent/80 transition-colors"

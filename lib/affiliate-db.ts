@@ -100,7 +100,7 @@ export async function createAffiliateAccount(
   email: string,
   password: string,
   affiliateCode: string,
-  commissionRate = 0.25,
+  commissionRate = 0.20,
   discountRate = 0.10
 ): Promise<AffiliateAccount> {
   const id = genId("aff_");
@@ -257,8 +257,11 @@ export type ReferralOrder = {
 
 export async function getAffiliateReferrals(affiliateCode: string): Promise<ReferralOrder[]> {
   const { listOrders } = await import("./db");
-  const orders = await listOrders();
-  const rate = 0.25;
+  const [orders, affiliate] = await Promise.all([
+    listOrders(),
+    getAffiliateByCode(affiliateCode),
+  ]);
+  const rate = affiliate?.commissionRate ?? 0.20;
   return orders
     .filter((o) => {
       const o2 = o as { refCode?: string; discountCode?: string };
@@ -266,11 +269,13 @@ export async function getAffiliateReferrals(affiliateCode: string): Promise<Refe
     })
     .map((o) => {
       const total = parseFloat(o.subtotal.replace(/[^0-9.]/g, "")) || 0;
+      // Commission on net (after 10% customer discount)
+      const net = total * 0.90;
       return {
         id: o.id,
         createdAt: o.createdAt,
         subtotal: o.subtotal,
-        commission: `$${(total * rate).toFixed(2)}`,
+        commission: `$${(net * rate).toFixed(2)}`,
         status: o.status,
         items: o.items,
       };
