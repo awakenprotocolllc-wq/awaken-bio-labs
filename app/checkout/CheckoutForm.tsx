@@ -9,6 +9,21 @@ function parsePrice(p: string): number {
   return isNaN(n) ? 0 : n;
 }
 
+// ---------------------------------------------------------------------------
+// Shipping calculation
+// Origin: Las Vegas, NV · Carrier: UPS 2-Day
+// Las Vegas NV: $11.70 actual + $2.00 markup = $13.70
+// All other US:  $14.50 standard + $3.00 markup = $17.50
+// ---------------------------------------------------------------------------
+function calcShipping(city: string, state: string): { cost: number; label: string } {
+  const isLasVegas =
+    state.trim().toUpperCase() === "NV" &&
+    city.trim().toLowerCase().replace(/[^a-z]/g, "").includes("lasvegas");
+  return isLasVegas
+    ? { cost: 13.70, label: "UPS 2-Day · Las Vegas" }
+    : { cost: 17.50, label: "UPS 2-Day · Standard" };
+}
+
 const BAC_WATER = { product: "BAC Water", strength: "10ml", price: "$9.50" } as const;
 
 export default function CheckoutForm() {
@@ -42,15 +57,21 @@ export default function CheckoutForm() {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
   }
 
-  // Calculate totals
+  // ── Totals ────────────────────────────────────────────────────────────────
   const rawSubtotal = items.reduce((sum, i) => sum + parsePrice(i.price) * i.qty, 0);
   const discountAmount = appliedCode ? rawSubtotal * discountRate : 0;
-  const finalTotal = rawSubtotal - discountAmount;
+  const afterDiscount = rawSubtotal - discountAmount;
+  const shipping = calcShipping(form.city, form.state);
+  // Only show/add shipping once city + state are filled in
+  const shippingReady = form.city.trim().length > 0 && form.state.trim().length > 0;
+  const shippingCost = shippingReady ? shipping.cost : 0;
+  const orderTotal = afterDiscount + shippingCost;
 
   function fmtPrice(n: number) {
     return `$${n.toFixed(2)}`;
   }
 
+  // ── Discount code ─────────────────────────────────────────────────────────
   async function applyCode(code: string) {
     const trimmed = code.trim().toUpperCase();
     if (!trimmed) {
@@ -59,7 +80,6 @@ export default function CheckoutForm() {
       setCodeError("");
       return;
     }
-
     setValidating(true);
     setCodeError("");
     try {
@@ -84,16 +104,15 @@ export default function CheckoutForm() {
   function handleCodeInput(e: React.ChangeEvent<HTMLInputElement>) {
     const val = e.target.value;
     setDiscountInput(val);
-    // Clear applied code if user edits
     if (appliedCode && val.trim().toUpperCase() !== appliedCode) {
       setAppliedCode(null);
       setDiscountRate(0);
     }
-    // Debounce validation
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => applyCode(val), 600);
   }
 
+  // ── Submit ────────────────────────────────────────────────────────────────
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -124,6 +143,8 @@ export default function CheckoutForm() {
           notes: form.notes || undefined,
           discountCode: appliedCode || undefined,
           discountAmount: discountAmount > 0 ? fmtPrice(discountAmount) : undefined,
+          shippingCost: fmtPrice(shipping.cost),
+          orderTotal: fmtPrice(orderTotal),
         }),
       });
 
@@ -140,16 +161,14 @@ export default function CheckoutForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-10">
-      {/* Order items */}
+      {/* ── Order items ── */}
       <div>
         <p className="font-mono text-accent text-xs tracking-[0.25em] mb-4">— YOUR ORDER —</p>
 
         {items.length === 0 && (
           <p className="text-bone text-sm">
             Your cart is empty.{" "}
-            <a href="/shop" className="text-accent hover:underline">
-              Browse the catalog →
-            </a>
+            <a href="/shop" className="text-accent hover:underline">Browse the catalog →</a>
           </p>
         )}
 
@@ -171,9 +190,7 @@ export default function CheckoutForm() {
                   disabled={item.qty <= 1}
                   className="h-8 w-9 border border-slate text-paper hover:border-accent hover:text-accent transition-colors font-mono text-base flex items-center justify-center disabled:opacity-30"
                   aria-label="Decrease quantity"
-                >
-                  −
-                </button>
+                >−</button>
                 <span className="h-8 w-10 border-y border-slate text-paper font-mono text-sm flex items-center justify-center">
                   {item.qty}
                 </span>
@@ -182,9 +199,7 @@ export default function CheckoutForm() {
                   onClick={() => updateQty(item.product, item.strength, item.qty + 1)}
                   className="h-8 w-9 border border-slate text-paper hover:border-accent hover:text-accent transition-colors font-mono text-base flex items-center justify-center"
                   aria-label="Increase quantity"
-                >
-                  +
-                </button>
+                >+</button>
               </div>
               <span className="font-mono text-accent text-sm font-semibold w-20 text-right shrink-0">
                 ${lineTotal}
@@ -219,9 +234,7 @@ export default function CheckoutForm() {
                 type="button"
                 onClick={() => addItem({ product: BAC_WATER.product, strength: BAC_WATER.strength, price: BAC_WATER.price })}
                 className="font-mono text-xs text-obsidian bg-accent px-4 py-2 hover:bg-accent/80 transition-colors tracking-wider"
-              >
-                Add +
-              </button>
+              >Add +</button>
             </div>
           </div>
         )}
@@ -250,9 +263,7 @@ export default function CheckoutForm() {
                 {validating ? "…" : "Apply"}
               </button>
             </div>
-            {codeError && (
-              <p className="font-mono text-red-400 text-[11px] mt-2">{codeError}</p>
-            )}
+            {codeError && <p className="font-mono text-red-400 text-[11px] mt-2">{codeError}</p>}
             {appliedCode && (
               <p className="font-mono text-green-400 text-[11px] mt-2">
                 ✓ Code <strong>{appliedCode}</strong> applied — {Math.round(discountRate * 100)}% off
@@ -261,32 +272,50 @@ export default function CheckoutForm() {
           </div>
         )}
 
-        {/* Totals */}
+        {/* ── Order totals ── */}
         {items.length > 0 && (
-          <div className="mt-4 space-y-2">
+          <div className="mt-4 space-y-2 border-t border-slate pt-4">
+            <div className="flex justify-between items-center">
+              <span className="font-mono text-bone text-xs tracking-wider uppercase">Subtotal</span>
+              <span className="font-mono text-bone text-sm">{fmtPrice(rawSubtotal)}</span>
+            </div>
+
             {appliedCode && (
-              <>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="font-mono text-bone text-xs tracking-wider uppercase">Subtotal</span>
-                  <span className="font-mono text-bone text-sm">{fmtPrice(rawSubtotal)}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="font-mono text-green-400 text-xs tracking-wider uppercase">
-                    Discount ({Math.round(discountRate * 100)}% — {appliedCode})
-                  </span>
-                  <span className="font-mono text-green-400 text-sm">−{fmtPrice(discountAmount)}</span>
-                </div>
-              </>
+              <div className="flex justify-between items-center">
+                <span className="font-mono text-green-400 text-xs tracking-wider uppercase">
+                  Discount ({Math.round(discountRate * 100)}% — {appliedCode})
+                </span>
+                <span className="font-mono text-green-400 text-sm">−{fmtPrice(discountAmount)}</span>
+              </div>
             )}
-            <div className="flex justify-between items-center border-t border-slate pt-3">
-              <span className="font-mono text-bone text-xs tracking-wider uppercase">Total</span>
-              <span className="font-mono text-accent text-xl font-bold">{fmtPrice(finalTotal)}</span>
+
+            <div className="flex justify-between items-center">
+              <span className="font-mono text-bone text-xs tracking-wider uppercase">
+                Shipping
+                {shippingReady && (
+                  <span className="ml-2 normal-case font-sans text-[10px] text-bone/50">
+                    {shipping.label}
+                  </span>
+                )}
+              </span>
+              <span className="font-mono text-bone text-sm">
+                {shippingReady ? fmtPrice(shipping.cost) : (
+                  <span className="text-bone/40 text-xs">Enter city & state</span>
+                )}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center border-t border-slate pt-3 mt-1">
+              <span className="font-mono text-bone text-xs tracking-wider uppercase">Order Total</span>
+              <span className="font-mono text-accent text-xl font-bold">
+                {shippingReady ? fmtPrice(orderTotal) : fmtPrice(afterDiscount) + " + shipping"}
+              </span>
             </div>
           </div>
         )}
       </div>
 
-      {/* Customer info */}
+      {/* ── Customer info ── */}
       <div>
         <p className="font-mono text-accent text-xs tracking-[0.25em] mb-6">— YOUR DETAILS —</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -296,7 +325,7 @@ export default function CheckoutForm() {
         </div>
       </div>
 
-      {/* Shipping address */}
+      {/* ── Shipping address ── */}
       <div>
         <p className="font-mono text-accent text-xs tracking-[0.25em] mb-6">— SHIPPING ADDRESS —</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -307,9 +336,23 @@ export default function CheckoutForm() {
           <Field label="State *" name="state" placeholder="e.g. NV" value={form.state} onChange={handleField} />
           <Field label="ZIP Code *" name="zip" value={form.zip} onChange={handleField} />
         </div>
+
+        {/* Live shipping preview under address */}
+        {shippingReady && (
+          <div className="mt-4 flex items-center gap-3 bg-carbon border border-slate px-4 py-3">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-accent shrink-0">
+              <path d="M5 12h14M14 6l6 6-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square" />
+            </svg>
+            <div className="flex-1">
+              <span className="font-mono text-accent text-xs tracking-wider">{shipping.label}</span>
+              <span className="font-mono text-bone/50 text-xs ml-2">· Ships Mon / Wed / Fri</span>
+            </div>
+            <span className="font-mono text-accent text-sm font-bold">{fmtPrice(shipping.cost)}</span>
+          </div>
+        )}
       </div>
 
-      {/* Notes */}
+      {/* ── Notes ── */}
       <div>
         <label className="block font-mono text-bone text-xs tracking-wider uppercase mb-2">
           Order Notes (optional)
@@ -324,7 +367,7 @@ export default function CheckoutForm() {
         />
       </div>
 
-      {/* Disclaimer */}
+      {/* ── Disclaimer ── */}
       <div className="bg-carbon border border-slate p-4">
         <p className="font-mono text-white/40 text-[11px] tracking-widest uppercase leading-relaxed">
           By placing this order you confirm all products are for in-vitro research use only and not for
@@ -343,7 +386,11 @@ export default function CheckoutForm() {
         disabled={loading || items.length === 0}
         className="w-full bg-accent text-obsidian font-semibold h-14 min-h-[44px] text-base hover:bg-accent/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {loading ? "Placing Order..." : `Place Order — ${fmtPrice(finalTotal)}`}
+        {loading
+          ? "Placing Order..."
+          : shippingReady
+          ? `Place Order — ${fmtPrice(orderTotal)}`
+          : `Place Order — ${fmtPrice(afterDiscount)} + shipping`}
       </button>
     </form>
   );

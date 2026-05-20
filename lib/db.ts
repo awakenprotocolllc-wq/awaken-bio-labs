@@ -29,7 +29,9 @@ export type Order = {
     zip: string;
   };
   items: OrderItem[];
-  subtotal: string; // formatted total, e.g. "$104.50"
+  subtotal: string;       // product total before discount/shipping, e.g. "$104.50"
+  shippingCost?: string;  // e.g. "$13.70"
+  orderTotal?: string;    // final total = subtotal - discount + shipping
   notes?: string;
   refCode?: string;      // affiliate tracking code from ?ref= cookie
   discountCode?: string; // affiliate code typed at checkout

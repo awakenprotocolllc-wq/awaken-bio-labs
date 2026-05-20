@@ -8,7 +8,7 @@ import { sendCustomerOrderEmail, sendAdminOrderEmail } from "@/lib/order-emails"
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { customer, shipping, items, notes, discountCode, discountAmount } = body ?? {};
+    const { customer, shipping, items, notes, discountCode, discountAmount, shippingCost, orderTotal } = body ?? {};
 
     // Validate required fields
     if (
@@ -41,16 +41,17 @@ export async function POST(req: NextRequest) {
       refCode,
       discountCode: discountCode || undefined,
       discountAmount: discountAmount || undefined,
+      shippingCost: shippingCost || undefined,
+      orderTotal: orderTotal || undefined,
     });
 
-    // Fire both emails — non-blocking, don't fail the order if email errors
-    Promise.allSettled([
+    // Await both emails before returning — Vercel exits on response
+    const emailResults = await Promise.allSettled([
       sendCustomerOrderEmail(order),
       sendAdminOrderEmail(order),
-    ]).then((results) => {
-      results.forEach((r) => {
-        if (r.status === "rejected") console.error("[orders] email error:", r.reason);
-      });
+    ]);
+    emailResults.forEach((r) => {
+      if (r.status === "rejected") console.error("[orders] email error:", r.reason);
     });
 
     return NextResponse.json({ ok: true, orderId: order.id });
