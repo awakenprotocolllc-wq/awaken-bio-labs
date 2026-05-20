@@ -32,7 +32,7 @@ export async function PATCH(
   const body = await req.json();
   const { action, password, affiliateCode, commissionRate } = body ?? {};
 
-  // --- Suspend / Reactivate (operates on affiliate account, not application) ---
+  // --- Suspend / Reactivate ---
   if (action === "suspend" || action === "reactivate") {
     const affiliates = await listAffiliates();
     const aff = affiliates.find((a) => a.id === params.id);
@@ -45,7 +45,7 @@ export async function PATCH(
     return NextResponse.json({ ok: true });
   }
 
-  // --- Approve / Deny (operates on application) ---
+  // --- Approve / Deny ---
   const apps = await listApplications();
   const app = apps.find((a) => a.id === params.id);
   if (!app) return NextResponse.json({ ok: false, error: "Application not found" }, { status: 404 });
@@ -64,9 +64,9 @@ export async function PATCH(
     }
 
     const code = (affiliateCode || generateAffiliateCode(app.name)).toUpperCase();
-    const rate = typeof commissionRate === "number" ? commissionRate : 0.25;
+    const rate = typeof commissionRate === "number" ? commissionRate : 0.20;
 
-    // Create account in pending_contract state (not active yet)
+    // Create account in pending_contract state
     const account = await createAffiliateAccount(
       params.id,
       app.name,
@@ -77,17 +77,22 @@ export async function PATCH(
     );
     await updateApplicationStatus(params.id, "approved");
 
-    // Generate contract token (stores password temporarily for post-sign email)
+    // Generate contract token (stores password temporarily so it can be emailed after signing)
     const token = await createContractToken(account.id, app.name, app.email, password);
     const contractUrl = `${SITE}/affiliates/contract?token=${token}`;
 
-    // Send contract signing email (non-blocking)
-    sendContractSigningEmail({
-      name: app.name,
-      email: app.email,
-      contractUrl,
-      commissionRate: account.commissionRate,
-    }).catch((err) => console.error("[affiliates/approve] email error:", err));
+    // Await the email — do NOT fire-and-forget on Vercel (function exits before fetch completes)
+    try {
+      await sendContractSigningEmail({
+        name: app.name,
+        email: app.email,
+        contractUrl,
+        commissionRate: account.commissionRate,
+      });
+    } catch (err) {
+      console.error("[affiliates/approve] contract email failed:", err);
+      // Don't fail the whole response — account is created, admin can resend manually
+    }
 
     return NextResponse.json({ ok: true, account });
   }

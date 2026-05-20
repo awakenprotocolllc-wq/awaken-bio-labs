@@ -15,7 +15,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Fetch the token record first (we need the stored password before signing)
+    // Fetch token record FIRST — we need the stored password before calling signContract
+    // (signContract marks it as signed, after which password retrieval still works but
+    // we want it in hand before any state changes)
     const record = await getContractToken(token);
     if (!record) {
       return NextResponse.json(
@@ -31,28 +33,36 @@ export async function POST(req: NextRequest) {
     }
     if (new Date() > new Date(record.expiresAt)) {
       return NextResponse.json(
-        { ok: false, error: "This contract link has expired. Please contact support." },
+        { ok: false, error: "This contract link has expired. Please contact support@awakenbiolabs.com." },
         { status: 410 }
       );
     }
 
-    // Activate account + mark token as signed
+    // Store password now before signContract mutates the record
+    const storedPassword = record.password;
+
+    // Activate account + mark token signed
     const account = await signContract(token);
     if (!account) {
       return NextResponse.json(
-        { ok: false, error: "Could not activate account. Please contact support." },
+        { ok: false, error: "Could not activate your account. Please contact support@awakenbiolabs.com." },
         { status: 500 }
       );
     }
 
-    // Send credentials email now that contract is signed (non-blocking)
-    sendCredentialsEmail({
-      name: account.name,
-      email: account.email,
-      affiliateCode: account.affiliateCode,
-      password: record.password,
-      commissionRate: account.commissionRate,
-    }).catch((err) => console.error("[sign-contract] credentials email error:", err));
+    // Await the credentials email — do NOT fire-and-forget on Vercel
+    try {
+      await sendCredentialsEmail({
+        name: account.name,
+        email: account.email,
+        affiliateCode: account.affiliateCode,
+        password: storedPassword,
+        commissionRate: account.commissionRate,
+      });
+    } catch (emailErr) {
+      // Log but don't fail — account IS active, email can be resent manually
+      console.error("[sign-contract] credentials email failed:", emailErr);
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err) {
