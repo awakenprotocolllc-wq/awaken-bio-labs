@@ -20,7 +20,7 @@ const C = {
 
 const s = {
   p: { margin: "0 0 12px", fontSize: 13, color: C.bone, lineHeight: 1.75 } as React.CSSProperties,
-  pb: { margin: "0 0 12px", fontSize: 13, color: C.bone, lineHeight: 1.75, fontWeight: 700, color: C.text } as React.CSSProperties,
+  pb: { margin: "0 0 12px", fontSize: 13, lineHeight: 1.75, fontWeight: 700, color: C.text } as React.CSSProperties,
   h: {
     margin: "28px 0 0",
     paddingBottom: 8,
