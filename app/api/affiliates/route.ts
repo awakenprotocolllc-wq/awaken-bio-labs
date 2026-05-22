@@ -6,7 +6,7 @@ import { sendApplicationReceivedEmail } from "@/lib/affiliate-emails";
 export async function POST(req: Request) {
   try {
     const data = await req.json();
-    const { name, email, platform, audience, about } = data ?? {};
+    const { name, email, platform, audience, about, programType } = data ?? {};
 
     if (!name || !email || !platform) {
       return NextResponse.json(
@@ -15,8 +15,10 @@ export async function POST(req: Request) {
       );
     }
 
+    const resolvedProgramType = programType === "licensee" ? "licensee" : "ambassador";
+
     // Save to KV so admin can review and approve
-    await createApplication({ name, email, platform, audience, about });
+    await createApplication({ name, email, platform, audience, about, programType: resolvedProgramType });
 
     // Send confirmation to applicant (non-blocking)
     sendApplicationReceivedEmail(name, email).catch((err) =>
@@ -26,6 +28,7 @@ export async function POST(req: Request) {
     // Also email admin
     const html = `
       <h2>New Affiliate Application</h2>
+      <p><strong>Program:</strong> ${resolvedProgramType === "licensee" ? "⚡ LICENSEE" : "🤝 Ambassador"}</p>
       <p><strong>Name:</strong> ${escape(name)}</p>
       <p><strong>Email:</strong> ${escape(email)}</p>
       <p><strong>Platform:</strong> ${escape(platform)}</p>

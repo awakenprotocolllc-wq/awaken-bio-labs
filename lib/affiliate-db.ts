@@ -5,6 +5,8 @@ import { createHash, randomBytes } from "crypto";
 // Types
 // ---------------------------------------------------------------------------
 
+export type ProgramType = "ambassador" | "licensee";
+
 export type AffiliateApplication = {
   id: string;
   name: string;
@@ -14,6 +16,7 @@ export type AffiliateApplication = {
   about?: string;
   status: "pending" | "approved" | "denied";
   appliedAt: string;
+  programType: ProgramType;
 };
 
 export type AffiliateAccount = {
@@ -23,8 +26,9 @@ export type AffiliateAccount = {
   affiliateCode: string;
   /** pending_contract = approved but contract not yet signed */
   status: "pending_contract" | "active" | "suspended";
-  commissionRate: number; // 0.25 = 25%
-  discountRate: number;   // 0.10 = 10% customer discount
+  programType: ProgramType;  // "ambassador" | "licensee"
+  commissionRate: number;    // 0.20 = ambassador, 0.50 = licensee
+  discountRate: number;      // 0.10 = 10% customer discount
   joinedAt: string;
   applicationId?: string;
   contractSignedAt?: string;
@@ -69,7 +73,7 @@ export function generateAffiliateCode(name: string): string {
 // ---------------------------------------------------------------------------
 
 export async function createApplication(
-  data: Pick<AffiliateApplication, "name" | "email" | "platform" | "audience" | "about">
+  data: Pick<AffiliateApplication, "name" | "email" | "platform" | "audience" | "about" | "programType">
 ): Promise<AffiliateApplication> {
   const id = genId("app_");
   const app: AffiliateApplication = { ...data, id, status: "pending", appliedAt: new Date().toISOString() };
@@ -101,7 +105,8 @@ export async function createAffiliateAccount(
   password: string,
   affiliateCode: string,
   commissionRate = 0.20,
-  discountRate = 0.10
+  discountRate = 0.10,
+  programType: ProgramType = "ambassador"
 ): Promise<AffiliateAccount> {
   const id = genId("aff_");
   const account: AffiliateAccountInternal = {
@@ -110,6 +115,7 @@ export async function createAffiliateAccount(
     email: email.toLowerCase(),
     affiliateCode: affiliateCode.toUpperCase(),
     status: "pending_contract", // must sign contract before going active
+    programType,
     commissionRate,
     discountRate,
     joinedAt: new Date().toISOString(),

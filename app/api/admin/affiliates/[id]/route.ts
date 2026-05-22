@@ -64,7 +64,9 @@ export async function PATCH(
     }
 
     const code = (affiliateCode || generateAffiliateCode(app.name)).toUpperCase();
-    const rate = typeof commissionRate === "number" ? commissionRate : 0.20;
+    const programType = app.programType ?? "ambassador";
+    // Licensees are always 50% — not overridable
+    const rate = programType === "licensee" ? 0.50 : (typeof commissionRate === "number" ? commissionRate : 0.20);
 
     // Create account in pending_contract state
     const account = await createAffiliateAccount(
@@ -73,7 +75,9 @@ export async function PATCH(
       app.email,
       password,
       code,
-      rate
+      rate,
+      0.10,
+      programType
     );
     await updateApplicationStatus(params.id, "approved");
 
