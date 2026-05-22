@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { type Product, getPriceForStrength, isOrderable } from "@/lib/products";
+import { type Product, getPriceForStrength, isOrderable, getCoaForStrength } from "@/lib/products";
 import { useCart } from "@/lib/cart";
 
 export default function ProductOrderSection({ product }: { product: Product }) {
@@ -12,6 +12,7 @@ export default function ProductOrderSection({ product }: { product: Product }) {
 
   const price = getPriceForStrength(product, selectedStrength);
   const canOrder = isOrderable(product, selectedStrength);
+  const coaUrl = getCoaForStrength(product, selectedStrength);
 
   const contactUrl = `mailto:support@awakenbiolabs.com?subject=${encodeURIComponent(
     `Order Inquiry: ${product.name}`
@@ -86,12 +87,28 @@ export default function ProductOrderSection({ product }: { product: Product }) {
             Contact to Order
           </a>
         )}
-        <Link
-          href="/coas"
-          className="border border-accent text-accent font-semibold h-12 min-h-[44px] flex items-center justify-center hover:bg-accent/10 transition-colors"
-        >
-          View COA
-        </Link>
+        {coaUrl && coaUrl !== "pending" ? (
+          <a
+            href={coaUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="border border-accent text-accent font-semibold h-12 min-h-[44px] flex items-center justify-center hover:bg-accent/10 transition-colors"
+          >
+            View COA ↗
+          </a>
+        ) : coaUrl === "pending" ? (
+          <span className="border border-slate text-bone font-semibold h-12 min-h-[44px] flex items-center justify-center gap-2 cursor-default">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent/60 animate-pulse" />
+            COA Coming Soon
+          </span>
+        ) : (
+          <Link
+            href="/coas"
+            className="border border-slate text-bone font-semibold h-12 min-h-[44px] flex items-center justify-center hover:border-accent hover:text-accent transition-colors"
+          >
+            View COAs
+          </Link>
+        )}
       </div>
     </>
   );

@@ -7,6 +7,8 @@ export type Product = {
   /** Per-strength prices for multi-strength products */
   priceMap?: Record<string, string>;
   coa?: "pending" | string; // "pending" = coming soon, string = URL to PDF
+  /** Per-strength COA overrides — takes priority over coa for a given strength */
+  coaMap?: Record<string, string>;
   category:
     | "GH Axis"
     | "Repair & Recovery"
@@ -17,6 +19,12 @@ export type Product = {
     | "Blends"
     | "Supplies";
 };
+
+/** Returns the COA URL for a given strength, or falls back to product.coa */
+export function getCoaForStrength(product: Product, strength?: string): string | "pending" | undefined {
+  if (strength && product.coaMap?.[strength]) return product.coaMap[strength];
+  return product.coa;
+}
 
 /** Returns the price for a given strength, falling back to product.price */
 export function getPriceForStrength(product: Product, strength: string): string | null {
@@ -74,20 +82,20 @@ export const products: Product[] = [
     strengths: ["10mg", "30mg"],
     price: "$102.00 – $261.00",
     priceMap: { "10mg": "$102.00", "30mg": "$261.00" },
-    coa: "pending",
+    coaMap: { "10mg": "/coas/retatrutide-10mg.pdf", "30mg": "/coas/retatrutide-30mg.pdf" },
     category: "Metabolic",
   },
   { name: "5-Amino-1MQ",            strengths: ["5mg"],        price: "$70.00",          category: "Metabolic" },
 
   // Repair & Recovery
-  { name: "BPC-157",                strengths: ["10mg"],       price: "$52.50",          coa: "pending", category: "Repair & Recovery" },
-  { name: "TB-500",                 strengths: ["10mg"],       price: "$57.00",          coa: "pending", category: "Repair & Recovery" },
+  { name: "BPC-157",                strengths: ["10mg"],       price: "$52.50",          coa: "/coas/bpc-157.pdf",  category: "Repair & Recovery" },
+  { name: "TB-500",                 strengths: ["10mg"],       price: "$57.00",          coa: "/coas/tb-500.pdf",   category: "Repair & Recovery" },
   {
     name: "GHK-Cu",
     strengths: ["50mg", "100mg"],
     price: "$45.00 – $61.50",
     priceMap: { "50mg": "$45.00", "100mg": "$61.50" },
-    coa: "pending",
+    coa: "/coas/ghk-cu.pdf",
     category: "Repair & Recovery",
   },
   { name: "Snap-8",                 strengths: ["10mg"],       price: "$35.00",          category: "Repair & Recovery" },
@@ -109,12 +117,12 @@ export const products: Product[] = [
     strengths: ["10mg", "40mg"],
     price: "$48.50 – $120.00",
     priceMap: { "10mg": "$48.50", "40mg": "$120.00" },
-    coa: "pending",
+    coaMap: { "10mg": "/coas/mots-c-10mg.pdf" },
     category: "Longevity",
   },
   { name: "SS-31",                  strengths: ["50mg"],       price: "$150.00",         category: "Longevity" },
   { name: "FOX-04",                 strengths: ["10mg"],       price: "$217.50",         category: "Longevity" },
-  { name: "NAD+",                   strengths: ["500mg"],      price: "$82.00",          coa: "pending", category: "Longevity" },
+  { name: "NAD+",                   strengths: ["500mg"],      price: "$82.00",          coa: "/coas/nad-plus.pdf", category: "Longevity" },
   { name: "Glutathione",            strengths: ["1500mg"],     price: "$84.00",          category: "Longevity" },
 
   // Sexual Health
@@ -123,7 +131,7 @@ export const products: Product[] = [
 
   // Blends
   { name: "BPC Blend",              strengths: ["70mg"],       price: "$110.50",         category: "Blends" },
-  { name: "Wolverine Blend",        subtitle: "TB-500 + BPC-157", strengths: ["20mg"], price: "$135.00", coa: "pending", category: "Blends" },
+  { name: "Wolverine Blend",        subtitle: "TB-500 + BPC-157", strengths: ["20mg"], price: "$135.00", coa: "/coas/wolverine-blend.pdf", category: "Blends" },
   { name: "KLOW",                   strengths: ["80mg"],       price: "$145.00",         category: "Blends" },
 
   // Supplies

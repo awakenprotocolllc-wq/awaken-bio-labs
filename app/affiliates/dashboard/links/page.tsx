@@ -40,7 +40,7 @@ export default function LinksPage() {
               {code}
             </p>
             <p className="text-bone text-sm mt-2">
-              Customers using this code get 10% off. You earn 25% commission.
+              Customers using this code get 10% off. You earn 20% commission.
             </p>
           </div>
           <button

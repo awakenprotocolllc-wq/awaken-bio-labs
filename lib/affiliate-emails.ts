@@ -58,7 +58,7 @@ export async function sendApplicationReceivedEmail(name: string, email: string) 
             ${[
               ["Review", "Our team checks your platform and audience fit."],
               ["Approval email", "If approved, you'll receive a contract to sign digitally — takes under a minute."],
-              ["Start earning", "Share your link. Earn 25% commission on every referred sale."],
+              ["Start earning", "Share your link. Earn 20% commission on every referred sale."],
             ]
               .map(
                 ([step, desc], i) => `
@@ -252,6 +252,80 @@ export async function sendCredentialsEmail({
   return sendEmail({
     to: email,
     subject: "Your Awaken Bio Labs affiliate account is ready",
+    html,
+    replyTo: SUPPORT,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// 4. Password reset
+// ---------------------------------------------------------------------------
+export async function sendPasswordResetEmail({
+  name,
+  email,
+  resetUrl,
+}: {
+  name: string;
+  email: string;
+  resetUrl: string;
+}) {
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#0A0B0D;font-family:'Helvetica Neue',Arial,sans-serif;color:#E8E6E1;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0A0B0D;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;">
+
+        <tr><td style="padding-bottom:32px;">
+          <p style="margin:0;font-family:monospace;font-size:11px;letter-spacing:0.2em;color:#57C7D6;text-transform:uppercase;">
+            — AWAKEN BIO LABS —
+          </p>
+        </td></tr>
+
+        <tr><td style="border-left:2px solid #57C7D6;padding-left:20px;padding-bottom:32px;">
+          <h1 style="margin:0;font-size:28px;font-weight:700;color:#F5F3EF;line-height:1.1;letter-spacing:-0.02em;">
+            Reset your password.
+          </h1>
+          <p style="margin:12px 0 0;font-size:15px;color:#A09E9A;line-height:1.6;">
+            Hi ${escape(name)}, we received a request to reset your affiliate account password. Click the button below — this link is valid for <strong style="color:#E8E6E1;">1 hour</strong>.
+          </p>
+        </td></tr>
+
+        <tr><td style="padding-bottom:32px;text-align:center;">
+          <a href="${resetUrl}" style="display:inline-block;background:#57C7D6;color:#0A0B0D;font-weight:700;font-size:15px;text-decoration:none;padding:16px 40px;letter-spacing:0.02em;">
+            Set New Password →
+          </a>
+          <p style="margin:16px 0 0;font-family:monospace;font-size:10px;color:#5A5856;text-align:center;">
+            If you didn't request this, ignore this email — your password won't change.
+          </p>
+        </td></tr>
+
+        <tr><td style="padding-bottom:24px;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#141517;border:1px solid #2A2B2F;padding:20px;">
+            <tr><td>
+              <p style="margin:0 0 6px;font-family:monospace;font-size:10px;color:#5A5856;letter-spacing:0.15em;text-transform:uppercase;">Or copy this link</p>
+              <p style="margin:0;font-family:monospace;font-size:11px;color:#57C7D6;word-break:break-all;">${resetUrl}</p>
+            </td></tr>
+          </table>
+        </td></tr>
+
+        <tr><td style="border-top:1px solid #2A2B2F;padding-top:24px;">
+          <p style="margin:0;font-family:monospace;font-size:10px;color:#5A5856;letter-spacing:0.15em;text-transform:uppercase;line-height:1.8;">
+            AWAKEN BIO LABS LLC · Questions? <a href="mailto:${SUPPORT}" style="color:#5A5856;">${SUPPORT}</a>
+          </p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  return sendEmail({
+    to: email,
+    subject: "Reset your Awaken Bio Labs affiliate password",
     html,
     replyTo: SUPPORT,
   });

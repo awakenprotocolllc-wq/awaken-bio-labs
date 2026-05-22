@@ -8,7 +8,7 @@ import PageHeader from "@/components/PageHeader";
 const benefits = [
   {
     title: "Industry-Leading Commissions",
-    body: "Up to 25% per sale, paid out twice monthly. No caps. No tiered nonsense.",
+    body: "20% per sale, paid out twice monthly. No caps. No tiered nonsense.",
   },
   {
     title: "Real-Time Dashboard",

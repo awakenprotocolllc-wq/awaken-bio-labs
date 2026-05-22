@@ -243,6 +243,53 @@ export async function deleteAffiliateSession(token: string): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// Password reset
+// ---------------------------------------------------------------------------
+
+type PasswordResetToken = {
+  token: string;
+  affiliateId: string;
+  email: string;
+  expiresAt: string;
+  used: boolean;
+};
+
+/** Creates a 1-hour reset token for the given email. Returns null silently if email not found. */
+export async function createPasswordResetToken(email: string): Promise<string | null> {
+  const id = await kv.get<string>(`aff:email:${email.toLowerCase()}`);
+  if (!id) return null;
+  const token = randomBytes(32).toString("hex");
+  const record: PasswordResetToken = {
+    token,
+    affiliateId: id,
+    email: email.toLowerCase(),
+    expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1 hour
+    used: false,
+  };
+  await kv.set(`aff:pwreset:${token}`, record, { ex: 60 * 60 });
+  return token;
+}
+
+/** Validates token, updates password hash, marks token used. Returns true on success. */
+export async function consumePasswordResetToken(token: string, newPassword: string): Promise<boolean> {
+  const record = await kv.get<PasswordResetToken>(`aff:pwreset:${token}`);
+  if (!record || record.used) return false;
+  if (new Date() > new Date(record.expiresAt)) return false;
+
+  // Mark token used first to prevent replay
+  await kv.set(`aff:pwreset:${token}`, { ...record, used: true });
+
+  // Update password hash
+  const account = await kv.get<AffiliateAccountInternal>(`aff:account:${record.affiliateId}`);
+  if (!account) return false;
+  await kv.set(`aff:account:${record.affiliateId}`, {
+    ...account,
+    passwordHash: hashPassword(newPassword),
+  });
+  return true;
+}
+
+// ---------------------------------------------------------------------------
 // Referral stats
 // ---------------------------------------------------------------------------
 
@@ -269,13 +316,12 @@ export async function getAffiliateReferrals(affiliateCode: string): Promise<Refe
     })
     .map((o) => {
       const total = parseFloat(o.subtotal.replace(/[^0-9.]/g, "")) || 0;
-      // Commission on net (after 10% customer discount)
-      const net = total * 0.90;
+      // Commission on gross subtotal (products only, before discount and shipping)
       return {
         id: o.id,
         createdAt: o.createdAt,
         subtotal: o.subtotal,
-        commission: `$${(net * rate).toFixed(2)}`,
+        commission: `$${(total * rate).toFixed(2)}`,
         status: o.status,
         items: o.items,
       };

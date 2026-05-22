@@ -95,7 +95,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <dt className="font-mono text-[10px] text-bone tracking-wider uppercase">Commission</dt>
-                <dd className="text-paper">25% of net sale</dd>
+                <dd className="text-paper">20% of product subtotal</dd>
               </div>
               <div>
                 <dt className="font-mono text-[10px] text-bone tracking-wider uppercase">Cookie Window</dt>

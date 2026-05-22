@@ -3,20 +3,41 @@
 import { useMemo, useState } from "react";
 import SiteShell from "@/components/SiteShell";
 import PageHeader from "@/components/PageHeader";
-import { products, slugify } from "@/lib/products";
+import { products, slugify, getCoaForStrength } from "@/lib/products";
 
-const coaProducts = products.filter((p) => p.coa !== undefined);
+// Flatten products into per-row entries (one per strength for products with coaMap)
+const coaRows = products.flatMap((p) => {
+  // Products with per-strength COAs → one row per strength
+  if (p.coaMap && Object.keys(p.coaMap).length > 0) {
+    return p.strengths.map((s) => ({
+      name: p.name,
+      category: p.category,
+      strength: s,
+      coa: getCoaForStrength(p, s),
+    }));
+  }
+  // Products with a single COA field
+  if (p.coa !== undefined) {
+    return p.strengths.map((s) => ({
+      name: p.name,
+      category: p.category,
+      strength: s,
+      coa: p.coa,
+    }));
+  }
+  return [];
+});
 
 export default function COAsPage() {
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return coaProducts;
-    return coaProducts.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q)
+    if (!q) return coaRows;
+    return coaRows.filter(
+      (r) =>
+        r.name.toLowerCase().includes(q) ||
+        r.category.toLowerCase().includes(q)
     );
   }, [query]);
 
@@ -52,7 +73,7 @@ export default function COAsPage() {
           </div>
 
           <p className="font-mono text-bone text-xs tracking-wider mb-6">
-            {filtered.length} {filtered.length === 1 ? "COMPOUND" : "COMPOUNDS"}
+            {filtered.length} {filtered.length === 1 ? "RESULT" : "RESULTS"}
           </p>
 
           {/* Table */}
@@ -65,44 +86,39 @@ export default function COAsPage() {
             </div>
 
             <div>
-              {filtered.map((p) => (
+              {filtered.map((row, i) => (
                 <div
-                  key={p.name}
+                  key={`${row.name}-${row.strength}-${i}`}
                   className="grid grid-cols-12 gap-4 px-5 py-5 border-b border-slate last:border-b-0 hover:bg-obsidian transition-colors items-center"
                 >
                   <div className="col-span-12 sm:col-span-5">
                     <a
-                      href={`/shop/${slugify(p.name)}`}
+                      href={`/shop/${slugify(row.name)}`}
                       className="font-sans font-bold text-paper hover:text-accent transition-colors"
                     >
-                      {p.name}
+                      {row.name}
                     </a>
                   </div>
 
                   <div className="col-span-6 sm:col-span-3 font-mono text-xs text-bone tracking-wide">
-                    {p.category}
+                    {row.category}
                   </div>
 
-                  <div className="col-span-6 sm:col-span-2 flex flex-wrap gap-1">
-                    {p.strengths.map((s) => (
-                      <span
-                        key={s}
-                        className="font-mono text-[10px] text-accent bg-slate px-2 py-0.5"
-                      >
-                        {s}
-                      </span>
-                    ))}
+                  <div className="col-span-6 sm:col-span-2">
+                    <span className="font-mono text-[10px] text-accent bg-slate px-2 py-0.5">
+                      {row.strength}
+                    </span>
                   </div>
 
                   <div className="col-span-12 sm:col-span-2 sm:text-right">
-                    {p.coa === "pending" ? (
+                    {!row.coa || row.coa === "pending" ? (
                       <span className="inline-flex items-center gap-1.5 font-mono text-xs text-bone border border-slate px-3 h-9">
                         <span className="w-1.5 h-1.5 rounded-full bg-accent/60 animate-pulse" />
                         COMING SOON
                       </span>
                     ) : (
                       <a
-                        href={p.coa}
+                        href={row.coa}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-2 font-mono text-xs text-accent border border-accent/40 hover:border-accent hover:bg-accent/10 px-3 h-9 transition-colors"
@@ -110,7 +126,7 @@ export default function COAsPage() {
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
                           <path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" strokeWidth="1.5" />
                         </svg>
-                        DOWNLOAD
+                        VIEW COA
                       </a>
                     )}
                   </div>
