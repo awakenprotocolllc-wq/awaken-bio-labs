@@ -3,66 +3,64 @@ import type { OrderItem } from "@/lib/db";
 // ---------------------------------------------------------------------------
 // COGS — Cost of Goods Sold
 // Internal only. Never exposed to customers or affiliates.
+// Source: 1stPharma™ Private Label Pricing
 //
 // Key format: "Product Name|strength"  (must match exactly what's stored on orders)
-// Example:    "BPC-157|10mg": 18.00
-//
-// Leave at 0 until you have supplier invoices to reference.
 // ---------------------------------------------------------------------------
 
 const UNIT_COSTS: Record<string, number> = {
   // GH Axis
-  "CJC-1295 (with DAC)|5mg":        0,
-  "CJC-1295 (without DAC)|10mg":    0,
-  "Ipamorelin|10mg":                 0,
-  "GHRP-6 Acetate|10mg":            0,
-  "Sermorelin Acetate|10mg":         0,
-  "AOD-9604|5mg":                    0,
-  "IGF-1 LR3|1mg":                   0,
-  "IGF-DES|1mg":                     0,
+  "CJC-1295 (with DAC)|5mg":        23.75,
+  "CJC-1295 (without DAC)|10mg":    21.00,
+  "Ipamorelin|10mg":                 12.25,
+  "GHRP-6 Acetate|10mg":             8.75,
+  "Sermorelin Acetate|10mg":         16.75,
+  "AOD-9604|5mg":                    15.75,
+  "IGF-1 LR3|1mg":                   29.75,
+  "IGF-DES|1mg":                      0,    // not in supplier list — update when available
 
   // Metabolic
-  "GLP3-R (Retatrutide)|10mg":       0,
-  "GLP3-R (Retatrutide)|30mg":       0,
-  "5-Amino-1MQ|5mg":                 0,
+  "GLP3-R (Retatrutide)|10mg":       15.75,
+  "GLP3-R (Retatrutide)|30mg":       34.25,
+  "5-Amino-1MQ|5mg":                  7.00,
 
   // Repair & Recovery
-  "BPC-157|10mg":                    0,
-  "TB-500|10mg":                     0,
-  "GHK-Cu|50mg":                     0,
-  "GHK-Cu|100mg":                    0,
-  "Snap-8|10mg":                     0,
-  "SLU-PP-322|5mg":                  0,
-  "KPV (Lysine-Proline-Valine)|10mg": 0,
-  "PNC-27|10mg":                     0,
+  "BPC-157|10mg":                     9.75,
+  "TB-500|10mg":                     19.25,
+  "GHK-Cu|50mg":                      5.00,
+  "GHK-Cu|100mg":                     9.00,
+  "Snap-8|10mg":                      8.00,
+  "SLU-PP-322|5mg":                  16.75,
+  "KPV (Lysine-Proline-Valine)|10mg": 12.25,
+  "PNC-27|10mg":                     27.25,
 
   // Cognitive
-  "Selank|10mg":                     0,
-  "Semax|10mg":                      0,
-  "DSIP|15mg":                       0,
-  "Pinealon|20mg":                   0,
-  "Oxytocin|2mg":                    0,
+  "Selank|10mg":                      8.50,
+  "Semax|10mg":                       8.50,
+  "DSIP|15mg":                       15.00,
+  "Pinealon|20mg":                   17.50,
+  "Oxytocin|2mg":                     5.00,
 
   // Longevity
-  "Epithalon|10mg":                  0,
-  "MOTS-C|10mg":                     0,
-  "MOTS-C|40mg":                     0,
-  "SS-31|50mg":                      0,
-  "FOX-04|10mg":                     0,
-  "NAD+|500mg":                      0,
-  "Glutathione|1500mg":              0,
+  "Epithalon|10mg":                   9.00,
+  "MOTS-C|10mg":                      9.75,
+  "MOTS-C|40mg":                     29.75,
+  "SS-31|50mg":                      45.50,
+  "FOX-04|10mg":                     47.25,
+  "NAD+|500mg":                      12.25,
+  "Glutathione|1500mg":               0,    // not in supplier list — update when available
 
   // Sexual Health
-  "PT-141|10mg":                     0,
-  "Kisspeptin-10|10mg":              0,
+  "PT-141|10mg":                      8.75,
+  "Kisspeptin-10|10mg":              15.00,
 
   // Blends
-  "BPC Blend|70mg":                  0,
-  "Wolverine Blend|20mg":            0,
-  "KLOW|80mg":                       0,
+  "BPC Blend|70mg":                   0,    // not in supplier list — update when available
+  "Wolverine Blend|20mg":            29.75,
+  "KLOW|80mg":                       33.25,
 
   // Supplies
-  "BAC Water|10ml":                  0,
+  "BAC Water|10ml":                   0,    // update when available
 };
 
 /** Cost per single unit of a product+strength. Returns 0 if not configured. */
