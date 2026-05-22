@@ -24,14 +24,16 @@ export type AffiliateAccount = {
   name: string;
   email: string;
   affiliateCode: string;
-  /** pending_contract = approved but contract not yet signed */
-  status: "pending_contract" | "active" | "suspended";
+  /** pending_contract → active → suspended → archived; archived requires re-onboard to return */
+  status: "pending_contract" | "active" | "suspended" | "archived";
   programType: ProgramType;  // "ambassador" | "licensee"
   commissionRate: number;    // 0.20 = ambassador, 0.50 = licensee
   discountRate: number;      // 0.10 = 10% customer discount
   joinedAt: string;
   applicationId?: string;
   contractSignedAt?: string;
+  archivedAt?: string;
+  programSwitchedAt?: string;
 };
 
 // Internal — never returned to client
@@ -47,6 +49,8 @@ export type ContractToken = {
   createdAt: string;
   expiresAt: string;
   signed: boolean;
+  /** true = re-onboarding; skip credentials email, send welcome-back email instead */
+  isReOnboard?: boolean;
 };
 
 // ---------------------------------------------------------------------------
@@ -168,7 +172,8 @@ export async function createContractToken(
   affiliateId: string,
   name: string,
   email: string,
-  password: string
+  password: string,
+  isReOnboard = false
 ): Promise<string> {
   const token = randomBytes(32).toString("hex");
   const record: ContractToken = {
@@ -180,6 +185,7 @@ export async function createContractToken(
     createdAt: new Date().toISOString(),
     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
     signed: false,
+    isReOnboard,
   };
   await kv.set(`aff:contract:${token}`, record, { ex: 60 * 60 * 24 * 7 });
   return token;
@@ -239,6 +245,7 @@ export async function getAffiliateSession(token: string): Promise<AffiliateAccou
   const id = await kv.get<string>(`aff:session:${token}`);
   if (!id) return null;
   const account = await kv.get<AffiliateAccountInternal>(`aff:account:${id}`);
+  // Block suspended and archived accounts from dashboard access
   if (!account || account.status !== "active") return null;
   const { passwordHash, ...safe } = account;
   return safe;
@@ -246,6 +253,45 @@ export async function getAffiliateSession(token: string): Promise<AffiliateAccou
 
 export async function deleteAffiliateSession(token: string): Promise<void> {
   await kv.del(`aff:session:${token}`);
+}
+
+// ---------------------------------------------------------------------------
+// Program switching
+// ---------------------------------------------------------------------------
+
+/** Switch an affiliate's program type and update their commission rate accordingly. */
+export async function updateAffiliateProgram(
+  id: string,
+  programType: ProgramType
+): Promise<AffiliateAccount | null> {
+  const account = await kv.get<AffiliateAccountInternal>(`aff:account:${id}`);
+  if (!account) return null;
+  const commissionRate = programType === "licensee" ? 0.50 : 0.20;
+  const updated: AffiliateAccountInternal = {
+    ...account,
+    programType,
+    commissionRate,
+    programSwitchedAt: new Date().toISOString(),
+  };
+  await kv.set(`aff:account:${id}`, updated);
+  const { passwordHash, ...safe } = updated;
+  return safe;
+}
+
+// ---------------------------------------------------------------------------
+// Archive / Re-onboard
+// ---------------------------------------------------------------------------
+
+/** Archive a suspended affiliate. Preserves all data; requires re-onboarding to return. */
+export async function archiveAffiliate(id: string): Promise<void> {
+  const account = await kv.get<AffiliateAccountInternal>(`aff:account:${id}`);
+  if (account) {
+    await kv.set(`aff:account:${id}`, {
+      ...account,
+      status: "archived",
+      archivedAt: new Date().toISOString(),
+    });
+  }
 }
 
 // ---------------------------------------------------------------------------

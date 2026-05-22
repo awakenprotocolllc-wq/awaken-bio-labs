@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getContractToken, signContract } from "@/lib/affiliate-db";
-import { sendCredentialsEmail } from "@/lib/affiliate-emails";
+import { sendCredentialsEmail, sendWelcomeBackEmail } from "@/lib/affiliate-emails";
 
 // POST /api/affiliate/sign-contract
 // body: { token: string; signatureName: string }
@@ -38,8 +38,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Store password now before signContract mutates the record
+    // Capture fields before signContract mutates the record
     const storedPassword = record.password;
+    const isReOnboard = record.isReOnboard ?? false;
 
     // Activate account + mark token signed
     const account = await signContract(token);
@@ -50,18 +51,28 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Await the credentials email — do NOT fire-and-forget on Vercel
+    // Send appropriate email — do NOT fire-and-forget on Vercel
     try {
-      await sendCredentialsEmail({
-        name: account.name,
-        email: account.email,
-        affiliateCode: account.affiliateCode,
-        password: storedPassword,
-        commissionRate: account.commissionRate,
-      });
+      if (isReOnboard) {
+        // Re-onboarding: they already have credentials — just send welcome back
+        await sendWelcomeBackEmail({
+          name: account.name,
+          email: account.email,
+          affiliateCode: account.affiliateCode,
+          commissionRate: account.commissionRate,
+        });
+      } else {
+        // First-time: send full credentials
+        await sendCredentialsEmail({
+          name: account.name,
+          email: account.email,
+          affiliateCode: account.affiliateCode,
+          password: storedPassword,
+          commissionRate: account.commissionRate,
+        });
+      }
     } catch (emailErr) {
-      // Log but don't fail — account IS active, email can be resent manually
-      console.error("[sign-contract] credentials email failed:", emailErr);
+      console.error("[sign-contract] email failed:", emailErr);
     }
 
     return NextResponse.json({ ok: true });

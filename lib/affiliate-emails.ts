@@ -258,7 +258,157 @@ export async function sendCredentialsEmail({
 }
 
 // ---------------------------------------------------------------------------
-// 4. Password reset
+// 4. Program switch notification
+// ---------------------------------------------------------------------------
+export async function sendProgramSwitchEmail({
+  name,
+  email,
+  oldProgram,
+  newProgram,
+  commissionRate,
+  affiliateCode,
+}: {
+  name: string;
+  email: string;
+  oldProgram: "ambassador" | "licensee";
+  newProgram: "ambassador" | "licensee";
+  commissionRate: number;
+  affiliateCode: string;
+}) {
+  const commissionPct = Math.round(commissionRate * 100);
+  const dashboardUrl = `${SITE}/affiliates/dashboard`;
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#0A0B0D;font-family:'Helvetica Neue',Arial,sans-serif;color:#E8E6E1;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0A0B0D;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;">
+        <tr><td style="padding-bottom:32px;">
+          <p style="margin:0;font-family:monospace;font-size:11px;letter-spacing:0.2em;color:#57C7D6;text-transform:uppercase;">— AWAKEN BIO LABS —</p>
+        </td></tr>
+        <tr><td style="border-left:2px solid #57C7D6;padding-left:20px;padding-bottom:32px;">
+          <h1 style="margin:0;font-size:28px;font-weight:700;color:#F5F3EF;line-height:1.1;letter-spacing:-0.02em;">Your program has been updated.</h1>
+          <p style="margin:12px 0 0;font-size:15px;color:#A09E9A;line-height:1.6;">
+            Hi ${escape(name)}, your Awaken Bio Labs partner program has been updated by our team.
+          </p>
+        </td></tr>
+        <tr><td style="padding-bottom:32px;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#141517;border:1px solid #2A2B2F;padding:24px;">
+            <tr><td>
+              <p style="margin:0 0 6px;font-family:monospace;font-size:10px;color:#5A5856;letter-spacing:0.15em;text-transform:uppercase;">Previous Program</p>
+              <p style="margin:0 0 20px;font-size:16px;color:#A09E9A;text-decoration:line-through;">${oldProgram.charAt(0).toUpperCase() + oldProgram.slice(1)}</p>
+              <p style="margin:0 0 6px;font-family:monospace;font-size:10px;color:#5A5856;letter-spacing:0.15em;text-transform:uppercase;">New Program</p>
+              <p style="margin:0 0 20px;font-size:20px;font-weight:700;color:#57C7D6;">${newProgram.charAt(0).toUpperCase() + newProgram.slice(1)}</p>
+              <p style="margin:0 0 6px;font-family:monospace;font-size:10px;color:#5A5856;letter-spacing:0.15em;text-transform:uppercase;">Your Commission Rate</p>
+              <p style="margin:0 0 20px;font-size:20px;font-weight:700;color:#57C7D6;">${commissionPct}% of gross sales</p>
+              <p style="margin:0 0 6px;font-family:monospace;font-size:10px;color:#5A5856;letter-spacing:0.15em;text-transform:uppercase;">Your Code (unchanged)</p>
+              <p style="margin:0;font-size:24px;font-weight:700;font-family:monospace;color:#57C7D6;letter-spacing:0.15em;">${escape(affiliateCode)}</p>
+            </td></tr>
+          </table>
+        </td></tr>
+        <tr><td style="padding-bottom:32px;text-align:center;">
+          <a href="${dashboardUrl}" style="display:inline-block;background:#57C7D6;color:#0A0B0D;font-weight:700;font-size:14px;text-decoration:none;padding:14px 36px;letter-spacing:0.02em;">
+            View Your Dashboard →
+          </a>
+        </td></tr>
+        <tr><td style="padding-bottom:20px;">
+          <p style="margin:0;font-size:14px;color:#A09E9A;line-height:1.7;">
+            Your affiliate code and tracking link remain the same. If you have any questions about this change, reply to this email or contact us at
+            <a href="mailto:${SUPPORT}" style="color:#57C7D6;text-decoration:none;">${SUPPORT}</a>.
+          </p>
+        </td></tr>
+        <tr><td style="border-top:1px solid #2A2B2F;padding-top:24px;">
+          <p style="margin:0;font-family:monospace;font-size:10px;color:#5A5856;letter-spacing:0.15em;text-transform:uppercase;line-height:1.8;">
+            AWAKEN BIO LABS LLC · Questions? <a href="mailto:${SUPPORT}" style="color:#5A5856;">${SUPPORT}</a>
+          </p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  return sendEmail({
+    to: email,
+    subject: `Your Awaken Bio Labs program has been updated — you're now a ${newProgram}`,
+    html,
+    replyTo: SUPPORT,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// 5. Welcome back — re-onboarding after archive
+// ---------------------------------------------------------------------------
+export async function sendWelcomeBackEmail({
+  name,
+  email,
+  affiliateCode,
+  commissionRate,
+}: {
+  name: string;
+  email: string;
+  affiliateCode: string;
+  commissionRate: number;
+}) {
+  const commissionPct = Math.round(commissionRate * 100);
+  const loginUrl = `${SITE}/affiliates/login`;
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#0A0B0D;font-family:'Helvetica Neue',Arial,sans-serif;color:#E8E6E1;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0A0B0D;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;">
+        <tr><td style="padding-bottom:32px;">
+          <p style="margin:0;font-family:monospace;font-size:11px;letter-spacing:0.2em;color:#57C7D6;text-transform:uppercase;">— AWAKEN BIO LABS —</p>
+        </td></tr>
+        <tr><td style="border-left:2px solid #57C7D6;padding-left:20px;padding-bottom:32px;">
+          <h1 style="margin:0;font-size:28px;font-weight:700;color:#F5F3EF;line-height:1.1;letter-spacing:-0.02em;">Welcome back, ${escape(name)}.</h1>
+          <p style="margin:12px 0 0;font-size:15px;color:#A09E9A;line-height:1.6;">
+            Your contract has been signed and your account is active again. Everything is exactly as you left it.
+          </p>
+        </td></tr>
+        <tr><td style="padding-bottom:32px;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#141517;border:1px solid #57C7D6;padding:24px;">
+            <tr><td>
+              <p style="margin:0 0 6px;font-family:monospace;font-size:10px;color:#5A5856;letter-spacing:0.15em;text-transform:uppercase;">Your Affiliate Code</p>
+              <p style="margin:0 0 4px;font-size:32px;font-weight:700;font-family:monospace;color:#57C7D6;letter-spacing:0.15em;">${escape(affiliateCode)}</p>
+              <p style="margin:0 0 20px;font-size:13px;color:#A09E9A;">Customers get <strong style="color:#F5F3EF;">10% off</strong>. You earn <strong style="color:#57C7D6;">${commissionPct}%</strong> on every fulfilled order.</p>
+              <p style="margin:0 0 6px;font-family:monospace;font-size:10px;color:#5A5856;letter-spacing:0.15em;text-transform:uppercase;">Your Tracking Link</p>
+              <p style="margin:0;font-family:monospace;font-size:12px;color:#57C7D6;word-break:break-all;">${SITE}/shop?ref=${escape(affiliateCode)}</p>
+            </td></tr>
+          </table>
+        </td></tr>
+        <tr><td style="padding-bottom:32px;text-align:center;">
+          <a href="${loginUrl}" style="display:inline-block;background:#57C7D6;color:#0A0B0D;font-weight:700;font-size:14px;text-decoration:none;padding:14px 36px;letter-spacing:0.02em;">
+            Sign In to Dashboard →
+          </a>
+          <p style="margin:12px 0 0;font-family:monospace;font-size:10px;color:#5A5856;text-align:center;">Use your existing email and password.</p>
+        </td></tr>
+        <tr><td style="border-top:1px solid #2A2B2F;padding-top:24px;">
+          <p style="margin:0;font-family:monospace;font-size:10px;color:#5A5856;letter-spacing:0.15em;text-transform:uppercase;line-height:1.8;">
+            AWAKEN BIO LABS LLC · Questions? <a href="mailto:${SUPPORT}" style="color:#5A5856;">${SUPPORT}</a>
+          </p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  return sendEmail({
+    to: email,
+    subject: "Welcome back — your Awaken Bio Labs account is active again",
+    html,
+    replyTo: SUPPORT,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// 6. Password reset
 // ---------------------------------------------------------------------------
 export async function sendPasswordResetEmail({
   name,
