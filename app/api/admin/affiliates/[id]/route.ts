@@ -10,6 +10,7 @@ import {
   archiveAffiliate,
   getAffiliateById,
   listAffiliates,
+  setAffiliatePassword,
   type ProgramType,
 } from "@/lib/affiliate-db";
 import { sendContractSigningEmail, sendProgramSwitchEmail } from "@/lib/affiliate-emails";
@@ -80,6 +81,17 @@ export async function PATCH(
     }
 
     return NextResponse.json({ ok: true, account: updated });
+  }
+
+  // --- Set password (admin only) ---
+  if (action === "set-password") {
+    const { newPassword } = body;
+    if (!newPassword || typeof newPassword !== "string" || newPassword.length < 6) {
+      return NextResponse.json({ ok: false, error: "Password must be at least 6 characters" }, { status: 400 });
+    }
+    const ok = await setAffiliatePassword(params.id, newPassword);
+    if (!ok) return NextResponse.json({ ok: false, error: "Affiliate not found or write failed" }, { status: 404 });
+    return NextResponse.json({ ok: true });
   }
 
   // --- Re-onboard (archived → pending_contract, new contract link) ---

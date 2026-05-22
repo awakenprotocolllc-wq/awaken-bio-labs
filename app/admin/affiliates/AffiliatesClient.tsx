@@ -30,6 +30,7 @@ type ApproveForm = { id: string; password: string; code: string; rate: string; p
 type SwitchConfirm = { id: string; name: string; currentProgram: "ambassador" | "licensee" };
 type ArchiveConfirm = { id: string; name: string };
 type ReOnboardConfirm = { id: string; name: string };
+type ChangePassForm = { id: string; newPassword: string; confirm: string };
 
 export default function AffiliatesClient({
   initialApplications,
@@ -47,6 +48,8 @@ export default function AffiliatesClient({
   const [switchConfirm, setSwitchConfirm] = useState<SwitchConfirm | null>(null);
   const [archiveConfirm, setArchiveConfirm] = useState<ArchiveConfirm | null>(null);
   const [reOnboardConfirm, setReOnboardConfirm] = useState<ReOnboardConfirm | null>(null);
+  const [changePassForm, setChangePassForm] = useState<ChangePassForm | null>(null);
+  const [changePassError, setChangePassError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -172,6 +175,33 @@ export default function AffiliatesClient({
     setWorking(null);
   }
 
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (!changePassForm) return;
+    setChangePassError(null);
+    if (changePassForm.newPassword.length < 6) {
+      setChangePassError("Password must be at least 6 characters.");
+      return;
+    }
+    if (changePassForm.newPassword !== changePassForm.confirm) {
+      setChangePassError("Passwords do not match.");
+      return;
+    }
+    setWorking(changePassForm.id);
+    const res = await fetch(`/api/admin/affiliates/${changePassForm.id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "set-password", newPassword: changePassForm.newPassword }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      setChangePassForm(null);
+      showToast("Password updated ✓");
+    } else {
+      setChangePassError(data.error ?? "Failed to update password.");
+    }
+    setWorking(null);
+  }
+
   // ── Segment data ──────────────────────────────────────────────────────────
   const pending   = applications.filter((a) => a.status === "pending");
   const denied    = applications.filter((a) => a.status === "denied");
@@ -276,6 +306,59 @@ export default function AffiliatesClient({
                 Cancel
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Change Password modal */}
+      {changePassForm && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-obsidian/80 px-4">
+          <div className="bg-carbon border border-slate p-6 max-w-sm w-full space-y-4">
+            <p className="font-mono text-accent text-[10px] tracking-[0.2em]">— CHANGE PARTNER PASSWORD —</p>
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div>
+                <label className="block font-mono text-bone text-[10px] tracking-wider uppercase mb-2">New Password</label>
+                <input
+                  type="text"
+                  value={changePassForm.newPassword}
+                  onChange={(e) => setChangePassForm((f) => f && { ...f, newPassword: e.target.value })}
+                  placeholder="min 6 characters"
+                  className="w-full bg-obsidian border border-slate text-paper font-mono text-sm px-3 h-10 focus:outline-none focus:border-accent"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block font-mono text-bone text-[10px] tracking-wider uppercase mb-2">Confirm Password</label>
+                <input
+                  type="text"
+                  value={changePassForm.confirm}
+                  onChange={(e) => setChangePassForm((f) => f && { ...f, confirm: e.target.value })}
+                  className="w-full bg-obsidian border border-slate text-paper font-mono text-sm px-3 h-10 focus:outline-none focus:border-accent"
+                />
+              </div>
+              {changePassError && (
+                <p className="font-mono text-[10px] text-red-400">{changePassError}</p>
+              )}
+              <p className="font-mono text-bone/40 text-[10px]">
+                This immediately updates their login password. Send them the new password separately.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  disabled={working === changePassForm.id}
+                  className="bg-accent text-obsidian font-semibold font-mono text-xs px-5 h-10 min-h-[44px] hover:bg-accent/80 transition-colors disabled:opacity-50"
+                >
+                  {working === changePassForm.id ? "Saving…" : "Save Password"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setChangePassForm(null); setChangePassError(null); }}
+                  className="border border-slate text-bone font-mono text-xs px-5 h-10 min-h-[44px] hover:border-accent hover:text-accent transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -525,6 +608,24 @@ export default function AffiliatesClient({
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-2">
+                    {/* View Portal */}
+                    <Link
+                      href={`/admin/affiliates/${aff.id}/portal`}
+                      target="_blank"
+                      className="font-mono text-[10px] tracking-wider text-accent border border-accent/30 px-3 py-1.5 hover:bg-accent/10 transition-colors"
+                      title="View partner's dashboard"
+                    >
+                      View Portal
+                    </Link>
+                    {/* Change Password */}
+                    <button
+                      onClick={() => { setChangePassForm({ id: aff.id, newPassword: "", confirm: "" }); setChangePassError(null); }}
+                      disabled={working === aff.id}
+                      className="font-mono text-[10px] tracking-wider text-bone border border-slate px-3 py-1.5 hover:border-accent hover:text-accent transition-colors disabled:opacity-40"
+                      title="Change partner's password"
+                    >
+                      Password
+                    </button>
                     {/* Switch program */}
                     {aff.status === "active" && (
                       <button

@@ -328,17 +328,40 @@ export async function consumePasswordResetToken(token: string, newPassword: stri
   if (!record || record.used) return false;
   if (new Date() > new Date(record.expiresAt)) return false;
 
-  // Mark token used first to prevent replay
-  await kv.set(`aff:pwreset:${token}`, { ...record, used: true });
-
-  // Update password hash
+  // Fetch the account FIRST — bail early if it doesn't exist
   const account = await kv.get<AffiliateAccountInternal>(`aff:account:${record.affiliateId}`);
   if (!account) return false;
+
+  const newHash = hashPassword(newPassword);
+
+  // Write new password hash to account
   await kv.set(`aff:account:${record.affiliateId}`, {
     ...account,
-    passwordHash: hashPassword(newPassword),
+    passwordHash: newHash,
   });
+
+  // Verify the write actually landed before marking the token used
+  const verify = await kv.get<AffiliateAccountInternal>(`aff:account:${record.affiliateId}`);
+  if (!verify || verify.passwordHash !== newHash) {
+    // Write failed — do NOT mark token used so the user can try again
+    console.error("[consumePasswordResetToken] KV write verification failed for", record.affiliateId);
+    return false;
+  }
+
+  // Now safe to mark token as used (prevents replay)
+  await kv.set(`aff:pwreset:${token}`, { ...record, used: true }, { ex: 60 * 60 });
   return true;
+}
+
+/** Directly set a partner's password (admin use only). Returns true on success. */
+export async function setAffiliatePassword(affiliateId: string, newPassword: string): Promise<boolean> {
+  const account = await kv.get<AffiliateAccountInternal>(`aff:account:${affiliateId}`);
+  if (!account) return false;
+  const newHash = hashPassword(newPassword);
+  await kv.set(`aff:account:${affiliateId}`, { ...account, passwordHash: newHash });
+  // Verify write
+  const verify = await kv.get<AffiliateAccountInternal>(`aff:account:${affiliateId}`);
+  return !!verify && verify.passwordHash === newHash;
 }
 
 // ---------------------------------------------------------------------------
