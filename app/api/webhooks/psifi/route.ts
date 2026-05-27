@@ -8,25 +8,43 @@ import { createHmac } from "crypto";
 // ---------------------------------------------------------------------------
 // POST /api/webhooks/psifi
 //
-// PsiFi fires this when a payment is completed.
-// Configure in: portal.psifi.app/developer → Webhooks
-// URL: https://awakenbiolabs.com/api/webhooks/psifi
+// PsiFi uses Svix for webhook delivery.
+// Configure in: portal.psifi.app/developer → Webhooks → New Endpoint
+//   URL:    https://awakenbiolabs.com/api/webhooks/psifi
+//   Events: transaction.completed, checkout.notifications.complete
 //
-// We:
-//  1. Verify the webhook signature (if PSIFI_WEBHOOK_SECRET is set)
-//  2. Identify the order from session ID or metadata
-//  3. Mark the order as "paid"
-//  4. Push to ShipStation for fulfillment
-//  5. Send confirmation emails to customer + admin
+// Svix signs with three headers:
+//   svix-id        — unique message ID
+//   svix-timestamp — Unix timestamp (seconds)
+//   svix-signature — "v1,<base64-hmac-sha256>" of "{id}.{timestamp}.{body}"
 // ---------------------------------------------------------------------------
 
-function verifySignature(rawBody: string, signature: string, secret: string): boolean {
-  // PsiFi likely uses HMAC-SHA256 — try common header/format patterns
+function verifySvixSignature(
+  rawBody: string,
+  msgId: string,
+  msgTimestamp: string,
+  msgSignature: string,
+  secret: string
+): boolean {
   try {
-    const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
-    // Handle both plain hex and "sha256=..." prefixed formats
-    const clean = signature.startsWith("sha256=") ? signature.slice(7) : signature;
-    return clean === expected;
+    // Reject if timestamp is more than 5 minutes old (replay protection)
+    const ts = parseInt(msgTimestamp, 10);
+    if (isNaN(ts) || Math.abs(Date.now() / 1000 - ts) > 300) return false;
+
+    // Svix signing: HMAC-SHA256 of "{svix-id}.{svix-timestamp}.{rawBody}"
+    const toSign = `${msgId}.${msgTimestamp}.${rawBody}`;
+
+    // Secret may be prefixed with "whsec_" — strip it, then base64-decode
+    const cleanSecret = secret.startsWith("whsec_") ? secret.slice(6) : secret;
+    const keyBytes = Buffer.from(cleanSecret, "base64");
+    const computedHmac = createHmac("sha256", keyBytes).update(toSign).digest("base64");
+
+    // svix-signature header: "v1,<base64sig>" (may have multiple space-separated sigs)
+    const sigs = msgSignature.split(" ");
+    return sigs.some((s) => {
+      const b64 = s.startsWith("v1,") ? s.slice(3) : s;
+      return b64 === computedHmac;
+    });
   } catch {
     return false;
   }
@@ -35,23 +53,26 @@ function verifySignature(rawBody: string, signature: string, secret: string): bo
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();
 
-  // Log full payload for the first few calls so you can inspect the format
-  console.log("[psifi/webhook] received:", rawBody.slice(0, 1000));
+  // Log full payload for debugging (truncated)
+  console.log("[psifi/webhook] received:", rawBody.slice(0, 800));
 
-  // Verify signature if secret is configured
+  // Svix signature headers
+  const msgId        = req.headers.get("svix-id") ?? "";
+  const msgTimestamp = req.headers.get("svix-timestamp") ?? "";
+  const msgSignature = req.headers.get("svix-signature") ?? "";
+
   const webhookSecret = process.env.PSIFI_WEBHOOK_SECRET;
   if (webhookSecret) {
-    const sig =
-      req.headers.get("x-psifi-signature") ??
-      req.headers.get("x-signature") ??
-      req.headers.get("webhook-signature") ??
-      "";
-    if (!sig || !verifySignature(rawBody, sig, webhookSecret)) {
-      console.warn("[psifi/webhook] Signature verification failed — check PSIFI_WEBHOOK_SECRET");
+    if (!msgId || !msgTimestamp || !msgSignature) {
+      console.warn("[psifi/webhook] Missing Svix headers");
+      return NextResponse.json({ ok: false, error: "Missing signature headers" }, { status: 401 });
+    }
+    if (!verifySvixSignature(rawBody, msgId, msgTimestamp, msgSignature, webhookSecret)) {
+      console.warn("[psifi/webhook] Svix signature verification failed");
       return NextResponse.json({ ok: false, error: "Invalid signature" }, { status: 401 });
     }
   } else {
-    console.warn("[psifi/webhook] No PSIFI_WEBHOOK_SECRET set — skipping signature verification");
+    console.warn("[psifi/webhook] No PSIFI_WEBHOOK_SECRET set — skipping verification");
   }
 
   let body: Record<string, unknown>;
@@ -61,42 +82,41 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Invalid JSON" }, { status: 400 });
   }
 
-  // Extract event type — handle multiple payload formats
-  const eventType =
-    (body.type as string) ??
-    (body.event as string) ??
-    (body.event_type as string) ??
-    "";
+  // PsiFi event types we handle:
+  //   transaction.completed          — card payment confirmed
+  //   checkout.notifications.complete — checkout session completed
+  const eventType = (body.type as string) ?? "";
 
-  // Only process successful payment events
   const isPaymentComplete =
-    eventType === "payment.completed" ||
-    eventType === "checkout.completed" ||
-    eventType === "payment_intent.succeeded" ||
-    eventType === "session.completed" ||
-    (body.status as string) === "paid" ||
-    ((body.data as Record<string, unknown>)?.status as string) === "paid" ||
-    ((body.data as Record<string, unknown>)?.status as string) === "completed";
+    eventType === "transaction.completed" ||
+    eventType === "checkout.notifications.complete";
 
   if (!isPaymentComplete) {
     console.log("[psifi/webhook] Skipping non-payment event:", eventType || body.status);
     return NextResponse.json({ ok: true, skipped: true });
   }
 
-  // Extract session ID from multiple possible locations in the payload
+  // Svix wraps the PsiFi payload in { type, data: { ... } }
   const data = (body.data as Record<string, unknown>) ?? {};
+
+  // Session/transaction ID — PsiFi may use different field names
   const sessionId =
-    (data.id as string) ??
-    (data.session_id as string) ??
+    (data.checkoutSessionId as string) ??
     (data.checkout_session_id as string) ??
-    (body.session_id as string) ??
-    (body.id as string) ??
+    (data.sessionId as string) ??
+    (data.session_id as string) ??
+    (data.id as string) ??
     "";
 
-  // Extract orderId — check metadata first, then KV session map
+  // orderId — check metadata first (we pass it when creating the session),
+  // then fall back to KV session map
   let orderId: string | null = null;
 
-  const metadata = (data.metadata as Record<string, string>) ?? (body.metadata as Record<string, string>) ?? {};
+  const metadata =
+    (data.metadata as Record<string, string>) ??
+    (body.metadata as Record<string, string>) ??
+    {};
+
   if (metadata?.orderId) {
     orderId = metadata.orderId;
   } else if (sessionId) {
