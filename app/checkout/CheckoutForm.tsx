@@ -152,7 +152,14 @@ export default function CheckoutForm() {
       if (!data.ok) throw new Error(data.error ?? "Unknown error");
 
       clearCart();
-      router.push(`/order-confirmation?id=${data.orderId}`);
+
+      // Redirect to PsiFi hosted checkout for card payment
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url;
+      } else {
+        // Fallback (e.g. local dev with no PsiFi key)
+        router.push(`/order-confirmation?id=${data.orderId}`);
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
       setLoading(false);
@@ -371,7 +378,8 @@ export default function CheckoutForm() {
       <div className="bg-carbon border border-slate p-4">
         <p className="font-mono text-white/40 text-[11px] tracking-widest uppercase leading-relaxed">
           By placing this order you confirm all products are for in-vitro research use only and not for
-          human or veterinary consumption. Payment is via Zelle. Instructions will be emailed to you.
+          human or veterinary consumption. You will be redirected to our secure payment page to complete
+          your purchase via Visa, Mastercard, or Amex.
         </p>
       </div>
 
@@ -387,10 +395,10 @@ export default function CheckoutForm() {
         className="w-full bg-accent text-obsidian font-semibold h-14 min-h-[44px] text-base hover:bg-accent/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading
-          ? "Placing Order..."
+          ? "Redirecting to payment..."
           : shippingReady
-          ? `Place Order — ${fmtPrice(orderTotal)}`
-          : `Place Order — ${fmtPrice(afterDiscount)} + shipping`}
+          ? `Pay Now — ${fmtPrice(orderTotal)}`
+          : `Pay Now — ${fmtPrice(afterDiscount)} + shipping`}
       </button>
     </form>
   );

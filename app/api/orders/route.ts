@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { kv } from "@vercel/kv";
 import { createOrder, listOrders, calcSubtotal, type OrderItem } from "@/lib/db";
-import { sendCustomerOrderEmail, sendAdminOrderEmail } from "@/lib/order-emails";
+
+const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://awakenbiolabs.com";
 
 // ---------------------------------------------------------------------------
-// POST /api/orders — create new order
+// POST /api/orders — create order then redirect to PsiFi checkout
 // ---------------------------------------------------------------------------
 export async function POST(req: NextRequest) {
   try {
@@ -32,6 +34,7 @@ export async function POST(req: NextRequest) {
     // Referral attribution: cookie ref takes priority; discount code used as fallback
     const refCode = req.cookies.get("awaken_ref")?.value || discountCode || undefined;
 
+    // 1. Save the order (pending_payment — no emails yet, payment not confirmed)
     const order = await createOrder({
       customer,
       shipping,
@@ -45,16 +48,75 @@ export async function POST(req: NextRequest) {
       orderTotal: orderTotal || undefined,
     });
 
-    // Await both emails before returning — Vercel exits on response
-    const emailResults = await Promise.allSettled([
-      sendCustomerOrderEmail(order),
-      sendAdminOrderEmail(order),
-    ]);
-    emailResults.forEach((r) => {
-      if (r.status === "rejected") console.error("[orders] email error:", r.reason);
+    // 2. Build PsiFi line items
+    function parseAmt(s?: string): number {
+      if (!s) return 0;
+      return parseFloat(s.replace(/[^0-9.]/g, "")) || 0;
+    }
+
+    const psifiItems: { name: string; price: number; quantity: number }[] = typedItems.map((item) => ({
+      name: `${item.product} — ${item.strength}`,
+      price: parseAmt(item.price),
+      quantity: item.qty,
+    }));
+
+    // Shipping line item
+    const shippingNum = parseAmt(shippingCost);
+    if (shippingNum > 0) {
+      psifiItems.push({ name: "Shipping — UPS 2-Day", price: shippingNum, quantity: 1 });
+    }
+
+    // Discount line item (negative price — reduces total on PsiFi checkout)
+    const discountNum = parseAmt(discountAmount);
+    if (discountNum > 0) {
+      psifiItems.push({
+        name: `Discount${discountCode ? ` — ${discountCode}` : ""}`,
+        price: -discountNum,
+        quantity: 1,
+      });
+    }
+
+    // 3. Create PsiFi checkout session
+    const apiKey = process.env.PSIFI_API_KEY;
+    if (!apiKey) {
+      // Fallback: no PsiFi key configured — send to order confirmation directly
+      // (useful for local dev; in production this should never happen)
+      console.warn("[orders] PSIFI_API_KEY not set — skipping payment redirect");
+      return NextResponse.json({ ok: true, orderId: order.id, checkout_url: null });
+    }
+
+    const psifiRes = await fetch("https://api.psifi.app/api/v2/checkout-sessions", {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        items: psifiItems,
+        success_url: `${SITE}/order-confirmation?id=${order.id}`,
+        cancel_url: `${SITE}/checkout`,
+        // Pass metadata so PsiFi echoes it back in the webhook
+        metadata: { orderId: order.id },
+      }),
     });
 
-    return NextResponse.json({ ok: true, orderId: order.id });
+    if (!psifiRes.ok) {
+      const errText = await psifiRes.text();
+      console.error("[orders] PsiFi session creation failed:", psifiRes.status, errText);
+      // Don't fail the whole order — return orderId so customer can at least see confirmation
+      return NextResponse.json({ ok: true, orderId: order.id, checkout_url: null });
+    }
+
+    const psifiData = await psifiRes.json();
+    const checkoutUrl: string = psifiData.checkout_url ?? psifiData.url ?? psifiData.checkoutUrl;
+    const sessionId: string = psifiData.id ?? psifiData.session_id ?? psifiData.sessionId;
+
+    // 4. Store session → orderId mapping for webhook lookup (48h TTL)
+    if (sessionId) {
+      await kv.set(`psifi:session:${sessionId}`, order.id, { ex: 60 * 60 * 48 });
+    }
+
+    return NextResponse.json({ ok: true, orderId: order.id, checkout_url: checkoutUrl });
   } catch (err) {
     console.error("[POST /api/orders]", err);
     return NextResponse.json({ ok: false, error: "Server error" }, { status: 500 });

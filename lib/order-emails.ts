@@ -34,13 +34,12 @@ function itemsRowsAdmin(items: Order["items"]): string {
 }
 
 // ---------------------------------------------------------------------------
-// Customer email — payment instructions
+// Customer email — order confirmed (sent after PsiFi payment webhook)
 // ---------------------------------------------------------------------------
 
 export async function sendCustomerOrderEmail(order: Order) {
-  const siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    "https://awakenbiolabs.com";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://awakenbiolabs.com";
+  const displayTotal = order.orderTotal ?? order.subtotal;
 
   const html = `
 <!DOCTYPE html>
@@ -52,7 +51,7 @@ export async function sendCustomerOrderEmail(order: Order) {
   <!-- Header -->
   <div style="border-bottom:1px solid #2A2D33;padding-bottom:24px;margin-bottom:32px;">
     <p style="font-family:'Courier New',monospace;color:#57C7D6;font-size:11px;letter-spacing:0.25em;text-transform:uppercase;margin:0 0 12px;">AWAKEN BIO LABS</p>
-    <h1 style="color:#F4F4F2;font-size:26px;margin:0 0 8px;font-weight:700;">Order Received</h1>
+    <h1 style="color:#F4F4F2;font-size:26px;margin:0 0 8px;font-weight:700;">Order Confirmed</h1>
     <p style="font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;margin:0;">
       Order <strong style="color:#57C7D6;">#${order.id.toUpperCase()}</strong>
       &nbsp;·&nbsp;
@@ -60,10 +59,18 @@ export async function sendCustomerOrderEmail(order: Order) {
     </p>
   </div>
 
-  <p style="color:#D9D9DC;font-size:15px;line-height:1.7;margin:0 0 20px;">
+  <!-- Confirmation message -->
+  <p style="color:#D9D9DC;font-size:15px;line-height:1.7;margin:0 0 28px;">
     Hi <strong style="color:#F4F4F2;">${order.customer.name}</strong>,<br /><br />
-    Thank you for your order. To complete your purchase, please send the exact total below via <strong style="color:#F4F4F2;">Zelle</strong>. Your order will be fulfilled once we confirm receipt of payment — typically within 1 business day.
+    Your payment has been received and your order is confirmed. We&apos;re preparing your package and will ship it within 1 business day. You&apos;ll receive a shipping notification once it&apos;s on its way.
   </p>
+
+  <!-- Payment confirmed badge -->
+  <div style="background:#0d2e1a;border:1px solid #1a5c35;padding:16px 20px;margin:0 0 28px;display:flex;align-items:center;gap:12px;">
+    <p style="font-family:'Courier New',monospace;color:#2ecc71;font-size:12px;letter-spacing:0.15em;text-transform:uppercase;margin:0;">
+      ✓ &nbsp;Payment confirmed &nbsp;·&nbsp; ${displayTotal}
+    </p>
+  </div>
 
   <!-- Order Summary -->
   <div style="background:#141518;border:1px solid #2A2D33;margin:0 0 24px;">
@@ -81,47 +88,28 @@ export async function sendCustomerOrderEmail(order: Order) {
       </thead>
       <tbody>${itemsRowsCustomer(order.items)}</tbody>
     </table>
-    <div style="padding:16px 14px;border-top:1px solid #57C7D6;display:flex;justify-content:space-between;">
-      <span style="font-family:'Courier New',monospace;color:#D9D9DC;font-size:13px;font-weight:bold;text-transform:uppercase;letter-spacing:0.1em;">Total Due</span>
-      <span style="font-family:'Courier New',monospace;color:#57C7D6;font-size:22px;font-weight:bold;">${order.subtotal}</span>
-    </div>
-  </div>
-
-  <!-- Zelle Payment -->
-  <div style="background:#141518;border:2px solid #57C7D6;margin:0 0 24px;padding:28px;">
-    <p style="font-family:'Courier New',monospace;color:#57C7D6;font-size:10px;letter-spacing:0.25em;text-transform:uppercase;margin:0 0 20px;">— PAYMENT INSTRUCTIONS —</p>
-
-    <p style="color:#D9D9DC;font-size:15px;line-height:1.7;margin:0 0 20px;">
-      Please send exactly <strong style="color:#57C7D6;font-size:18px;">${order.subtotal}</strong> via Zelle to:
-    </p>
-
-    <div style="background:#0A0B0D;border:1px solid #2A2D33;padding:20px;margin:0 0 20px;">
+    <!-- Totals -->
+    <div style="padding:12px 14px;border-top:1px solid #2A2D33;">
       <table style="width:100%;border-collapse:collapse;">
         <tr>
-          <td style="padding:0 0 14px;">
-            <p style="font-family:'Courier New',monospace;color:#D9D9DC;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;margin:0 0 6px;">Zelle Account Name</p>
-            <p style="color:#F4F4F2;font-size:20px;font-weight:700;margin:0;letter-spacing:0.03em;">AWAKEN BIOLABS LLC</p>
-          </td>
+          <td style="padding:4px 0;font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;">Subtotal</td>
+          <td style="padding:4px 0;font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;text-align:right;">${order.subtotal}</td>
         </tr>
+        ${order.discountAmount ? `
         <tr>
-          <td style="padding:14px 0 0;border-top:1px solid #2A2D33;">
-            <p style="font-family:'Courier New',monospace;color:#D9D9DC;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;margin:0 0 6px;">Zelle ID</p>
-            <p style="color:#57C7D6;font-size:20px;font-weight:700;margin:0;">awakenbiolabs</p>
-          </td>
+          <td style="padding:4px 0;font-family:'Courier New',monospace;color:#2ecc71;font-size:12px;">Discount${order.discountCode ? ` (${order.discountCode})` : ""}</td>
+          <td style="padding:4px 0;font-family:'Courier New',monospace;color:#2ecc71;font-size:12px;text-align:right;">−${order.discountAmount}</td>
+        </tr>` : ""}
+        ${order.shippingCost ? `
+        <tr>
+          <td style="padding:4px 0;font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;">Shipping — UPS 2-Day</td>
+          <td style="padding:4px 0;font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;text-align:right;">${order.shippingCost}</td>
+        </tr>` : ""}
+        <tr>
+          <td style="padding:10px 0 4px;border-top:1px solid #57C7D6;font-family:'Courier New',monospace;color:#D9D9DC;font-size:13px;font-weight:bold;text-transform:uppercase;letter-spacing:0.1em;">Total Charged</td>
+          <td style="padding:10px 0 4px;border-top:1px solid #57C7D6;font-family:'Courier New',monospace;color:#57C7D6;font-size:20px;font-weight:bold;text-align:right;">${displayTotal}</td>
         </tr>
       </table>
-    </div>
-
-    <!-- QR Code -->
-    <div style="text-align:center;margin:0 0 20px;">
-      <img src="${siteUrl}/zelle-qr.png" alt="Zelle QR Code — AWAKEN BIOLABS LLC" width="180" style="max-width:180px;display:block;margin:0 auto;" />
-      <p style="font-family:'Courier New',monospace;color:#D9D9DC;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;margin:10px 0 0;">Scan to pay via Zelle</p>
-    </div>
-
-    <div style="border-top:1px solid #2A2D33;padding-top:18px;">
-      <p style="color:#D9D9DC;font-size:14px;line-height:1.7;margin:0;">
-        ⚠️&nbsp;<strong style="color:#F4F4F2;">After paying:</strong> reply to this email with a <strong style="color:#F4F4F2;">screenshot of your Zelle confirmation</strong>. Please send the <em>exact</em> amount — partial payments cannot be processed. Your order ships once payment is verified.
-      </p>
     </div>
   </div>
 
@@ -134,6 +122,12 @@ export async function sendCustomerOrderEmail(order: Order) {
       ${order.shipping.city}, ${order.shipping.state} ${order.shipping.zip}
     </p>
   </div>
+
+  ${order.notes ? `
+  <div style="background:#141518;border:1px solid #2A2D33;margin:0 0 24px;padding:20px;">
+    <p style="font-family:'Courier New',monospace;color:#57C7D6;font-size:10px;letter-spacing:0.25em;text-transform:uppercase;margin:0 0 10px;">— ORDER NOTES —</p>
+    <p style="color:#D9D9DC;font-size:14px;line-height:1.6;margin:0;">${order.notes}</p>
+  </div>` : ""}
 
   <!-- Footer -->
   <div style="border-top:1px solid #2A2D33;padding-top:24px;margin-top:8px;">
@@ -153,17 +147,19 @@ export async function sendCustomerOrderEmail(order: Order) {
 
   return sendEmail({
     to: order.customer.email,
-    subject: `Your Awaken Bio Labs Order — Payment Instructions`,
+    subject: `Order Confirmed — #${order.id.toUpperCase()} | Awaken Bio Labs`,
     html,
     replyTo: "support@awakenbiolabs.com",
   });
 }
 
 // ---------------------------------------------------------------------------
-// Admin notification email
+// Admin notification email — new paid order ready to fulfill
 // ---------------------------------------------------------------------------
 
 export async function sendAdminOrderEmail(order: Order) {
+  const displayTotal = order.orderTotal ?? order.subtotal;
+
   const html = `
 <!DOCTYPE html>
 <html>
@@ -172,7 +168,7 @@ export async function sendAdminOrderEmail(order: Order) {
 <div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;padding:32px 20px;background:#ffffff;border:1px solid #e0e0e0;">
 
   <h2 style="color:#0A0B0D;border-bottom:3px solid #57C7D6;padding-bottom:12px;margin:0 0 24px;">
-    🆕 New Order — Pending Payment
+    💳 New Paid Order — Ready to Fulfill
   </h2>
 
   <table style="width:100%;border-collapse:collapse;margin:0 0 24px;">
@@ -186,12 +182,22 @@ export async function sendAdminOrderEmail(order: Order) {
     </tr>
     <tr>
       <td style="padding:8px 0;color:#666;font-size:13px;">Status</td>
-      <td style="padding:8px 0;"><span style="background:#fff3cd;color:#856404;padding:3px 10px;font-size:12px;font-family:'Courier New',monospace;border:1px solid #ffc107;">PENDING PAYMENT</span></td>
+      <td style="padding:8px 0;"><span style="background:#d4edda;color:#155724;padding:3px 10px;font-size:12px;font-family:'Courier New',monospace;border:1px solid #c3e6cb;">PAID — PSIFI</span></td>
     </tr>
     <tr>
       <td style="padding:8px 0;color:#666;font-size:13px;">Total</td>
-      <td style="padding:8px 0;color:#0070d2;font-size:20px;font-weight:bold;">${order.subtotal}</td>
+      <td style="padding:8px 0;color:#0070d2;font-size:20px;font-weight:bold;">${displayTotal}</td>
     </tr>
+    ${order.discountCode ? `
+    <tr>
+      <td style="padding:8px 0;color:#666;font-size:13px;">Discount Code</td>
+      <td style="padding:8px 0;font-family:'Courier New',monospace;font-size:13px;color:#2e7d32;">${order.discountCode}${order.discountAmount ? ` (−${order.discountAmount})` : ""}</td>
+    </tr>` : ""}
+    ${order.refCode && order.refCode !== order.discountCode ? `
+    <tr>
+      <td style="padding:8px 0;color:#666;font-size:13px;">Ref Code</td>
+      <td style="padding:8px 0;font-family:'Courier New',monospace;font-size:13px;">${order.refCode}</td>
+    </tr>` : ""}
   </table>
 
   <h3 style="color:#0A0B0D;margin:0 0 12px;font-size:15px;text-transform:uppercase;letter-spacing:0.05em;">Customer</h3>
@@ -227,18 +233,19 @@ export async function sendAdminOrderEmail(order: Order) {
     <tbody>${itemsRowsAdmin(order.items)}</tbody>
     <tfoot>
       <tr style="background:#f0f0f0;font-weight:bold;">
-        <td colspan="3" style="padding:12px;border:1px solid #ddd;font-size:14px;">TOTAL</td>
-        <td style="padding:12px;border:1px solid #ddd;text-align:right;font-size:18px;color:#0070d2;">${order.subtotal}</td>
+        <td colspan="3" style="padding:12px;border:1px solid #ddd;font-size:14px;">TOTAL CHARGED</td>
+        <td style="padding:12px;border:1px solid #ddd;text-align:right;font-size:18px;color:#0070d2;">${displayTotal}</td>
       </tr>
     </tfoot>
   </table>
 
   ${order.notes ? `<h3 style="color:#0A0B0D;margin:0 0 8px;font-size:15px;">Customer Notes</h3><p style="margin:0 0 24px;padding:14px;background:#f5f5f5;font-size:14px;line-height:1.6;color:#333;">${order.notes}</p>` : ""}
 
-  <div style="padding:16px;background:#fff3cd;border:1px solid #ffc107;border-radius:4px;">
-    <p style="margin:0 0 8px;font-weight:bold;font-size:14px;">⏳ Awaiting Zelle Payment Screenshot</p>
-    <p style="margin:0;font-size:13px;color:#555;line-height:1.6;">
-      The customer has been sent payment instructions. Once they reply with a Zelle confirmation screenshot, mark the order as <em>paid</em> and fulfill it. Update status at <a href="https://awakenbiolabs.com/admin/orders">awakenbiolabs.com/admin/orders</a>.
+  <div style="padding:16px;background:#d4edda;border:1px solid #c3e6cb;border-radius:4px;">
+    <p style="margin:0 0 8px;font-weight:bold;font-size:14px;color:#155724;">✓ Payment confirmed via PsiFi — order is ready to fulfill</p>
+    <p style="margin:0;font-size:13px;color:#155724;line-height:1.6;">
+      This order has been paid. Push it to ShipStation and ship. Manage at
+      <a href="https://awakenbiolabs.com/admin/orders" style="color:#0070d2;">awakenbiolabs.com/admin/orders</a>.
     </p>
   </div>
 
@@ -248,7 +255,7 @@ export async function sendAdminOrderEmail(order: Order) {
 
   return sendEmail({
     to: "admin@awakenbiolabs.com",
-    subject: `New Order — Pending Payment | #${order.id.toUpperCase()} | ${order.subtotal}`,
+    subject: `New Paid Order — #${order.id.toUpperCase()} | ${displayTotal}`,
     html,
   });
 }
