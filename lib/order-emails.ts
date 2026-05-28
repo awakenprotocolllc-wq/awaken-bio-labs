@@ -34,7 +34,7 @@ function itemsRowsAdmin(items: Order["items"]): string {
 }
 
 // ---------------------------------------------------------------------------
-// Customer email — order confirmed (sent after PsiFi payment webhook)
+// Customer email — order confirmed (sent after Quiklie payment webhook)
 // ---------------------------------------------------------------------------
 
 export async function sendCustomerOrderEmail(order: Order) {
@@ -182,7 +182,7 @@ export async function sendAdminOrderEmail(order: Order) {
     </tr>
     <tr>
       <td style="padding:8px 0;color:#666;font-size:13px;">Status</td>
-      <td style="padding:8px 0;"><span style="background:#d4edda;color:#155724;padding:3px 10px;font-size:12px;font-family:'Courier New',monospace;border:1px solid #c3e6cb;">PAID — PSIFI</span></td>
+      <td style="padding:8px 0;"><span style="background:#d4edda;color:#155724;padding:3px 10px;font-size:12px;font-family:'Courier New',monospace;border:1px solid #c3e6cb;">PAID — QUIKLIE</span></td>
     </tr>
     <tr>
       <td style="padding:8px 0;color:#666;font-size:13px;">Total</td>
@@ -242,7 +242,7 @@ export async function sendAdminOrderEmail(order: Order) {
   ${order.notes ? `<h3 style="color:#0A0B0D;margin:0 0 8px;font-size:15px;">Customer Notes</h3><p style="margin:0 0 24px;padding:14px;background:#f5f5f5;font-size:14px;line-height:1.6;color:#333;">${order.notes}</p>` : ""}
 
   <div style="padding:16px;background:#d4edda;border:1px solid #c3e6cb;border-radius:4px;">
-    <p style="margin:0 0 8px;font-weight:bold;font-size:14px;color:#155724;">✓ Payment confirmed via PsiFi — order is ready to fulfill</p>
+    <p style="margin:0 0 8px;font-weight:bold;font-size:14px;color:#155724;">✓ Payment confirmed via Quiklie — order is ready to fulfill</p>
     <p style="margin:0;font-size:13px;color:#155724;line-height:1.6;">
       This order has been paid. Push it to ShipStation and ship. Manage at
       <a href="https://awakenbiolabs.com/admin/orders" style="color:#0070d2;">awakenbiolabs.com/admin/orders</a>.

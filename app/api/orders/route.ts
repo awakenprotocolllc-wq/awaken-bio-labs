@@ -1,40 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
-import { createOrder, listOrders, calcSubtotal, type OrderItem } from "@/lib/db";
+import { createOrder, updateOrderStatus, listOrders, calcSubtotal, type OrderItem } from "@/lib/db";
+import { sendCustomerOrderEmail, sendAdminOrderEmail } from "@/lib/order-emails";
+import { createShipStationOrder } from "@/lib/shipstation";
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://awakenbiolabs.com";
+const QUIKLIE_BASE = "https://api.quiklie.com";
 
 // ---------------------------------------------------------------------------
-// POST /api/orders — create order then redirect to PsiFi checkout
+// POST /api/orders — create order and process payment via Quiklie S2S
 // ---------------------------------------------------------------------------
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { customer, shipping, items, notes, discountCode, discountAmount, shippingCost, orderTotal } = body ?? {};
+    const {
+      customer, shipping, items, notes,
+      discountCode, discountAmount, shippingCost, orderTotal,
+      card, // { number, holderName, expiryMonth, expiryYear, cvv }
+    } = body ?? {};
 
     // Validate required fields
     if (
-      !customer?.name ||
-      !customer?.email ||
-      !shipping?.line1 ||
-      !shipping?.city ||
-      !shipping?.state ||
-      !shipping?.zip ||
+      !customer?.name || !customer?.email ||
+      !shipping?.line1 || !shipping?.city || !shipping?.state || !shipping?.zip ||
       !items?.length
     ) {
-      return NextResponse.json(
-        { ok: false, error: "Missing required fields" },
-        { status: 400 }
-      );
+      return NextResponse.json({ ok: false, error: "Missing required fields" }, { status: 400 });
+    }
+
+    if (!card?.number || !card?.holderName || !card?.expiryMonth || !card?.expiryYear || !card?.cvv) {
+      return NextResponse.json({ ok: false, error: "Card details are required" }, { status: 400 });
     }
 
     const typedItems = items as OrderItem[];
     const subtotal = calcSubtotal(typedItems);
-
-    // Referral attribution: cookie ref takes priority; discount code used as fallback
     const refCode = req.cookies.get("awaken_ref")?.value || discountCode || undefined;
 
-    // 1. Save the order (pending_payment — no emails yet, payment not confirmed)
+    // 1. Save the order (pending_payment — confirmed only after Quiklie SUCCESS)
     const order = await createOrder({
       customer,
       shipping,
@@ -48,75 +50,137 @@ export async function POST(req: NextRequest) {
       orderTotal: orderTotal || undefined,
     });
 
-    // 2. Build PsiFi line items
-    function parseAmt(s?: string): number {
-      if (!s) return 0;
-      return parseFloat(s.replace(/[^0-9.]/g, "")) || 0;
+    // 2. Build Quiklie payment request
+    const apiKey = process.env.QUIKLIE_API_KEY;
+    const merchantId = process.env.QUIKLIE_MERCHANT_ID;
+
+    if (!apiKey || !merchantId) {
+      console.error("[orders] QUIKLIE_API_KEY or QUIKLIE_MERCHANT_ID not set");
+      return NextResponse.json({ ok: false, error: "Payment processor not configured. Please contact support." }, { status: 500 });
     }
 
-    const psifiItems: { name: string; price: number; quantity: number }[] = typedItems.map((item) => ({
-      name: `${item.product} — ${item.strength}`,
-      price: parseAmt(item.price),
-      quantity: item.qty,
-    }));
+    // Parse total amount (use orderTotal if available, else subtotal)
+    const totalStr = orderTotal ?? subtotal;
+    const amount = parseFloat(totalStr.replace(/[^0-9.]/g, "")) || 0;
 
-    // Shipping line item
-    const shippingNum = parseAmt(shippingCost);
-    if (shippingNum > 0) {
-      psifiItems.push({ name: "Shipping — UPS 2-Day", price: shippingNum, quantity: 1 });
+    // Split full name into first/last
+    const nameParts = customer.name.trim().split(/\s+/);
+    const firstName = nameParts[0];
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : nameParts[0];
+
+    // Customer IP (Vercel passes this via x-forwarded-for)
+    const ipAddress =
+      req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+      req.headers.get("x-real-ip") ||
+      "0.0.0.0";
+
+    // Strip spaces/dashes from card number
+    const cardNumber = card.number.replace(/[\s-]/g, "");
+
+    // Do NOT log card data — security requirement
+    const quikliePayload = {
+      merchantId,
+      firstName,
+      lastName,
+      email: customer.email,
+      phone: customer.phone || "0000000000",
+      amount,
+      currencyCode: "USD",
+      address: shipping.line1,
+      zipCode: shipping.zip,
+      city: shipping.city,
+      state: shipping.state,
+      country: "US",
+      ipAddress,
+      callbackUrl: `${SITE}/api/webhooks/quiklie`,
+      redirectUrl: `${SITE}/order-confirmation?id=${order.id}`,
+      customerReferenceId: `CUST-${order.id}`,
+      transactionReferenceId: order.id,
+      cardNumber,
+      cardHolderName: card.holderName,
+      cardExpiryMonth: String(card.expiryMonth).padStart(2, "0"),
+      cardExpiryYear: String(card.expiryYear),
+      cardCvv: card.cvv,
+      midType: "THREE_D",
+    };
+
+    // 3. Call Quiklie
+    let quiklieData: Record<string, unknown>;
+    try {
+      const quiklieRes = await fetch(`${QUIKLIE_BASE}/api/v2/process-payment`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "x-source": "api",
+        },
+        body: JSON.stringify(quikliePayload),
+      });
+
+      quiklieData = await quiklieRes.json();
+      console.log("[orders/quiklie] response statusCode:", quiklieData.statusCode, "status:", quiklieData.status);
+    } catch (fetchErr) {
+      console.error("[orders/quiklie] network error:", fetchErr);
+      return NextResponse.json({ ok: false, error: "Payment gateway unreachable. Please try again." }, { status: 502 });
     }
 
-    // Discount line item (negative price — reduces total on PsiFi checkout)
-    const discountNum = parseAmt(discountAmount);
-    if (discountNum > 0) {
-      psifiItems.push({
-        name: `Discount${discountCode ? ` — ${discountCode}` : ""}`,
-        price: -discountNum,
-        quantity: 1,
+    const statusCode = Number(quiklieData.statusCode);
+    const qkpaymentId = quiklieData.qkpaymentId as string | undefined;
+
+    // Store Quiklie payment ID → orderId for webhook lookup
+    if (qkpaymentId) {
+      await kv.set(`quiklie:tx:${qkpaymentId}`, order.id, { ex: 60 * 60 * 48 });
+      // Also index by our transactionReferenceId (= orderId) in case Quiklie echoes it back
+      await kv.set(`quiklie:ref:${order.id}`, order.id, { ex: 60 * 60 * 48 });
+    }
+
+    // 4. Handle Quiklie response
+    // statusCode 1 = SUCCESS
+    if (statusCode === 1 || (quiklieData.status as string)?.toUpperCase() === "SUCCESS") {
+      await updateOrderStatus(order.id, "paid");
+      const paidOrder = { ...order, status: "paid" as const };
+      createShipStationOrder(paidOrder).catch((e) => console.error("[quiklie] ShipStation:", e));
+      await Promise.allSettled([
+        sendCustomerOrderEmail(paidOrder),
+        sendAdminOrderEmail(paidOrder),
+      ]);
+      return NextResponse.json({ ok: true, orderId: order.id, paid: true });
+    }
+
+    // statusCode 2 = 3DS required — redirect customer to Quiklie 3DS page
+    if (statusCode === 2) {
+      const redirectUrl = quiklieData.quikleeRedirectUrl as string;
+      return NextResponse.json({ ok: true, orderId: order.id, requires3DS: true, redirectUrl });
+    }
+
+    // statusCode 3 = OTP required
+    if (statusCode === 3) {
+      return NextResponse.json({
+        ok: true,
+        orderId: order.id,
+        requiresOTP: true,
+        transactionId: qkpaymentId,
       });
     }
 
-    // 3. Create PsiFi checkout session
-    const apiKey = process.env.PSIFI_API_KEY;
-    if (!apiKey) {
-      // Fallback: no PsiFi key configured — send to order confirmation directly
-      // (useful for local dev; in production this should never happen)
-      console.warn("[orders] PSIFI_API_KEY not set — skipping payment redirect");
-      return NextResponse.json({ ok: true, orderId: order.id, checkout_url: null });
+    // statusCode 5 = DECLINED
+    if (statusCode === 5) {
+      return NextResponse.json({
+        ok: false,
+        error: "Your card was declined. Please check your details or try a different card.",
+      }, { status: 402 });
     }
 
-    const psifiRes = await fetch("https://api.psifi.app/api/v2/checkout-sessions", {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        items: psifiItems,
-        success_url: `${SITE}/order-confirmation?id=${order.id}`,
-        cancel_url: `${SITE}/checkout`,
-        // Pass metadata so PsiFi echoes it back in the webhook
-        metadata: { orderId: order.id },
-      }),
-    });
-
-    if (!psifiRes.ok) {
-      const errText = await psifiRes.text();
-      console.error("[orders] PsiFi session creation failed:", psifiRes.status, errText);
-      // Don't fail the whole order — return orderId so customer can at least see confirmation
-      return NextResponse.json({ ok: true, orderId: order.id, checkout_url: null });
+    // statusCode 4 = PENDING (async — wait for webhook)
+    if (statusCode === 4) {
+      return NextResponse.json({ ok: true, orderId: order.id, pending: true });
     }
 
-    const psifiData = await psifiRes.json();
-    const checkoutUrl: string = psifiData.checkout_url ?? psifiData.url ?? psifiData.checkoutUrl;
-    const sessionId: string = psifiData.id ?? psifiData.session_id ?? psifiData.sessionId;
+    // Unknown / error response
+    const msg = (quiklieData.message as string) || "Payment could not be processed. Please try again.";
+    console.error("[orders/quiklie] unexpected statusCode:", statusCode, quiklieData);
+    return NextResponse.json({ ok: false, error: msg }, { status: 402 });
 
-    // 4. Store session → orderId mapping for webhook lookup (48h TTL)
-    if (sessionId) {
-      await kv.set(`psifi:session:${sessionId}`, order.id, { ex: 60 * 60 * 48 });
-    }
-
-    return NextResponse.json({ ok: true, orderId: order.id, checkout_url: checkoutUrl });
   } catch (err) {
     console.error("[POST /api/orders]", err);
     return NextResponse.json({ ok: false, error: "Server error" }, { status: 500 });
@@ -130,11 +194,9 @@ export async function GET(req: NextRequest) {
   const cookie = req.headers.get("cookie") ?? "";
   const token = cookie.match(/awaken_admin=([^;]+)/)?.[1];
   const expected = process.env.ADMIN_SESSION_TOKEN;
-
   if (!expected || token !== expected) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
-
   const orders = await listOrders();
   return NextResponse.json({ ok: true, orders });
 }

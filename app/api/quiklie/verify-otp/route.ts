@@ -1,0 +1,64 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getOrder, updateOrderStatus } from "@/lib/db";
+import { sendCustomerOrderEmail, sendAdminOrderEmail } from "@/lib/order-emails";
+import { createShipStationOrder } from "@/lib/shipstation";
+
+// POST /api/quiklie/verify-otp
+// Called from CheckoutForm when Quiklie returns statusCode 3 (OTP required)
+// body: { transactionId: string; otp: string; orderId: string }
+export async function POST(req: NextRequest) {
+  try {
+    const { transactionId, otp, orderId } = await req.json();
+
+    if (!transactionId || !otp || !orderId) {
+      return NextResponse.json({ ok: false, error: "Missing fields" }, { status: 400 });
+    }
+
+    const apiKey = process.env.QUIKLIE_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json({ ok: false, error: "Payment not configured" }, { status: 500 });
+    }
+
+    // Call Quiklie OTP verification
+    const res = await fetch("https://api.quiklie.com/api/v1/verify-otp", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "x-source": "api",
+      },
+      body: JSON.stringify({ transactionId, otp }),
+    });
+
+    const data = await res.json();
+    console.log("[verify-otp] response:", data.approved, data.status);
+
+    if (!data.approved) {
+      return NextResponse.json({
+        ok: false,
+        error: data.message || "Incorrect OTP. Please try again.",
+      }, { status: 402 });
+    }
+
+    // OTP approved — mark order paid, push to ShipStation, send emails
+    const order = await getOrder(orderId);
+    if (!order) {
+      return NextResponse.json({ ok: false, error: "Order not found" }, { status: 404 });
+    }
+
+    if (order.status !== "paid" && order.status !== "fulfilled") {
+      await updateOrderStatus(orderId, "paid");
+      const paidOrder = { ...order, status: "paid" as const };
+      createShipStationOrder(paidOrder).catch((e) => console.error("[verify-otp] ShipStation:", e));
+      await Promise.allSettled([
+        sendCustomerOrderEmail(paidOrder),
+        sendAdminOrderEmail(paidOrder),
+      ]);
+    }
+
+    return NextResponse.json({ ok: true, orderId });
+  } catch (err) {
+    console.error("[POST /api/quiklie/verify-otp]", err);
+    return NextResponse.json({ ok: false, error: "Server error" }, { status: 500 });
+  }
+}

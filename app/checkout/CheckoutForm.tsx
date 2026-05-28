@@ -40,6 +40,22 @@ export default function CheckoutForm() {
     zip: "",
     notes: "",
   });
+
+  // Card details
+  const [card, setCard] = useState({
+    number: "",
+    holderName: "",
+    expiryMonth: "",
+    expiryYear: "",
+    cvv: "",
+  });
+
+  // OTP flow state (statusCode 3)
+  const [otpState, setOtpState] = useState<{ transactionId: string; orderId: string } | null>(null);
+  const [otpValue, setOtpValue] = useState("");
+  const [otpError, setOtpError] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -55,6 +71,17 @@ export default function CheckoutForm() {
 
   function handleField(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+  }
+
+  // ── Card helpers ───────────────────────────────────────────────────────────
+  function handleCardNumber(e: React.ChangeEvent<HTMLInputElement>) {
+    const digits = e.target.value.replace(/\D/g, "").slice(0, 16);
+    const formatted = digits.replace(/(.{4})/g, "$1 ").trim();
+    setCard((c) => ({ ...c, number: formatted }));
+  }
+
+  function handleCardField(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+    setCard((c) => ({ ...c, [e.target.name]: e.target.value }));
   }
 
   // ── Totals ────────────────────────────────────────────────────────────────
@@ -122,7 +149,11 @@ export default function CheckoutForm() {
       return;
     }
     if (!form.name || !form.email || !form.line1 || !form.city || !form.state || !form.zip) {
-      setError("Please fill in all required fields.");
+      setError("Please fill in all required shipping fields.");
+      return;
+    }
+    if (!card.number || !card.holderName || !card.expiryMonth || !card.expiryYear || !card.cvv) {
+      setError("Please fill in all card details.");
       return;
     }
 
@@ -145,24 +176,75 @@ export default function CheckoutForm() {
           discountAmount: discountAmount > 0 ? fmtPrice(discountAmount) : undefined,
           shippingCost: fmtPrice(shipping.cost),
           orderTotal: fmtPrice(orderTotal),
+          card: {
+            number: card.number.replace(/\s/g, ""),
+            holderName: card.holderName,
+            expiryMonth: card.expiryMonth,
+            expiryYear: card.expiryYear,
+            cvv: card.cvv,
+          },
         }),
       });
 
       const data = await res.json();
-      if (!data.ok) throw new Error(data.error ?? "Unknown error");
+
+      // Declined or error
+      if (!data.ok) {
+        setError(data.error ?? "Payment failed. Please try again.");
+        setLoading(false);
+        return;
+      }
 
       clearCart();
 
-      // Redirect to PsiFi hosted checkout for card payment
-      if (data.checkout_url) {
-        window.location.href = data.checkout_url;
-      } else {
-        // Fallback (e.g. local dev with no PsiFi key)
-        router.push(`/order-confirmation?id=${data.orderId}`);
+      // 3DS required — redirect to Quiklie authentication page
+      if (data.requires3DS && data.redirectUrl) {
+        window.location.href = data.redirectUrl;
+        return;
       }
+
+      // OTP required — show OTP input
+      if (data.requiresOTP && data.transactionId) {
+        setOtpState({ transactionId: data.transactionId, orderId: data.orderId });
+        setLoading(false);
+        return;
+      }
+
+      // Direct success or pending
+      router.push(`/order-confirmation?id=${data.orderId}`);
+
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
       setLoading(false);
+    }
+  }
+
+  // ── OTP Submit ────────────────────────────────────────────────────────────
+  async function handleOtpSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!otpState) return;
+    setOtpError("");
+    setOtpLoading(true);
+    try {
+      const res = await fetch("/api/quiklie/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          transactionId: otpState.transactionId,
+          otp: otpValue,
+          orderId: otpState.orderId,
+        }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setOtpError(data.error ?? "Invalid OTP. Please try again.");
+        setOtpLoading(false);
+        return;
+      }
+      router.push(`/order-confirmation?id=${otpState.orderId}`);
+    } catch {
+      setOtpError("Network error. Please try again.");
+      setOtpLoading(false);
     }
   }
 
@@ -374,12 +456,121 @@ export default function CheckoutForm() {
         />
       </div>
 
+      {/* ── Payment details ── */}
+      <div>
+        <p className="font-mono text-accent text-xs tracking-[0.25em] mb-6">— PAYMENT DETAILS —</p>
+
+        {/* Card number */}
+        <div className="mb-4">
+          <label className="block font-mono text-bone text-xs tracking-wider uppercase mb-2">
+            Card Number *
+          </label>
+          <div className="relative">
+            <input
+              type="text"
+              name="number"
+              inputMode="numeric"
+              autoComplete="cc-number"
+              value={card.number}
+              onChange={handleCardNumber}
+              placeholder="1234 5678 9012 3456"
+              maxLength={19}
+              className="w-full bg-carbon border border-slate text-paper placeholder-bone/30 font-mono text-sm px-4 h-11 focus:outline-none focus:border-accent transition-colors pr-24"
+            />
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+              <span className="font-mono text-bone/30 text-[10px] tracking-widest">VISA</span>
+              <span className="font-mono text-bone/30 text-[10px] tracking-widest">MC</span>
+              <span className="font-mono text-bone/30 text-[10px] tracking-widest">AMEX</span>
+            </span>
+          </div>
+        </div>
+
+        {/* Cardholder name */}
+        <div className="mb-4">
+          <label className="block font-mono text-bone text-xs tracking-wider uppercase mb-2">
+            Cardholder Name *
+          </label>
+          <input
+            type="text"
+            name="holderName"
+            autoComplete="cc-name"
+            value={card.holderName}
+            onChange={handleCardField}
+            placeholder="Name as it appears on card"
+            className="w-full bg-carbon border border-slate text-paper placeholder-bone/30 font-sans text-sm px-4 h-11 focus:outline-none focus:border-accent transition-colors"
+          />
+        </div>
+
+        {/* Expiry + CVV */}
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <label className="block font-mono text-bone text-xs tracking-wider uppercase mb-2">
+              Month *
+            </label>
+            <select
+              name="expiryMonth"
+              value={card.expiryMonth}
+              onChange={handleCardField}
+              className="w-full bg-carbon border border-slate text-paper font-mono text-sm px-3 h-11 focus:outline-none focus:border-accent transition-colors appearance-none"
+            >
+              <option value="">MM</option>
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                <option key={m} value={String(m).padStart(2, "0")}>
+                  {String(m).padStart(2, "0")}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block font-mono text-bone text-xs tracking-wider uppercase mb-2">
+              Year *
+            </label>
+            <select
+              name="expiryYear"
+              value={card.expiryYear}
+              onChange={handleCardField}
+              className="w-full bg-carbon border border-slate text-paper font-mono text-sm px-3 h-11 focus:outline-none focus:border-accent transition-colors appearance-none"
+            >
+              <option value="">YYYY</option>
+              {Array.from({ length: 12 }, (_, i) => new Date().getFullYear() + i).map((y) => (
+                <option key={y} value={String(y)}>{y}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block font-mono text-bone text-xs tracking-wider uppercase mb-2">
+              CVV *
+            </label>
+            <input
+              type="text"
+              name="cvv"
+              inputMode="numeric"
+              autoComplete="cc-csc"
+              value={card.cvv}
+              onChange={handleCardField}
+              placeholder="123"
+              maxLength={4}
+              className="w-full bg-carbon border border-slate text-paper placeholder-bone/30 font-mono text-sm px-4 h-11 focus:outline-none focus:border-accent transition-colors"
+            />
+          </div>
+        </div>
+
+        {/* Security note */}
+        <div className="mt-4 flex items-center gap-2">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-accent/60 shrink-0">
+            <path d="M12 2L4 6v6c0 5.25 3.5 10.15 8 11.35C16.5 22.15 20 17.25 20 12V6l-8-4z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square"/>
+          </svg>
+          <p className="font-mono text-bone/40 text-[10px] tracking-wider">
+            256-BIT SSL ENCRYPTED · YOUR CARD DATA IS NEVER STORED
+          </p>
+        </div>
+      </div>
+
       {/* ── Disclaimer ── */}
       <div className="bg-carbon border border-slate p-4">
         <p className="font-mono text-white/40 text-[11px] tracking-widest uppercase leading-relaxed">
           By placing this order you confirm all products are for in-vitro research use only and not for
-          human or veterinary consumption. You will be redirected to our secure payment page to complete
-          your purchase via Visa, Mastercard, or Amex.
+          human or veterinary consumption. Payment is processed securely via Visa, Mastercard, or Amex.
         </p>
       </div>
 
@@ -395,11 +586,67 @@ export default function CheckoutForm() {
         className="w-full bg-accent text-obsidian font-semibold h-14 min-h-[44px] text-base hover:bg-accent/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading
-          ? "Redirecting to payment..."
+          ? "Processing payment..."
           : shippingReady
           ? `Pay Now — ${fmtPrice(orderTotal)}`
           : `Pay Now — ${fmtPrice(afterDiscount)} + shipping`}
       </button>
+
+      {/* ── OTP Modal ── */}
+      {otpState && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
+          <div className="bg-obsidian border border-slate w-full max-w-sm p-8">
+            <p className="font-mono text-accent text-xs tracking-[0.25em] mb-2">— VERIFICATION REQUIRED —</p>
+            <h2 className="font-sans text-paper text-xl font-semibold mb-2">Enter Your OTP</h2>
+            <p className="font-sans text-bone text-sm mb-6">
+              Your bank sent a one-time password to your registered phone or email. Enter it below to complete your purchase.
+            </p>
+
+            <form onSubmit={handleOtpSubmit} className="space-y-4">
+              <div>
+                <label className="block font-mono text-bone text-xs tracking-wider uppercase mb-2">
+                  One-Time Password *
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={otpValue}
+                  onChange={(e) => setOtpValue(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                  placeholder="e.g. 123456"
+                  autoFocus
+                  className="w-full bg-carbon border border-slate text-paper placeholder-bone/30 font-mono text-lg tracking-[0.3em] text-center px-4 h-14 focus:outline-none focus:border-accent transition-colors"
+                />
+              </div>
+
+              {otpError && (
+                <p className="font-mono text-red-400 text-[11px] border border-red-400/30 bg-red-400/10 px-3 py-2">
+                  {otpError}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={otpLoading || otpValue.length < 4}
+                className="w-full bg-accent text-obsidian font-semibold h-12 text-sm hover:bg-accent/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {otpLoading ? "Verifying…" : "Verify & Complete Order"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setOtpState(null);
+                  setOtpValue("");
+                  setOtpError("");
+                }}
+                className="w-full font-mono text-bone/50 text-xs hover:text-bone transition-colors py-2"
+              >
+                Cancel
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </form>
   );
 }
