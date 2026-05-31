@@ -56,6 +56,9 @@ export default function CheckoutForm() {
   const [otpError, setOtpError] = useState("");
   const [otpLoading, setOtpLoading] = useState(false);
 
+  // Payment method
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "zelle">("card");
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -92,7 +95,9 @@ export default function CheckoutForm() {
   // Only show/add shipping once city + state are filled in
   const shippingReady = form.city.trim().length > 0 && form.state.trim().length > 0;
   const shippingCost = shippingReady ? shipping.cost : 0;
-  const orderTotal = afterDiscount + shippingCost;
+  const baseTotal = afterDiscount + shippingCost;
+  const processingFee = paymentMethod === "card" ? baseTotal * 0.04 : 0;
+  const orderTotal = baseTotal + processingFee;
 
   function fmtPrice(n: number) {
     return `$${n.toFixed(2)}`;
@@ -152,7 +157,7 @@ export default function CheckoutForm() {
       setError("Please fill in all required shipping fields.");
       return;
     }
-    if (!card.number || !card.holderName || !card.expiryMonth || !card.expiryYear || !card.cvv) {
+    if (paymentMethod === "card" && (!card.number || !card.holderName || !card.expiryMonth || !card.expiryYear || !card.cvv)) {
       setError("Please fill in all card details.");
       return;
     }
@@ -175,14 +180,16 @@ export default function CheckoutForm() {
           discountCode: appliedCode || undefined,
           discountAmount: discountAmount > 0 ? fmtPrice(discountAmount) : undefined,
           shippingCost: fmtPrice(shipping.cost),
+          processingFee: processingFee > 0 ? fmtPrice(processingFee) : undefined,
           orderTotal: fmtPrice(orderTotal),
-          card: {
+          paymentMethod,
+          card: paymentMethod === "card" ? {
             number: card.number.replace(/\s/g, ""),
             holderName: card.holderName,
             expiryMonth: card.expiryMonth,
             expiryYear: card.expiryYear,
             cvv: card.cvv,
-          },
+          } : undefined,
         }),
       });
 
@@ -196,6 +203,12 @@ export default function CheckoutForm() {
       }
 
       clearCart();
+
+      // Zelle — go to confirmation with zelle instructions
+      if (data.zelle) {
+        router.push(`/order-confirmation?id=${data.orderId}&method=zelle`);
+        return;
+      }
 
       // 3DS required — redirect to Quiklie authentication page
       if (data.requires3DS && data.redirectUrl) {
@@ -211,7 +224,7 @@ export default function CheckoutForm() {
       }
 
       // Direct success or pending
-      router.push(`/order-confirmation?id=${data.orderId}`);
+      router.push(`/order-confirmation?id=${data.orderId}&method=card`);
 
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
@@ -394,6 +407,15 @@ export default function CheckoutForm() {
               </span>
             </div>
 
+            {paymentMethod === "card" && shippingReady && (
+              <div className="flex justify-between items-center">
+                <span className="font-mono text-bone/60 text-xs tracking-wider uppercase">
+                  Card Processing (4%)
+                </span>
+                <span className="font-mono text-bone/60 text-sm">{fmtPrice(processingFee)}</span>
+              </div>
+            )}
+
             <div className="flex justify-between items-center border-t border-slate pt-3 mt-1">
               <span className="font-mono text-bone text-xs tracking-wider uppercase">Order Total</span>
               <span className="font-mono text-accent text-xl font-bold">
@@ -456,9 +478,56 @@ export default function CheckoutForm() {
         />
       </div>
 
-      {/* ── Payment details ── */}
+      {/* ── Payment method ── */}
       <div>
-        <p className="font-mono text-accent text-xs tracking-[0.25em] mb-6">— PAYMENT DETAILS —</p>
+        <p className="font-mono text-accent text-xs tracking-[0.25em] mb-6">— PAYMENT METHOD —</p>
+        <div className="grid grid-cols-2 gap-3 mb-2">
+          <button
+            type="button"
+            onClick={() => setPaymentMethod("card")}
+            className={`border p-4 text-left transition-colors ${
+              paymentMethod === "card"
+                ? "border-accent bg-accent/10"
+                : "border-slate hover:border-accent/50"
+            }`}
+          >
+            <p className={`font-mono text-xs tracking-wider uppercase mb-1 ${paymentMethod === "card" ? "text-accent" : "text-bone"}`}>
+              💳 Credit / Debit Card
+            </p>
+            <p className="font-sans text-bone/50 text-xs">Visa, Mastercard, Amex</p>
+            <p className="font-mono text-bone/40 text-[10px] mt-1">+4% processing fee</p>
+          </button>
+          <button
+            type="button"
+            onClick={() => setPaymentMethod("zelle")}
+            className={`border p-4 text-left transition-colors ${
+              paymentMethod === "zelle"
+                ? "border-accent bg-accent/10"
+                : "border-slate hover:border-accent/50"
+            }`}
+          >
+            <p className={`font-mono text-xs tracking-wider uppercase mb-1 ${paymentMethod === "zelle" ? "text-accent" : "text-bone"}`}>
+              📲 Zelle
+            </p>
+            <p className="font-sans text-bone/50 text-xs">No processing fee</p>
+            <p className="font-mono text-bone/40 text-[10px] mt-1">Ships after payment confirmed</p>
+          </button>
+        </div>
+
+        {paymentMethod === "zelle" && (
+          <div className="bg-carbon border border-accent/20 px-4 py-3 mt-3">
+            <p className="font-mono text-accent text-[10px] tracking-wider uppercase mb-1">Zelle Instructions</p>
+            <p className="font-sans text-bone text-xs leading-relaxed">
+              After placing your order you&apos;ll receive an email with the exact total. Send via Zelle to{" "}
+              <strong className="text-paper">awakenbiolabs</strong> (Awaken Biolabs LLC). Your order ships once payment is confirmed.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* ── Payment details (card only) ── */}
+      {paymentMethod === "card" && <div>
+        <p className="font-mono text-accent text-xs tracking-[0.25em] mb-6">— CARD DETAILS —</p>
 
         {/* Card number */}
         <div className="mb-4">
@@ -564,13 +633,16 @@ export default function CheckoutForm() {
             256-BIT SSL ENCRYPTED · YOUR CARD DATA IS NEVER STORED
           </p>
         </div>
-      </div>
+      </div>}
 
       {/* ── Disclaimer ── */}
       <div className="bg-carbon border border-slate p-4">
         <p className="font-mono text-white/40 text-[11px] tracking-widest uppercase leading-relaxed">
           By placing this order you confirm all products are for in-vitro research use only and not for
-          human or veterinary consumption. Payment is processed securely via Visa, Mastercard, or Amex.
+          human or veterinary consumption.{" "}
+          {paymentMethod === "card"
+            ? "Payment is processed securely via Visa, Mastercard, or Amex. A 4% card processing fee is included in your total."
+            : "You will receive Zelle payment instructions by email after placing your order."}
         </p>
       </div>
 
@@ -586,10 +658,14 @@ export default function CheckoutForm() {
         className="w-full bg-accent text-obsidian font-semibold h-14 min-h-[44px] text-base hover:bg-accent/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading
-          ? "Processing payment..."
+          ? paymentMethod === "card" ? "Processing payment..." : "Placing order..."
+          : paymentMethod === "zelle"
+          ? shippingReady
+            ? `Place Order — Pay via Zelle (${fmtPrice(orderTotal)})`
+            : `Place Order — Pay via Zelle`
           : shippingReady
-          ? `Pay Now — ${fmtPrice(orderTotal)}`
-          : `Pay Now — ${fmtPrice(afterDiscount)} + shipping`}
+          ? `Pay with Card — ${fmtPrice(orderTotal)}`
+          : `Pay with Card — ${fmtPrice(afterDiscount)} + shipping`}
       </button>
 
       {/* ── OTP Modal ── */}

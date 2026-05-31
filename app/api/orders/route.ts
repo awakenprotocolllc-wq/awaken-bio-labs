@@ -8,14 +8,17 @@ const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://awakenbiolabs.com";
 const QUIKLIE_BASE = "https://api.quiklie.com";
 
 // ---------------------------------------------------------------------------
-// POST /api/orders — create order and process payment via Quiklie S2S
+// POST /api/orders — create order and process payment
+// paymentMethod "zelle" → save order + send Zelle instructions, no card processing
+// paymentMethod "card"  → Quiklie S2S with 4% processing fee baked into total
 // ---------------------------------------------------------------------------
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const {
       customer, shipping, items, notes,
-      discountCode, discountAmount, shippingCost, orderTotal,
+      discountCode, discountAmount, shippingCost, processingFee, orderTotal,
+      paymentMethod, // "card" | "zelle"
       card, // { number, holderName, expiryMonth, expiryYear, cvv }
     } = body ?? {};
 
@@ -28,7 +31,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Missing required fields" }, { status: 400 });
     }
 
-    if (!card?.number || !card?.holderName || !card?.expiryMonth || !card?.expiryYear || !card?.cvv) {
+    if (paymentMethod === "card" && (!card?.number || !card?.holderName || !card?.expiryMonth || !card?.expiryYear || !card?.cvv)) {
       return NextResponse.json({ ok: false, error: "Card details are required" }, { status: 400 });
     }
 
@@ -36,6 +39,33 @@ export async function POST(req: NextRequest) {
     const subtotal = calcSubtotal(typedItems);
     const refCode = req.cookies.get("awaken_ref")?.value || discountCode || undefined;
 
+    // ── Zelle path ──────────────────────────────────────────────────────────
+    if (paymentMethod === "zelle") {
+      const order = await createOrder({
+        customer,
+        shipping,
+        items: typedItems,
+        subtotal,
+        notes: notes || undefined,
+        refCode,
+        discountCode: discountCode || undefined,
+        discountAmount: discountAmount || undefined,
+        shippingCost: shippingCost || undefined,
+        orderTotal: orderTotal || undefined,
+        paymentMethod: "zelle",
+      });
+
+      // Send emails immediately — customer gets Zelle instructions
+      await Promise.allSettled([
+        sendCustomerOrderEmail(order),
+        sendAdminOrderEmail(order),
+      ]);
+
+      console.log("[orders/zelle] Order created, awaiting Zelle payment:", order.id);
+      return NextResponse.json({ ok: true, orderId: order.id, zelle: true });
+    }
+
+    // ── Card path (Quiklie S2S) ──────────────────────────────────────────────
     // 1. Save the order (pending_payment — confirmed only after Quiklie SUCCESS)
     const order = await createOrder({
       customer,
@@ -47,7 +77,9 @@ export async function POST(req: NextRequest) {
       discountCode: discountCode || undefined,
       discountAmount: discountAmount || undefined,
       shippingCost: shippingCost || undefined,
+      processingFee: processingFee || undefined,
       orderTotal: orderTotal || undefined,
+      paymentMethod: "card",
     });
 
     // 2. Build Quiklie payment request
@@ -59,7 +91,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Payment processor not configured. Please contact support." }, { status: 500 });
     }
 
-    // Parse total amount (use orderTotal if available, else subtotal)
+    // Parse total amount (use orderTotal if available, else subtotal) — includes 4% fee
     const totalStr = orderTotal ?? subtotal;
     const amount = parseFloat(totalStr.replace(/[^0-9.]/g, "")) || 0;
 
@@ -93,7 +125,7 @@ export async function POST(req: NextRequest) {
       country: "US",
       ipAddress,
       callbackUrl: `${SITE}/api/webhooks/quiklie`,
-      redirectUrl: `${SITE}/order-confirmation?id=${order.id}`,
+      redirectUrl: `${SITE}/order-confirmation?id=${order.id}&method=card`,
       customerReferenceId: `CUST-${order.id}`,
       transactionReferenceId: order.id,
       cardNumber,
@@ -130,7 +162,6 @@ export async function POST(req: NextRequest) {
     // Store Quiklie payment ID → orderId for webhook lookup
     if (qkpaymentId) {
       await kv.set(`quiklie:tx:${qkpaymentId}`, order.id, { ex: 60 * 60 * 48 });
-      // Also index by our transactionReferenceId (= orderId) in case Quiklie echoes it back
       await kv.set(`quiklie:ref:${order.id}`, order.id, { ex: 60 * 60 * 48 });
     }
 

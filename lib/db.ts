@@ -36,6 +36,8 @@ export type Order = {
   refCode?: string;      // affiliate tracking code from ?ref= cookie
   discountCode?: string; // affiliate code typed at checkout
   discountAmount?: string; // e.g. "$10.00"
+  paymentMethod?: "card" | "zelle";
+  processingFee?: string; // e.g. "$4.18" — 4% card fee
 };
 
 // ---------------------------------------------------------------------------

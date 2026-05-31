@@ -65,12 +65,30 @@ export async function sendCustomerOrderEmail(order: Order) {
     Your payment has been received and your order is confirmed. We&apos;re preparing your package and will ship it within 1 business day. You&apos;ll receive a shipping notification once it&apos;s on its way.
   </p>
 
-  <!-- Payment confirmed badge -->
-  <div style="background:#0d2e1a;border:1px solid #1a5c35;padding:16px 20px;margin:0 0 28px;display:flex;align-items:center;gap:12px;">
+  <!-- Payment status badge -->
+  ${order.paymentMethod === "zelle" ? `
+  <div style="background:#1a2a3a;border:1px solid #1a4a7a;padding:16px 20px;margin:0 0 28px;">
+    <p style="font-family:'Courier New',monospace;color:#57C7D6;font-size:12px;letter-spacing:0.15em;text-transform:uppercase;margin:0 0 10px;">
+      📲 &nbsp;Action Required — Send Zelle Payment
+    </p>
+    <p style="font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;margin:0 0 6px;">
+      Amount: <strong style="color:#57C7D6;">${displayTotal}</strong>
+    </p>
+    <p style="font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;margin:0 0 6px;">
+      Zelle ID: <strong style="color:#F4F4F2;">awakenbiolabs</strong>
+    </p>
+    <p style="font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;margin:0 0 6px;">
+      Name: <strong style="color:#F4F4F2;">AWAKEN BIOLABS LLC</strong>
+    </p>
+    <p style="font-family:'Courier New',monospace;color:#D9D9DC;font-size:11px;margin:12px 0 0;opacity:0.7;">
+      Reply to this email with a screenshot of your Zelle confirmation. Your order ships once payment is verified.
+    </p>
+  </div>` : `
+  <div style="background:#0d2e1a;border:1px solid #1a5c35;padding:16px 20px;margin:0 0 28px;">
     <p style="font-family:'Courier New',monospace;color:#2ecc71;font-size:12px;letter-spacing:0.15em;text-transform:uppercase;margin:0;">
       ✓ &nbsp;Payment confirmed &nbsp;·&nbsp; ${displayTotal}
     </p>
-  </div>
+  </div>`}
 
   <!-- Order Summary -->
   <div style="background:#141518;border:1px solid #2A2D33;margin:0 0 24px;">
@@ -105,8 +123,13 @@ export async function sendCustomerOrderEmail(order: Order) {
           <td style="padding:4px 0;font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;">Shipping — UPS 2-Day</td>
           <td style="padding:4px 0;font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;text-align:right;">${order.shippingCost}</td>
         </tr>` : ""}
+        ${order.processingFee ? `
         <tr>
-          <td style="padding:10px 0 4px;border-top:1px solid #57C7D6;font-family:'Courier New',monospace;color:#D9D9DC;font-size:13px;font-weight:bold;text-transform:uppercase;letter-spacing:0.1em;">Total Charged</td>
+          <td style="padding:4px 0;font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;">Card Processing (4%)</td>
+          <td style="padding:4px 0;font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;text-align:right;">${order.processingFee}</td>
+        </tr>` : ""}
+        <tr>
+          <td style="padding:10px 0 4px;border-top:1px solid #57C7D6;font-family:'Courier New',monospace;color:#D9D9DC;font-size:13px;font-weight:bold;text-transform:uppercase;letter-spacing:0.1em;">${order.paymentMethod === "zelle" ? "Order Total (Due via Zelle)" : "Total Charged"}</td>
           <td style="padding:10px 0 4px;border-top:1px solid #57C7D6;font-family:'Courier New',monospace;color:#57C7D6;font-size:20px;font-weight:bold;text-align:right;">${displayTotal}</td>
         </tr>
       </table>
@@ -182,7 +205,10 @@ export async function sendAdminOrderEmail(order: Order) {
     </tr>
     <tr>
       <td style="padding:8px 0;color:#666;font-size:13px;">Status</td>
-      <td style="padding:8px 0;"><span style="background:#d4edda;color:#155724;padding:3px 10px;font-size:12px;font-family:'Courier New',monospace;border:1px solid #c3e6cb;">PAID — QUIKLIE</span></td>
+      <td style="padding:8px 0;">${order.paymentMethod === "zelle"
+    ? `<span style="background:#fff3cd;color:#856404;padding:3px 10px;font-size:12px;font-family:'Courier New',monospace;border:1px solid #ffc107;">AWAITING ZELLE</span>`
+    : `<span style="background:#d4edda;color:#155724;padding:3px 10px;font-size:12px;font-family:'Courier New',monospace;border:1px solid #c3e6cb;">PAID — QUIKLIE</span>`
+  }</td>
     </tr>
     <tr>
       <td style="padding:8px 0;color:#666;font-size:13px;">Total</td>
@@ -241,21 +267,33 @@ export async function sendAdminOrderEmail(order: Order) {
 
   ${order.notes ? `<h3 style="color:#0A0B0D;margin:0 0 8px;font-size:15px;">Customer Notes</h3><p style="margin:0 0 24px;padding:14px;background:#f5f5f5;font-size:14px;line-height:1.6;color:#333;">${order.notes}</p>` : ""}
 
+  ${order.paymentMethod === "zelle" ? `
+  <div style="padding:16px;background:#fff3cd;border:1px solid #ffc107;border-radius:4px;">
+    <p style="margin:0 0 8px;font-weight:bold;font-size:14px;color:#856404;">📲 Awaiting Zelle payment — do not ship yet</p>
+    <p style="margin:0;font-size:13px;color:#856404;line-height:1.6;">
+      Customer has been sent Zelle instructions. Once they send a screenshot confirmation, mark as paid and ship.
+      Manage at <a href="https://awakenbiolabs.com/admin/orders" style="color:#0070d2;">awakenbiolabs.com/admin/orders</a>.
+    </p>
+  </div>` : `
   <div style="padding:16px;background:#d4edda;border:1px solid #c3e6cb;border-radius:4px;">
     <p style="margin:0 0 8px;font-weight:bold;font-size:14px;color:#155724;">✓ Payment confirmed via Quiklie — order is ready to fulfill</p>
     <p style="margin:0;font-size:13px;color:#155724;line-height:1.6;">
       This order has been paid. Push it to ShipStation and ship. Manage at
       <a href="https://awakenbiolabs.com/admin/orders" style="color:#0070d2;">awakenbiolabs.com/admin/orders</a>.
     </p>
-  </div>
+  </div>`}
 
 </div>
 </body>
 </html>`;
 
+  const subject = order.paymentMethod === "zelle"
+    ? `New Order — Awaiting Zelle — #${order.id.toUpperCase()} | ${displayTotal}`
+    : `New Paid Order — #${order.id.toUpperCase()} | ${displayTotal}`;
+
   return sendEmail({
     to: "admin@awakenbiolabs.com",
-    subject: `New Paid Order — #${order.id.toUpperCase()} | ${displayTotal}`,
+    subject,
     html,
   });
 }
