@@ -12,7 +12,7 @@ export type Product = {
   category:
     | "GHRH/GHRP"
     | "Regeneration"
-    | "GLP-1(R)"
+    | "GLP3-R"
     | "Neuro Research"
     | "Defence Peptide Research"
     | "All Other";
@@ -55,7 +55,7 @@ export const categories = [
   "All",
   "Regeneration",
   "Neuro Research",
-  "GLP-1(R)",
+  "GLP3-R",
   "GHRH/GHRP",
   "Defence Peptide Research",
   "All Other",
@@ -79,9 +79,9 @@ export const products: Product[] = [
     price: "$102.00 – $261.00",
     priceMap: { "10mg": "$102.00", "30mg": "$261.00" },
     coaMap: { "10mg": "/coas/retatrutide-10mg.pdf", "30mg": "/coas/retatrutide-30mg.pdf" },
-    category: "GLP-1(R)",
+    category: "GLP3-R",
   },
-  { name: "5-Amino-1MQ",            strengths: ["5mg"],        price: "$70.00",          category: "GLP-1(R)" },
+  { name: "5-Amino-1MQ",            strengths: ["5mg"],        price: "$70.00",          category: "GLP3-R" },
 
   // Regeneration (formerly Repair & Recovery)
   { name: "BPC-157",                strengths: ["10mg"],       price: "$52.50",          coa: "/coas/bpc-157.pdf",  category: "Regeneration" },
