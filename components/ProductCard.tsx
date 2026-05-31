@@ -5,14 +5,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { type Product, getProductImage, slugify } from "@/lib/products";
 
-export default function ProductCard({ product, index }: { product: Product; index: number }) {
+export default function ProductCard({ product }: { product: Product }) {
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-40px" }}
-      transition={{ duration: 0.4, delay: (index % 8) * 0.05 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
       className="group relative bg-carbon border border-slate hover:border-accent transition-all duration-200 hover:-translate-y-1 overflow-hidden flex flex-col"
     >
       <Link
