@@ -6,7 +6,7 @@ import { business } from "@/lib/business";
 export const metadata = {
   title: `About · ${business.name}`,
   description:
-    "Awaken Bio Labs is a Nevada-registered research compound supplier built on third-party verified purity, full COA transparency, and uncompromising standards.",
+    "Awaken Bio Labs is a Nevada-registered research compound supplier. Every product is US-manufactured, third-party tested, and backed by a downloadable Certificate of Analysis.",
 };
 
 const standards = [
@@ -16,7 +16,7 @@ const standards = [
   },
   {
     label: "Certificate of Analysis",
-    body: "Each product ships with a batch-specific COA. No black boxes. No trust-us assurances.",
+    body: "Each product ships with a batch-specific COA from an independent US lab. Downloadable, verifiable, tied to the exact batch in your order.",
   },
   {
     label: "GMP-Standard Manufacturing",
@@ -41,8 +41,8 @@ const values = [
   },
   {
     n: "03",
-    title: "Built for Serious Work",
-    body: "We supply the people doing the actual science. No marketing fluff. No miracle claims. Just clean compound.",
+    title: "Built for the Work Itself",
+    body: "We supply the people doing the actual science. Our catalog is built around compounds with real research backing — verified purity, accurate labeling, and results you can reproduce.",
   },
 ];
 
@@ -154,10 +154,10 @@ export default function AboutPage() {
       <section className="bg-obsidian py-16 md:py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <h2 className="font-sans font-bold text-paper text-3xl sm:text-4xl md:text-5xl leading-[1] tracking-tight mb-6">
-            Serious compounds. Verifiable standards.
+            Verified compounds. Transparent standards.
           </h2>
           <p className="text-bone text-lg mb-10 max-w-xl mx-auto">
-            A focused catalog of verified research compounds. Independent COAs. For qualified in-vitro research only.
+            Every compound in our catalog is independently tested and backed by a Certificate of Analysis you can download and verify yourself.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link

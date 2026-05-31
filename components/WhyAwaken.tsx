@@ -12,22 +12,22 @@ const items = [
   {
     title: "Tested in the USA",
     body:
-      "Third-party testing is completed right here in the US by independent, accredited laboratories. We don't send samples abroad for analysis. Every Certificate of Analysis is issued by a domestic lab you can verify.",
+      "Third-party testing is completed right here in the US by independent, accredited laboratories. We don't send samples abroad for analysis. Every Certificate of Analysis is issued by a domestic lab you can look up and verify yourself.",
   },
   {
     title: "99%+ Purity, HPLC-Confirmed",
     body:
-      "Every batch independently tested by a US third-party laboratory. Certificate of Analysis available for every product. No guessing, no black boxes.",
+      "Every batch independently tested by a US third-party laboratory before it ships. Certificate of Analysis available for every product — downloadable, verifiable, tied to the specific batch you receive.",
   },
   {
     title: "Fast Reliable Fulfillment",
     body:
-      "Orders placed before 1PM ship same day via FedEx 2-Day. Cold chain handling where required. All products ship for in-vitro research use only.",
+      "Orders placed before 1PM ship same day via UPS 2-Day. Cold chain handling where required. All products ship for in-vitro research use only.",
   },
   {
-    title: "Built For Serious Researchers",
+    title: "Priced to Support Real Research",
     body:
-      "No gimmicks. No fillers. No compromises. Just the compounds serious research demands at the purity laboratories require — at prices that don't penalize you for buying American.",
+      "High-purity, US-manufactured compounds at pricing that reflects what the work actually costs. We don't mark up for the domestic label — we just don't cut corners to compete on price.",
   },
 ];
 
@@ -40,10 +40,10 @@ export default function WhyAwaken() {
         <div className="lg:col-span-2">
           <p className="font-mono text-accent text-xs tracking-[0.25em] mb-4">— WHY US —</p>
           <h2 className="font-sans font-bold text-paper text-4xl sm:text-5xl md:text-6xl leading-[1] tracking-tight">
-            Leaders In Precision.
+            What Sets Us Apart.
           </h2>
           <p className="text-bone mt-5 text-base sm:text-lg max-w-md">
-            Serious researchers choose serious suppliers.
+            We built Awaken around the standards we'd want as researchers ourselves.
           </p>
         </div>
 
