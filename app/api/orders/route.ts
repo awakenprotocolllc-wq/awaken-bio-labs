@@ -133,7 +133,7 @@ export async function POST(req: NextRequest) {
       cardExpiryMonth: String(card.expiryMonth).padStart(2, "0"),
       cardExpiryYear: String(card.expiryYear),
       cardCvv: card.cvv,
-      midType: "THREE_D",
+      // midType omitted — let Quiklie use the default MID assigned to the merchant
     };
 
     // 3. Call Quiklie
@@ -150,7 +150,7 @@ export async function POST(req: NextRequest) {
       });
 
       quiklieData = await quiklieRes.json();
-      console.log("[orders/quiklie] response statusCode:", quiklieData.statusCode, "status:", quiklieData.status);
+      console.log("[orders/quiklie] full response:", JSON.stringify(quiklieData));
     } catch (fetchErr) {
       console.error("[orders/quiklie] network error:", fetchErr);
       return NextResponse.json({ ok: false, error: "Payment gateway unreachable. Please try again." }, { status: 502 });
