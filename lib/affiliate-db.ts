@@ -279,6 +279,35 @@ export async function updateAffiliateProgram(
 }
 
 // ---------------------------------------------------------------------------
+// Payout info (ACH)
+// ---------------------------------------------------------------------------
+
+export type AffiliatePayoutInfo = {
+  holderName: string;
+  bankName: string;
+  routingNumber: string;
+  accountNumber: string;
+  accountType: "checking" | "savings";
+  updatedAt: string;
+};
+
+export async function saveAffiliatePayoutInfo(
+  affiliateId: string,
+  info: Omit<AffiliatePayoutInfo, "updatedAt">
+): Promise<void> {
+  await kv.set(`aff:payout:${affiliateId}`, {
+    ...info,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+export async function getAffiliatePayoutInfo(
+  affiliateId: string
+): Promise<AffiliatePayoutInfo | null> {
+  return kv.get<AffiliatePayoutInfo>(`aff:payout:${affiliateId}`);
+}
+
+// ---------------------------------------------------------------------------
 // Edit affiliate details (admin)
 // ---------------------------------------------------------------------------
 

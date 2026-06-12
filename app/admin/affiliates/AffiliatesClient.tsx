@@ -32,6 +32,7 @@ type ArchiveConfirm = { id: string; name: string };
 type ReOnboardConfirm = { id: string; name: string };
 type ChangePassForm = { id: string; newPassword: string; confirm: string };
 type EditForm = { id: string; name: string; email: string; affiliateCode: string; commissionRate: string };
+type PayoutModal = { id: string; name: string };
 
 export default function AffiliatesClient({
   initialApplications,
@@ -53,6 +54,9 @@ export default function AffiliatesClient({
   const [changePassError, setChangePassError] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<EditForm | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
+  const [payoutModal, setPayoutModal] = useState<PayoutModal | null>(null);
+  const [payoutData, setPayoutData] = useState<Record<string, unknown> | null>(null);
+  const [payoutLoading, setPayoutLoading] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -272,6 +276,19 @@ export default function AffiliatesClient({
     setWorking(null);
   }
 
+  async function openPayoutModal(id: string, name: string) {
+    setPayoutModal({ id, name });
+    setPayoutData(null);
+    setPayoutLoading(true);
+    try {
+      const res = await fetch(`/api/admin/affiliates/${id}/payout-info`);
+      const data = await res.json();
+      setPayoutData(data.info ?? false);
+    } finally {
+      setPayoutLoading(false);
+    }
+  }
+
   // ── Segment data ──────────────────────────────────────────────────────────
   const pending   = applications.filter((a) => a.status === "pending");
   const denied    = applications.filter((a) => a.status === "denied");
@@ -429,6 +446,49 @@ export default function AffiliatesClient({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Payout info modal */}
+      {payoutModal && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-obsidian/80 px-4">
+          <div className="bg-carbon border border-slate p-6 max-w-md w-full space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="font-mono text-accent text-[10px] tracking-[0.2em]">— PAYOUT INFO —</p>
+              <button onClick={() => setPayoutModal(null)} className="font-mono text-bone text-xs hover:text-accent">✕</button>
+            </div>
+            <p className="font-sans font-semibold text-paper">{payoutModal.name}</p>
+            {payoutLoading && <p className="font-mono text-bone text-xs">Loading…</p>}
+            {!payoutLoading && !payoutData && (
+              <div className="bg-obsidian border border-slate p-4">
+                <p className="font-mono text-bone text-sm">No payout info on file.</p>
+                <p className="font-mono text-bone/50 text-xs mt-1">Partner has not submitted ACH information yet.</p>
+              </div>
+            )}
+            {!payoutLoading && payoutData && (
+              <div className="bg-obsidian border border-slate divide-y divide-slate">
+                {[
+                  ["Account Holder", (payoutData as Record<string,string>).holderName],
+                  ["Bank Name", (payoutData as Record<string,string>).bankName || "—"],
+                  ["Routing Number", (payoutData as Record<string,string>).routingNumber],
+                  ["Account Number", (payoutData as Record<string,string>).accountNumber],
+                  ["Account Type", (payoutData as Record<string,string>).accountType?.toUpperCase()],
+                  ["Last Updated", new Date((payoutData as Record<string,string>).updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })],
+                ].map(([label, value]) => (
+                  <div key={label} className="flex items-center justify-between px-4 py-3 gap-4">
+                    <p className="font-mono text-bone text-[10px] tracking-wider uppercase shrink-0">{label}</p>
+                    <p className="font-mono text-paper text-xs text-right">{value}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button
+              onClick={() => setPayoutModal(null)}
+              className="w-full border border-slate text-bone font-mono text-xs py-2 hover:border-accent hover:text-accent transition-colors"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
@@ -759,6 +819,15 @@ export default function AffiliatesClient({
                     >
                       View Portal
                     </Link>
+                    {/* Payout Info */}
+                    <button
+                      onClick={() => openPayoutModal(aff.id, aff.name)}
+                      disabled={working === aff.id}
+                      className="font-mono text-[10px] tracking-wider text-bone border border-slate px-3 py-1.5 hover:border-accent hover:text-accent transition-colors disabled:opacity-40"
+                      title="View ACH payout info"
+                    >
+                      Payout Info
+                    </button>
                     {/* Edit details */}
                     <button
                       onClick={() => {
