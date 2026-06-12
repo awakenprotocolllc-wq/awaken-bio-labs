@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import SystemClient from "./SystemClient";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "System · Admin · Awaken Bio Labs" };
@@ -12,6 +13,3 @@ export default async function AdminSystemPage() {
   }
   return <SystemClient />;
 }
-
-// Inline client component — keeps this a single file
-import SystemClient from "./SystemClient";
