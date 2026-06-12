@@ -793,7 +793,7 @@ export default function AffiliatesClient({
                       </button>
                     )}
                     {/* Suspend / Reactivate */}
-                    {aff.status === "active" && (
+                    {(aff.status === "active" || aff.status === "pending_contract") && (
                       <button onClick={() => handleSuspend(aff.id)} disabled={working === aff.id}
                         className="font-mono text-[10px] tracking-wider text-red-400 border border-red-500/30 px-3 py-1.5 hover:bg-red-500/10 transition-colors disabled:opacity-40">
                         Suspend
