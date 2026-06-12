@@ -63,11 +63,12 @@ export async function createShipStationOrder(order: Order): Promise<void> {
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-"),
     })),
-    amountPaid: parseAmount(order.subtotal),
+    amountPaid: parseAmount(order.orderTotal ?? order.subtotal),
     paymentDate: new Date().toISOString(),
     paymentMethod: "Other",
     internalNotes: [
-      "Payment: Zelle",
+      order.paymentMethod === "zelle" ? "Payment: Zelle (awaiting confirmation)" : "Payment: Card — Quiklie",
+      order.processingFee ? `Processing fee: ${order.processingFee}` : null,
       order.notes ? `Customer note: ${order.notes}` : null,
     ]
       .filter(Boolean)
