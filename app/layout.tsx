@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
 import AgeGate from "@/components/AgeGate";
 import CookieBanner from "@/components/CookieBanner";
 import ResearchDisclaimer from "@/components/ResearchDisclaimer";
@@ -49,6 +50,7 @@ export default function RootLayout({
         {children}
         <AgeGate />
         <CookieBanner />
+        <Analytics />
       </body>
     </html>
   );
