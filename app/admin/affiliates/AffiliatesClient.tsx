@@ -178,6 +178,22 @@ export default function AffiliatesClient({
     setWorking(null);
   }
 
+  async function handleForceActivate(id: string) {
+    setWorking(id);
+    const res = await fetch(`/api/admin/affiliates/${id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "force-activate" }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      setAffiliates((prev) => prev.map((a) => a.id === id ? data.account : a));
+      showToast("Account activated ✓");
+    } else {
+      showToast(`Failed: ${data.error ?? "unknown error"}`);
+    }
+    setWorking(null);
+  }
+
   async function handleResendContract(id: string) {
     setWorking(id);
     const res = await fetch(`/api/admin/affiliates/${id}`, {
@@ -781,16 +797,26 @@ export default function AffiliatesClient({
                         → {(aff.programType ?? "ambassador") === "ambassador" ? "Licensee" : "Ambassador"}
                       </button>
                     )}
-                    {/* Resend Contract — for pending_contract accounts */}
+                    {/* pending_contract actions */}
                     {aff.status === "pending_contract" && (
-                      <button
-                        onClick={() => handleResendContract(aff.id)}
-                        disabled={working === aff.id}
-                        className="font-mono text-[10px] tracking-wider text-yellow-400 border border-yellow-500/30 px-3 py-1.5 hover:bg-yellow-500/10 transition-colors disabled:opacity-40"
-                        title="Resend contract signing link"
-                      >
-                        {working === aff.id ? "Sending…" : "Resend Contract"}
-                      </button>
+                      <>
+                        <button
+                          onClick={() => handleForceActivate(aff.id)}
+                          disabled={working === aff.id}
+                          className="font-mono text-[10px] tracking-wider text-green-400 border border-green-500/30 px-3 py-1.5 hover:bg-green-500/10 transition-colors disabled:opacity-40"
+                          title="Activate account without contract signature"
+                        >
+                          {working === aff.id ? "Activating…" : "Activate"}
+                        </button>
+                        <button
+                          onClick={() => handleResendContract(aff.id)}
+                          disabled={working === aff.id}
+                          className="font-mono text-[10px] tracking-wider text-yellow-400 border border-yellow-500/30 px-3 py-1.5 hover:bg-yellow-500/10 transition-colors disabled:opacity-40"
+                          title="Resend contract signing link"
+                        >
+                          {working === aff.id ? "Sending…" : "Resend Contract"}
+                        </button>
+                      </>
                     )}
                     {/* Suspend / Reactivate */}
                     {(aff.status === "active" || aff.status === "pending_contract") && (

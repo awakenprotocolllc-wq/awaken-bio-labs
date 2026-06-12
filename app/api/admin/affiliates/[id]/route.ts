@@ -114,6 +114,20 @@ export async function PATCH(
     return NextResponse.json({ ok: true });
   }
 
+  // --- Force activate (pending_contract → active, bypasses contract signing) ---
+  if (action === "force-activate") {
+    const aff = await getAffiliateById(params.id);
+    if (!aff) return NextResponse.json({ ok: false, error: "Affiliate not found" }, { status: 404 });
+    if (aff.status !== "pending_contract") {
+      return NextResponse.json({ ok: false, error: "Only pending_contract accounts can be force-activated" }, { status: 400 });
+    }
+    await updateAffiliateStatus(params.id, "active", {
+      contractSignedAt: new Date().toISOString(),
+    });
+    const updated = await getAffiliateById(params.id);
+    return NextResponse.json({ ok: true, account: updated });
+  }
+
   // --- Resend contract (pending_contract → fresh signing link, no status change) ---
   if (action === "resend-contract") {
     const aff = await getAffiliateById(params.id);
