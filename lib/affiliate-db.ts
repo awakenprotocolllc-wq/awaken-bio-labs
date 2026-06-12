@@ -279,6 +279,45 @@ export async function updateAffiliateProgram(
 }
 
 // ---------------------------------------------------------------------------
+// Edit affiliate details (admin)
+// ---------------------------------------------------------------------------
+
+export async function updateAffiliateDetails(
+  id: string,
+  updates: { name?: string; email?: string; affiliateCode?: string; commissionRate?: number }
+): Promise<AffiliateAccount | null> {
+  const account = await kv.get<AffiliateAccountInternal>(`aff:account:${id}`);
+  if (!account) return null;
+
+  const newEmail = updates.email ? updates.email.toLowerCase() : null;
+  const newCode = updates.affiliateCode ? updates.affiliateCode.toUpperCase() : null;
+
+  // Clean up old email index if email is changing
+  if (newEmail && newEmail !== account.email) {
+    await kv.del(`aff:email:${account.email}`);
+    await kv.set(`aff:email:${newEmail}`, id);
+  }
+
+  // Clean up old code index if code is changing
+  if (newCode && newCode !== account.affiliateCode) {
+    await kv.del(`aff:code:${account.affiliateCode}`);
+    await kv.set(`aff:code:${newCode}`, id);
+  }
+
+  const updated: AffiliateAccountInternal = {
+    ...account,
+    name: updates.name ?? account.name,
+    email: newEmail ?? account.email,
+    affiliateCode: newCode ?? account.affiliateCode,
+    commissionRate: updates.commissionRate ?? account.commissionRate,
+  };
+
+  await kv.set(`aff:account:${id}`, updated);
+  const { passwordHash, ...safe } = updated;
+  return safe;
+}
+
+// ---------------------------------------------------------------------------
 // Archive / Re-onboard
 // ---------------------------------------------------------------------------
 

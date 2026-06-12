@@ -31,6 +31,7 @@ type SwitchConfirm = { id: string; name: string; currentProgram: "ambassador" | 
 type ArchiveConfirm = { id: string; name: string };
 type ReOnboardConfirm = { id: string; name: string };
 type ChangePassForm = { id: string; newPassword: string; confirm: string };
+type EditForm = { id: string; name: string; email: string; affiliateCode: string; commissionRate: string };
 
 export default function AffiliatesClient({
   initialApplications,
@@ -50,6 +51,8 @@ export default function AffiliatesClient({
   const [reOnboardConfirm, setReOnboardConfirm] = useState<ReOnboardConfirm | null>(null);
   const [changePassForm, setChangePassForm] = useState<ChangePassForm | null>(null);
   const [changePassError, setChangePassError] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<EditForm | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -217,6 +220,42 @@ export default function AffiliatesClient({
     setWorking(null);
   }
 
+  async function handleEditSave(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editForm) return;
+    setEditError(null);
+    const rate = parseFloat(editForm.commissionRate);
+    if (!editForm.name.trim() || !editForm.email.trim() || !editForm.affiliateCode.trim()) {
+      setEditError("All fields are required.");
+      return;
+    }
+    if (isNaN(rate) || rate <= 0 || rate > 100) {
+      setEditError("Commission must be between 1 and 100.");
+      return;
+    }
+    setWorking(editForm.id);
+    const res = await fetch(`/api/admin/affiliates/${editForm.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "update-details",
+        name: editForm.name.trim(),
+        email: editForm.email.trim(),
+        affiliateCode: editForm.affiliateCode.trim().toUpperCase(),
+        commissionRate: rate / 100,
+      }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      setAffiliates((prev) => prev.map((a) => a.id === editForm.id ? data.account : a));
+      setEditForm(null);
+      showToast("Details updated ✓");
+    } else {
+      setEditError(data.error ?? "Failed to save changes.");
+    }
+    setWorking(null);
+  }
+
   // ── Segment data ──────────────────────────────────────────────────────────
   const pending   = applications.filter((a) => a.status === "pending");
   const denied    = applications.filter((a) => a.status === "denied");
@@ -368,6 +407,76 @@ export default function AffiliatesClient({
                 <button
                   type="button"
                   onClick={() => { setChangePassForm(null); setChangePassError(null); }}
+                  className="border border-slate text-bone font-mono text-xs px-5 h-10 min-h-[44px] hover:border-accent hover:text-accent transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit details modal */}
+      {editForm && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-obsidian/80 px-4">
+          <div className="bg-carbon border border-slate p-6 max-w-md w-full space-y-4">
+            <p className="font-mono text-accent text-[10px] tracking-[0.2em]">— EDIT PARTNER DETAILS —</p>
+            <form onSubmit={handleEditSave} className="space-y-4">
+              <div>
+                <label className="block font-mono text-bone text-[10px] tracking-wider uppercase mb-2">Full Name</label>
+                <input
+                  type="text"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm((f) => f && { ...f, name: e.target.value })}
+                  className="w-full bg-obsidian border border-slate text-paper font-mono text-sm px-3 h-10 focus:outline-none focus:border-accent"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block font-mono text-bone text-[10px] tracking-wider uppercase mb-2">Email</label>
+                <input
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm((f) => f && { ...f, email: e.target.value })}
+                  className="w-full bg-obsidian border border-slate text-paper font-mono text-sm px-3 h-10 focus:outline-none focus:border-accent"
+                />
+              </div>
+              <div>
+                <label className="block font-mono text-bone text-[10px] tracking-wider uppercase mb-2">Promo Code</label>
+                <input
+                  type="text"
+                  value={editForm.affiliateCode}
+                  onChange={(e) => setEditForm((f) => f && { ...f, affiliateCode: e.target.value.toUpperCase() })}
+                  maxLength={12}
+                  className="w-full bg-obsidian border border-slate text-paper font-mono text-sm px-3 h-10 focus:outline-none focus:border-accent uppercase tracking-widest"
+                />
+              </div>
+              <div>
+                <label className="block font-mono text-bone text-[10px] tracking-wider uppercase mb-2">Commission %</label>
+                <input
+                  type="number"
+                  value={editForm.commissionRate}
+                  onChange={(e) => setEditForm((f) => f && { ...f, commissionRate: e.target.value })}
+                  min={1} max={100} step={1}
+                  className="w-full bg-obsidian border border-slate text-paper font-mono text-sm px-3 h-10 focus:outline-none focus:border-accent"
+                />
+              </div>
+              {editError && <p className="font-mono text-[10px] text-red-400">{editError}</p>}
+              <p className="font-mono text-bone/40 text-[10px]">
+                Email and promo code changes take effect immediately. The partner's login email will update automatically.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  disabled={working === editForm.id}
+                  className="bg-accent text-obsidian font-semibold font-mono text-xs px-5 h-10 min-h-[44px] hover:bg-accent/80 transition-colors disabled:opacity-50"
+                >
+                  {working === editForm.id ? "Saving…" : "Save Changes"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setEditForm(null); setEditError(null); }}
                   className="border border-slate text-bone font-mono text-xs px-5 h-10 min-h-[44px] hover:border-accent hover:text-accent transition-colors"
                 >
                   Cancel
@@ -634,6 +743,24 @@ export default function AffiliatesClient({
                     >
                       View Portal
                     </Link>
+                    {/* Edit details */}
+                    <button
+                      onClick={() => {
+                        setEditError(null);
+                        setEditForm({
+                          id: aff.id,
+                          name: aff.name,
+                          email: aff.email,
+                          affiliateCode: aff.affiliateCode,
+                          commissionRate: String(Math.round((aff.commissionRate ?? 0.20) * 100)),
+                        });
+                      }}
+                      disabled={working === aff.id}
+                      className="font-mono text-[10px] tracking-wider text-bone border border-slate px-3 py-1.5 hover:border-accent hover:text-accent transition-colors disabled:opacity-40"
+                      title="Edit partner details"
+                    >
+                      Edit
+                    </button>
                     {/* Change Password */}
                     <button
                       onClick={() => { setChangePassForm({ id: aff.id, newPassword: "", confirm: "" }); setChangePassError(null); }}

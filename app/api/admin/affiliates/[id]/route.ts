@@ -7,6 +7,7 @@ import {
   createContractToken,
   updateAffiliateStatus,
   updateAffiliateProgram,
+  updateAffiliateDetails,
   archiveAffiliate,
   getAffiliateById,
   listAffiliates,
@@ -80,6 +81,25 @@ export async function PATCH(
       console.error("[switch-program] email failed:", err);
     }
 
+    return NextResponse.json({ ok: true, account: updated });
+  }
+
+  // --- Update details (name, email, code, commission) ---
+  if (action === "update-details") {
+    const { name, email, affiliateCode, commissionRate } = body;
+    if (!name?.trim() || !email?.trim() || !affiliateCode?.trim()) {
+      return NextResponse.json({ ok: false, error: "Name, email, and code are required" }, { status: 400 });
+    }
+    if (typeof commissionRate !== "number" || commissionRate <= 0 || commissionRate > 1) {
+      return NextResponse.json({ ok: false, error: "Commission rate must be between 1% and 100%" }, { status: 400 });
+    }
+    const updated = await updateAffiliateDetails(params.id, {
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      affiliateCode: affiliateCode.trim().toUpperCase(),
+      commissionRate,
+    });
+    if (!updated) return NextResponse.json({ ok: false, error: "Affiliate not found" }, { status: 404 });
     return NextResponse.json({ ok: true, account: updated });
   }
 
