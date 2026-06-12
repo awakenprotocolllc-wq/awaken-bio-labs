@@ -90,8 +90,8 @@ export async function PATCH(
     if (!name?.trim() || !email?.trim() || !affiliateCode?.trim()) {
       return NextResponse.json({ ok: false, error: "Name, email, and code are required" }, { status: 400 });
     }
-    if (typeof commissionRate !== "number" || commissionRate <= 0 || commissionRate > 1) {
-      return NextResponse.json({ ok: false, error: "Commission rate must be between 1% and 100%" }, { status: 400 });
+    if (typeof commissionRate !== "number" || commissionRate < 0 || commissionRate > 1) {
+      return NextResponse.json({ ok: false, error: "Commission rate must be between 0% and 100%" }, { status: 400 });
     }
     const updated = await updateAffiliateDetails(params.id, {
       name: name.trim(),

@@ -229,8 +229,8 @@ export default function AffiliatesClient({
       setEditError("All fields are required.");
       return;
     }
-    if (isNaN(rate) || rate <= 0 || rate > 100) {
-      setEditError("Commission must be between 1 and 100.");
+    if (isNaN(rate) || rate < 0 || rate > 100) {
+      setEditError("Commission must be between 0 and 100.");
       return;
     }
     setWorking(editForm.id);
@@ -458,7 +458,7 @@ export default function AffiliatesClient({
                   type="number"
                   value={editForm.commissionRate}
                   onChange={(e) => setEditForm((f) => f && { ...f, commissionRate: e.target.value })}
-                  min={1} max={100} step={1}
+                  min={0} max={100} step={1}
                   className="w-full bg-obsidian border border-slate text-paper font-mono text-sm px-3 h-10 focus:outline-none focus:border-accent"
                 />
               </div>
