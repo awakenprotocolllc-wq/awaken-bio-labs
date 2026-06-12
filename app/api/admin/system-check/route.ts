@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { getOrder } from "@/lib/db";
 
 const BASE = "https://ssapi.shipstation.com";
@@ -20,16 +21,15 @@ function parseAmount(price: string): number {
   return isNaN(n) ? 0 : n;
 }
 
-function checkAuth(req: NextRequest): boolean {
-  const cookie = req.headers.get("cookie") ?? "";
-  const token = cookie.match(/awaken_admin=([^;]+)/)?.[1];
+function checkAuth(): boolean {
+  const token = cookies().get("awaken_admin")?.value;
   const expected = process.env.ADMIN_SESSION_TOKEN;
   return !!(expected && token === expected);
 }
 
 // GET — env var status + ShipStation connection test
 export async function GET(req: NextRequest) {
-  if (!checkAuth(req)) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  if (!checkAuth()) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
 
   const envVars = {
     QUIKLIE_API_KEY: envStatus("QUIKLIE_API_KEY"),
@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
 
 // POST — push a specific order to ShipStation
 export async function POST(req: NextRequest) {
-  if (!checkAuth(req)) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  if (!checkAuth()) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
 
   const { orderId } = await req.json();
   if (!orderId) return NextResponse.json({ ok: false, error: "orderId required" }, { status: 400 });
