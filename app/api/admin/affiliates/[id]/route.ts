@@ -94,6 +94,34 @@ export async function PATCH(
     return NextResponse.json({ ok: true });
   }
 
+  // --- Resend contract (pending_contract → fresh signing link, no status change) ---
+  if (action === "resend-contract") {
+    const aff = await getAffiliateById(params.id);
+    if (!aff) return NextResponse.json({ ok: false, error: "Affiliate not found" }, { status: 404 });
+    if (aff.status !== "pending_contract") {
+      return NextResponse.json({ ok: false, error: "Only pending_contract accounts can have contracts resent" }, { status: 400 });
+    }
+
+    // Generate a fresh 7-day contract token
+    const token = await createContractToken(aff.id, aff.name, aff.email, "");
+    const contractUrl = `${SITE}/affiliates/contract?token=${token}`;
+
+    try {
+      await sendContractSigningEmail({
+        name: aff.name,
+        email: aff.email,
+        contractUrl,
+        commissionRate: aff.commissionRate,
+      });
+      console.log("[resend-contract] sent to:", aff.email);
+    } catch (err) {
+      console.error("[resend-contract] email failed:", err);
+      return NextResponse.json({ ok: false, error: "Failed to send email" }, { status: 500 });
+    }
+
+    return NextResponse.json({ ok: true });
+  }
+
   // --- Re-onboard (archived → pending_contract, new contract link) ---
   if (action === "reonboard") {
     const aff = await getAffiliateById(params.id);

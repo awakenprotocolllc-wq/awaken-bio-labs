@@ -175,6 +175,21 @@ export default function AffiliatesClient({
     setWorking(null);
   }
 
+  async function handleResendContract(id: string) {
+    setWorking(id);
+    const res = await fetch(`/api/admin/affiliates/${id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "resend-contract" }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      showToast("Contract resent ✓");
+    } else {
+      showToast(`Failed: ${data.error ?? "unknown error"}`);
+    }
+    setWorking(null);
+  }
+
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault();
     if (!changePassForm) return;
@@ -642,12 +657,12 @@ export default function AffiliatesClient({
                     {/* Resend Contract — for pending_contract accounts */}
                     {aff.status === "pending_contract" && (
                       <button
-                        onClick={() => setReOnboardConfirm({ id: aff.id, name: aff.name })}
+                        onClick={() => handleResendContract(aff.id)}
                         disabled={working === aff.id}
                         className="font-mono text-[10px] tracking-wider text-yellow-400 border border-yellow-500/30 px-3 py-1.5 hover:bg-yellow-500/10 transition-colors disabled:opacity-40"
                         title="Resend contract signing link"
                       >
-                        Resend Contract
+                        {working === aff.id ? "Sending…" : "Resend Contract"}
                       </button>
                     )}
                     {/* Suspend / Reactivate */}
