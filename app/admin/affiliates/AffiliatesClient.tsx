@@ -639,6 +639,17 @@ export default function AffiliatesClient({
                         → {(aff.programType ?? "ambassador") === "ambassador" ? "Licensee" : "Ambassador"}
                       </button>
                     )}
+                    {/* Resend Contract — for pending_contract accounts */}
+                    {aff.status === "pending_contract" && (
+                      <button
+                        onClick={() => setReOnboardConfirm({ id: aff.id, name: aff.name })}
+                        disabled={working === aff.id}
+                        className="font-mono text-[10px] tracking-wider text-yellow-400 border border-yellow-500/30 px-3 py-1.5 hover:bg-yellow-500/10 transition-colors disabled:opacity-40"
+                        title="Resend contract signing link"
+                      >
+                        Resend Contract
+                      </button>
+                    )}
                     {/* Suspend / Reactivate */}
                     {aff.status === "active" && (
                       <button onClick={() => handleSuspend(aff.id)} disabled={working === aff.id}
