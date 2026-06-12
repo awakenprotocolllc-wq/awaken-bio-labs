@@ -95,6 +95,13 @@ export default function OrdersClient({ initialOrders }: { initialOrders: Order[]
             >
               Affiliates
             </Link>
+            <span className="text-slate">·</span>
+            <Link
+              href="/admin/system"
+              className="font-mono text-bone text-xs tracking-wider hover:text-accent transition-colors"
+            >
+              System
+            </Link>
           </div>
         </div>
         <button

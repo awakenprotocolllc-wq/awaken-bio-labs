@@ -374,6 +374,8 @@ export default function AffiliatesClient({
             <Link href="/admin/orders" className="font-mono text-bone text-xs tracking-wider hover:text-accent transition-colors">Orders</Link>
             <span className="text-slate">·</span>
             <span className="font-mono text-accent text-xs tracking-wider">Partners</span>
+            <span className="text-slate">·</span>
+            <Link href="/admin/system" className="font-mono text-bone text-xs tracking-wider hover:text-accent transition-colors">System</Link>
           </div>
         </div>
         <button onClick={handleLogout} className="font-mono text-bone text-xs tracking-wider hover:text-accent transition-colors">Sign Out</button>
