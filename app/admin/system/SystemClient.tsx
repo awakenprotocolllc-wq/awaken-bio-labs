@@ -6,8 +6,9 @@ import Link from "next/link";
 type EnvEntry = { status: "set" | "missing"; chars: number };
 type CheckResult = {
   ok: boolean;
-  envVars: Record<string, EnvEntry>;
-  shipstation: { ok: boolean; status?: number; error?: string };
+  envVars?: Record<string, EnvEntry>;
+  shipstation?: { ok: boolean; status?: number; error?: string };
+  error?: string;
 };
 
 type PushResult = {
@@ -17,13 +18,9 @@ type PushResult = {
   error?: string;
 };
 
-async function handleLogout() {
-  await fetch("/api/admin/logout", { method: "POST" });
-  window.location.href = "/admin/login";
-}
-
 export default function SystemClient() {
   const [check, setCheck] = useState<CheckResult | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [orderId, setOrderId] = useState("");
   const [pushResult, setPushResult] = useState<PushResult | null>(null);
@@ -31,10 +28,20 @@ export default function SystemClient() {
 
   async function runCheck() {
     setLoading(true);
+    setLoadError(null);
     try {
       const res = await fetch("/api/admin/system-check");
-      const data = await res.json();
+      const text = await res.text();
+      let data: CheckResult;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        setLoadError(`API returned non-JSON (HTTP ${res.status}): ${text.slice(0, 300)}`);
+        return;
+      }
       setCheck(data);
+    } catch (e) {
+      setLoadError(String(e));
     } finally {
       setLoading(false);
     }
@@ -50,11 +57,24 @@ export default function SystemClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderId: orderId.trim() }),
       });
-      const data = await res.json();
+      const text = await res.text();
+      let data: PushResult;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { ok: false, error: `Non-JSON response (HTTP ${res.status}): ${text.slice(0, 300)}` };
+      }
       setPushResult(data);
+    } catch (e) {
+      setPushResult({ ok: false, error: String(e) });
     } finally {
       setPushing(false);
     }
+  }
+
+  async function handleLogout() {
+    await fetch("/api/admin/logout", { method: "POST" });
+    window.location.href = "/admin/login";
   }
 
   useEffect(() => { runCheck(); }, []);
@@ -103,11 +123,18 @@ export default function SystemClient() {
             </button>
           </div>
 
-          {!check && loading && (
+          {loading && !check && (
             <p className="font-mono text-bone text-xs">Running checks…</p>
           )}
 
-          {check && (
+          {loadError && (
+            <div className="bg-red-500/10 border border-red-500/40 p-4">
+              <p className="font-mono text-red-400 text-xs font-bold mb-2">ERROR LOADING SYSTEM CHECK</p>
+              <pre className="font-mono text-bone text-[10px] whitespace-pre-wrap">{loadError}</pre>
+            </div>
+          )}
+
+          {check && check.envVars && (
             <div className="bg-carbon border border-slate divide-y divide-slate">
               {Object.entries(check.envVars).map(([key, val]) => (
                 <div key={key} className="flex items-center justify-between px-4 py-3">
@@ -128,7 +155,7 @@ export default function SystemClient() {
         {/* ── ShipStation Connection ── */}
         <div>
           <p className="font-mono text-bone text-[10px] tracking-[0.2em] uppercase mb-3">ShipStation Connection</p>
-          {check && (
+          {check && check.shipstation && (
             <div className={`bg-carbon border px-5 py-4 ${check.shipstation.ok ? "border-green-500/40" : "border-red-500/40"}`}>
               <div className="flex items-center gap-3 mb-2">
                 <span className={`w-2 h-2 rounded-full ${check.shipstation.ok ? "bg-green-400" : "bg-red-400"}`} />
@@ -154,6 +181,9 @@ export default function SystemClient() {
                 </p>
               )}
             </div>
+          )}
+          {check && !check.shipstation && (
+            <p className="font-mono text-bone text-xs">No ShipStation data returned.</p>
           )}
         </div>
 
