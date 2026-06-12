@@ -1,15 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 
 type EnvEntry = { status: "set" | "missing"; chars: number };
-type CheckResult = {
-  ok: boolean;
-  envVars?: Record<string, EnvEntry>;
-  shipstation?: { ok: boolean; status?: number; error?: string };
-  error?: string;
-};
+type ShipStationStatus = { ok: boolean; status?: number; error?: string };
 
 type PushResult = {
   ok: boolean;
@@ -18,34 +13,15 @@ type PushResult = {
   error?: string;
 };
 
-export default function SystemClient() {
-  const [check, setCheck] = useState<CheckResult | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+type Props = {
+  envVars: Record<string, EnvEntry>;
+  shipstation: ShipStationStatus;
+};
+
+export default function SystemClient({ envVars, shipstation }: Props) {
   const [orderId, setOrderId] = useState("");
   const [pushResult, setPushResult] = useState<PushResult | null>(null);
   const [pushing, setPushing] = useState(false);
-
-  async function runCheck() {
-    setLoading(true);
-    setLoadError(null);
-    try {
-      const res = await fetch("/api/admin/system-check");
-      const text = await res.text();
-      let data: CheckResult;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        setLoadError(`API returned non-JSON (HTTP ${res.status}): ${text.slice(0, 300)}`);
-        return;
-      }
-      setCheck(data);
-    } catch (e) {
-      setLoadError(String(e));
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function pushOrder() {
     if (!orderId.trim()) return;
@@ -76,8 +52,6 @@ export default function SystemClient() {
     await fetch("/api/admin/logout", { method: "POST" });
     window.location.href = "/admin/login";
   }
-
-  useEffect(() => { runCheck(); }, []);
 
   return (
     <div className="min-h-screen bg-obsidian text-paper">
@@ -112,79 +86,50 @@ export default function SystemClient() {
 
         {/* ── Env Vars ── */}
         <div>
-          <div className="flex items-center justify-between mb-3">
-            <p className="font-mono text-bone text-[10px] tracking-[0.2em] uppercase">Environment Variables</p>
-            <button
-              onClick={runCheck}
-              disabled={loading}
-              className="font-mono text-xs text-accent border border-accent/40 px-3 py-1 hover:bg-accent/10 transition-colors disabled:opacity-50"
-            >
-              {loading ? "Checking…" : "Refresh"}
-            </button>
+          <p className="font-mono text-bone text-[10px] tracking-[0.2em] uppercase mb-3">Environment Variables</p>
+          <div className="bg-carbon border border-slate divide-y divide-slate">
+            {Object.entries(envVars).map(([key, val]) => (
+              <div key={key} className="flex items-center justify-between px-4 py-3">
+                <p className="font-mono text-paper text-xs tracking-wider">{key}</p>
+                <span className={`font-mono text-[10px] px-2 py-1 border tracking-wider ${
+                  val.status === "set"
+                    ? "bg-green-500/10 text-green-400 border-green-500/30"
+                    : "bg-red-500/10 text-red-400 border-red-500/30"
+                }`}>
+                  {val.status === "set" ? `SET · ${val.chars} chars` : "MISSING"}
+                </span>
+              </div>
+            ))}
           </div>
-
-          {loading && !check && (
-            <p className="font-mono text-bone text-xs">Running checks…</p>
-          )}
-
-          {loadError && (
-            <div className="bg-red-500/10 border border-red-500/40 p-4">
-              <p className="font-mono text-red-400 text-xs font-bold mb-2">ERROR LOADING SYSTEM CHECK</p>
-              <pre className="font-mono text-bone text-[10px] whitespace-pre-wrap">{loadError}</pre>
-            </div>
-          )}
-
-          {check && check.envVars && (
-            <div className="bg-carbon border border-slate divide-y divide-slate">
-              {Object.entries(check.envVars).map(([key, val]) => (
-                <div key={key} className="flex items-center justify-between px-4 py-3">
-                  <p className="font-mono text-paper text-xs tracking-wider">{key}</p>
-                  <span className={`font-mono text-[10px] px-2 py-1 border tracking-wider ${
-                    val.status === "set"
-                      ? "bg-green-500/10 text-green-400 border-green-500/30"
-                      : "bg-red-500/10 text-red-400 border-red-500/30"
-                  }`}>
-                    {val.status === "set" ? `SET · ${val.chars} chars` : "MISSING"}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* ── ShipStation Connection ── */}
         <div>
           <p className="font-mono text-bone text-[10px] tracking-[0.2em] uppercase mb-3">ShipStation Connection</p>
-          {check && check.shipstation && (
-            <div className={`bg-carbon border px-5 py-4 ${check.shipstation.ok ? "border-green-500/40" : "border-red-500/40"}`}>
-              <div className="flex items-center gap-3 mb-2">
-                <span className={`w-2 h-2 rounded-full ${check.shipstation.ok ? "bg-green-400" : "bg-red-400"}`} />
-                <p className="font-mono text-xs font-bold tracking-wider">
-                  {check.shipstation.ok ? "CONNECTED" : "FAILED"}
-                </p>
-              </div>
-              {!check.shipstation.ok && (
-                <div className="mt-2">
-                  {check.shipstation.status && (
-                    <p className="font-mono text-red-400 text-xs">HTTP {check.shipstation.status}</p>
-                  )}
-                  {check.shipstation.error && (
-                    <pre className="font-mono text-bone text-[10px] mt-2 bg-obsidian border border-slate p-3 overflow-x-auto whitespace-pre-wrap">
-                      {check.shipstation.error}
-                    </pre>
-                  )}
-                </div>
-              )}
-              {check.shipstation.ok && (
-                <p className="font-mono text-green-400 text-[10px] mt-1">
-                  Credentials valid — API responding normally.
-                </p>
-              )}
+          <div className={`bg-carbon border px-5 py-4 ${shipstation.ok ? "border-green-500/40" : "border-red-500/40"}`}>
+            <div className="flex items-center gap-3 mb-2">
+              <span className={`w-2 h-2 rounded-full ${shipstation.ok ? "bg-green-400" : "bg-red-400"}`} />
+              <p className="font-mono text-xs font-bold tracking-wider">
+                {shipstation.ok ? "CONNECTED" : "FAILED"}
+              </p>
             </div>
-          )}
-          {check && !check.shipstation && (
-            <p className="font-mono text-bone text-xs">No ShipStation data returned.</p>
-          )}
+            {shipstation.ok ? (
+              <p className="font-mono text-green-400 text-[10px] mt-1">
+                Credentials valid — API responding normally.
+              </p>
+            ) : (
+              <div className="mt-2 space-y-1">
+                {shipstation.status && (
+                  <p className="font-mono text-red-400 text-xs">HTTP {shipstation.status}</p>
+                )}
+                {shipstation.error && (
+                  <pre className="font-mono text-bone text-[10px] bg-obsidian border border-slate p-3 overflow-x-auto whitespace-pre-wrap">
+                    {shipstation.error}
+                  </pre>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ── Manual ShipStation Push ── */}
