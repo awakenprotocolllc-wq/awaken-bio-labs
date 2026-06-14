@@ -7,6 +7,7 @@ import { products, getPriceForStrength, isOrderable } from "@/lib/products";
 import { validateDiscountCode } from "@/lib/affiliate-db";
 import { rateLimit, rateLimitBurst, clientIp } from "@/lib/rate-limit";
 import { findAttack } from "@/lib/validate";
+import { validateAdminSession } from "@/lib/admin-auth";
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://awakenbiolabs.com";
 const QUIKLIE_BASE = "https://api.quiklie.com";
@@ -366,10 +367,7 @@ export async function POST(req: NextRequest) {
 // GET /api/orders — list all orders (admin only)
 // ---------------------------------------------------------------------------
 export async function GET(req: NextRequest) {
-  const cookie = req.headers.get("cookie") ?? "";
-  const token = cookie.match(/awaken_admin=([^;]+)/)?.[1];
-  const expected = process.env.ADMIN_SESSION_TOKEN;
-  if (!expected || token !== expected) {
+  if (!(await validateAdminSession(req.cookies.get("awaken_admin")?.value))) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
   const orders = await listOrders();

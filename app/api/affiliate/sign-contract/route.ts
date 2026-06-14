@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getContractToken, signContract } from "@/lib/affiliate-db";
-import { sendCredentialsEmail, sendWelcomeBackEmail } from "@/lib/affiliate-emails";
+import { sendWelcomeBackEmail } from "@/lib/affiliate-emails";
 
 // POST /api/affiliate/sign-contract
 // body: { token: string; signatureName: string }
@@ -41,8 +41,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Capture fields before signContract mutates the record
-    const storedPassword = record.password;
     const isReOnboard = record.isReOnboard ?? false;
 
     // Activate account + mark token signed
@@ -54,28 +52,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Send appropriate email — do NOT fire-and-forget on Vercel
-    try {
-      if (isReOnboard) {
-        // Re-onboarding: they already have credentials — just send welcome back
+    // For re-onboarding: send welcome-back email
+    // For first-time: credentials were already emailed at approval — no action needed
+    if (isReOnboard) {
+      try {
         await sendWelcomeBackEmail({
           name: account.name,
           email: account.email,
           affiliateCode: account.affiliateCode,
           commissionRate: account.commissionRate,
         });
-      } else {
-        // First-time: send full credentials
-        await sendCredentialsEmail({
-          name: account.name,
-          email: account.email,
-          affiliateCode: account.affiliateCode,
-          password: storedPassword,
-          commissionRate: account.commissionRate,
-        });
+      } catch (emailErr) {
+        console.error("[sign-contract] welcome-back email failed:", emailErr);
       }
-    } catch (emailErr) {
-      console.error("[sign-contract] email failed:", emailErr);
     }
 
     return NextResponse.json({ ok: true });

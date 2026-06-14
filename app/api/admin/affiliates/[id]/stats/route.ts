@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAffiliateById, getAffiliateReferrals } from "@/lib/affiliate-db";
-
-function isAdmin(req: NextRequest): boolean {
-  const token = req.cookies.get("awaken_admin")?.value;
-  const expected = process.env.ADMIN_SESSION_TOKEN;
-  return !!expected && token === expected;
-}
+import { validateAdminSession } from "@/lib/admin-auth";
 
 function commissionValue(commission: string): number {
   return parseFloat(commission.replace(/[^0-9.]/g, "") || "0");
@@ -17,7 +12,7 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  if (!isAdmin(req)) return NextResponse.json({ ok: false }, { status: 401 });
+  if (!(await validateAdminSession(req.cookies.get("awaken_admin")?.value))) return NextResponse.json({ ok: false }, { status: 401 });
 
   const account = await getAffiliateById(params.id);
   if (!account) return NextResponse.json({ ok: false, error: "Affiliate not found" }, { status: 404 });

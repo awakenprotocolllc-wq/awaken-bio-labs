@@ -14,8 +14,9 @@ import {
   setAffiliatePassword,
   type ProgramType,
 } from "@/lib/affiliate-db";
-import { sendContractSigningEmail, sendProgramSwitchEmail } from "@/lib/affiliate-emails";
+import { sendContractSigningEmail, sendCredentialsEmail, sendProgramSwitchEmail } from "@/lib/affiliate-emails";
 import { isStr, isNum, isEnum } from "@/lib/validate";
+import { validateAdminSession } from "@/lib/admin-auth";
 
 const VALID_ACTIONS = [
   "approve", "deny", "suspend", "reactivate", "archive",
@@ -28,11 +29,7 @@ const CODE_RE  = /^[A-Z0-9]{2,20}$/;
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://awakenbiolabs.com";
 
-function isAdmin(req: NextRequest): boolean {
-  const token = req.cookies.get("awaken_admin")?.value;
-  const expected = process.env.ADMIN_SESSION_TOKEN;
-  return !!expected && token === expected;
-}
+
 
 // PATCH /api/admin/affiliates/[id]
 // body: { action: "approve", password: string, affiliateCode?: string, commissionRate?: number }
@@ -43,7 +40,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  if (!isAdmin(req)) return NextResponse.json({ ok: false }, { status: 401 });
+  if (!(await validateAdminSession(req.cookies.get("awaken_admin")?.value))) return NextResponse.json({ ok: false }, { status: 401 });
 
   const body = await req.json();
   const { action, password, affiliateCode, commissionRate } = body ?? {};
@@ -157,7 +154,7 @@ export async function PATCH(
     }
 
     // Generate a fresh 7-day contract token
-    const token = await createContractToken(aff.id, aff.name, aff.email, "");
+    const token = await createContractToken(aff.id, aff.name, aff.email);
     const contractUrl = `${SITE}/affiliates/contract?token=${token}`;
 
     try {
@@ -188,7 +185,7 @@ export async function PATCH(
     await updateAffiliateStatus(params.id, "pending_contract");
 
     // Generate a new 7-day contract token (isReOnboard=true → welcome-back email after signing)
-    const token = await createContractToken(aff.id, aff.name, aff.email, "", true);
+    const token = await createContractToken(aff.id, aff.name, aff.email, true);
     const contractUrl = `${SITE}/affiliates/contract?token=${token}`;
 
     try {
@@ -247,11 +244,23 @@ export async function PATCH(
     );
     await updateApplicationStatus(params.id, "approved");
 
-    // Generate contract token (stores password temporarily so it can be emailed after signing)
-    const token = await createContractToken(account.id, app.name, app.email, password);
+    // Send credentials email BEFORE the contract token — password never stored in KV
+    try {
+      await sendCredentialsEmail({
+        name: app.name,
+        email: app.email,
+        affiliateCode: account.affiliateCode,
+        password,
+        commissionRate: account.commissionRate,
+      });
+    } catch (err) {
+      console.error("[affiliates/approve] credentials email failed:", err);
+    }
+
+    // Generate contract token (no password stored)
+    const token = await createContractToken(account.id, app.name, app.email);
     const contractUrl = `${SITE}/affiliates/contract?token=${token}`;
 
-    // Await the email — do NOT fire-and-forget on Vercel (function exits before fetch completes)
     try {
       await sendContractSigningEmail({
         name: app.name,
@@ -261,7 +270,6 @@ export async function PATCH(
       });
     } catch (err) {
       console.error("[affiliates/approve] contract email failed:", err);
-      // Don't fail the whole response — account is created, admin can resend manually
     }
 
     return NextResponse.json({ ok: true, account });

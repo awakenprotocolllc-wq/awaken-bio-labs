@@ -1,5 +1,6 @@
 import { kv } from "@vercel/kv";
 import { createHash, randomBytes } from "crypto";
+import bcrypt from "bcryptjs";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -44,12 +45,10 @@ export type ContractToken = {
   affiliateId: string;
   name: string;
   email: string;
-  /** Plain-text password stored temporarily (7-day TTL) so it can be emailed after signing */
-  password: string;
   createdAt: string;
   expiresAt: string;
   signed: boolean;
-  /** true = re-onboarding; skip credentials email, send welcome-back email instead */
+  /** true = re-onboarding; send welcome-back email instead of activation email */
   isReOnboard?: boolean;
 };
 
@@ -61,11 +60,20 @@ function genId(prefix = ""): string {
   return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
 
-function hashPassword(password: string): string {
-  return createHash("sha256")
-    .update("awaken-biolabs:" + password)
-    .digest("hex");
+const BCRYPT_ROUNDS = 12;
+
+/** Hash a password with bcrypt (async, slow by design). */
+async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, BCRYPT_ROUNDS);
 }
+
+/** Legacy SHA-256 hash — kept only for lazy migration during login. */
+function legacyHash(password: string): string {
+  return createHash("sha256").update("awaken-biolabs:" + password).digest("hex");
+}
+
+/** Detects the old SHA-256 format: exactly 64 lowercase hex chars. */
+const SHA256_RE = /^[0-9a-f]{64}$/;
 
 export function generateAffiliateCode(name: string): string {
   const clean = name.replace(/[^a-z0-9]/gi, "").toUpperCase();
@@ -124,7 +132,7 @@ export async function createAffiliateAccount(
     discountRate,
     joinedAt: new Date().toISOString(),
     applicationId,
-    passwordHash: hashPassword(password),
+    passwordHash: await hashPassword(password),
   };
   await kv.set(`aff:account:${id}`, account);
   await kv.set(`aff:email:${email.toLowerCase()}`, id);
@@ -172,7 +180,6 @@ export async function createContractToken(
   affiliateId: string,
   name: string,
   email: string,
-  password: string,
   isReOnboard = false
 ): Promise<string> {
   const token = randomBytes(32).toString("hex");
@@ -181,7 +188,6 @@ export async function createContractToken(
     affiliateId,
     name,
     email,
-    password,
     createdAt: new Date().toISOString(),
     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
     signed: false,
@@ -220,7 +226,23 @@ export async function validateAffiliateLogin(email: string, password: string): P
   if (!id) return null;
   const account = await kv.get<AffiliateAccountInternal>(`aff:account:${id}`);
   if (!account || account.status !== "active") return null;
-  if (account.passwordHash !== hashPassword(password)) return null;
+
+  const stored = account.passwordHash;
+  let valid = false;
+
+  if (SHA256_RE.test(stored)) {
+    // Legacy SHA-256 hash — verify and lazily migrate to bcrypt
+    valid = stored === legacyHash(password);
+    if (valid) {
+      const newHash = await hashPassword(password);
+      await kv.set(`aff:account:${id}`, { ...account, passwordHash: newHash });
+    }
+  } else {
+    // Modern bcrypt hash
+    valid = await bcrypt.compare(password, stored);
+  }
+
+  if (!valid) return null;
   const { passwordHash, ...safe } = account;
   return safe;
 }
@@ -400,7 +422,7 @@ export async function consumePasswordResetToken(token: string, newPassword: stri
   const account = await kv.get<AffiliateAccountInternal>(`aff:account:${record.affiliateId}`);
   if (!account) return false;
 
-  const newHash = hashPassword(newPassword);
+  const newHash = await hashPassword(newPassword);
 
   // Write new password hash to account
   await kv.set(`aff:account:${record.affiliateId}`, {
@@ -425,7 +447,7 @@ export async function consumePasswordResetToken(token: string, newPassword: stri
 export async function setAffiliatePassword(affiliateId: string, newPassword: string): Promise<boolean> {
   const account = await kv.get<AffiliateAccountInternal>(`aff:account:${affiliateId}`);
   if (!account) return false;
-  const newHash = hashPassword(newPassword);
+  const newHash = await hashPassword(newPassword);
   await kv.set(`aff:account:${affiliateId}`, { ...account, passwordHash: newHash });
   // Verify write
   const verify = await kv.get<AffiliateAccountInternal>(`aff:account:${affiliateId}`);

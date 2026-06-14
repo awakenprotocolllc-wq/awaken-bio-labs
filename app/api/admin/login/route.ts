@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
+import { createAdminSession } from "@/lib/admin-auth";
 
 export async function POST(req: NextRequest) {
   // 10 attempts per 15 minutes per IP
@@ -15,22 +17,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Invalid password" }, { status: 401 });
   }
 
-  const adminPassword = process.env.ADMIN_PASSWORD;
-  const sessionToken = process.env.ADMIN_SESSION_TOKEN;
-
-  if (!adminPassword || !sessionToken) {
-    return NextResponse.json(
-      { ok: false, error: "Auth not configured" },
-      { status: 500 }
-    );
+  const adminPasswordHash = process.env.ADMIN_PASSWORD;
+  if (!adminPasswordHash) {
+    return NextResponse.json({ ok: false, error: "Auth not configured" }, { status: 500 });
   }
 
-  if (password !== adminPassword) {
-    return NextResponse.json(
-      { ok: false, error: "Invalid password" },
-      { status: 401 }
-    );
+  // ADMIN_PASSWORD must be a bcrypt hash — compare with bcrypt.compare, never plain ===
+  const valid = await bcrypt.compare(password, adminPasswordHash);
+  if (!valid) {
+    return NextResponse.json({ ok: false, error: "Invalid password" }, { status: 401 });
   }
+
+  // Per-login session token stored in KV — invalidated on logout
+  const sessionToken = await createAdminSession();
 
   const res = NextResponse.json({ ok: true });
   res.cookies.set("awaken_admin", sessionToken, {

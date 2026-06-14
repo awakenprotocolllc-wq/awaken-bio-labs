@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listOrders } from "@/lib/db";
+import { validateAdminSession } from "@/lib/admin-auth";
 
 const BASE = "https://ssapi.shipstation.com";
 
@@ -13,10 +14,7 @@ function authHeader(): string {
 // Verifies ShipStation credentials and optionally pushes the most recent paid order.
 // Protected by admin cookie.
 export async function GET(req: NextRequest) {
-  const cookie = req.headers.get("cookie") ?? "";
-  const token = cookie.match(/awaken_admin=([^;]+)/)?.[1];
-  const expected = process.env.ADMIN_SESSION_TOKEN;
-  if (!expected || token !== expected) {
+  if (!(await validateAdminSession(req.cookies.get("awaken_admin")?.value))) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 

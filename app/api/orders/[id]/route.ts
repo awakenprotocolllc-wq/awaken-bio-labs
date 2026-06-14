@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOrder, updateOrderStatus, type OrderStatus } from "@/lib/db";
 import { createShipStationOrder } from "@/lib/shipstation";
+import { validateAdminSession } from "@/lib/admin-auth";
 
 const VALID_STATUSES: OrderStatus[] = [
   "pending_payment",
@@ -9,18 +10,14 @@ const VALID_STATUSES: OrderStatus[] = [
   "cancelled",
 ];
 
-function isAdmin(req: NextRequest): boolean {
-  const token = req.cookies.get("awaken_admin")?.value;
-  const expected = process.env.ADMIN_SESSION_TOKEN;
-  return !!expected && token === expected;
-}
+
 
 // PATCH /api/orders/[id] — update order status (admin only)
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  if (!isAdmin(req)) {
+  if (!(await validateAdminSession(req.cookies.get("awaken_admin")?.value))) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 

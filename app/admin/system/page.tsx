@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { validateAdminSession } from "@/lib/admin-auth";
 import SystemClient from "./SystemClient";
 
 export const dynamic = "force-dynamic";
@@ -29,9 +30,8 @@ async function testShipStation() {
 }
 
 export default async function AdminSystemPage() {
-  const cookieStore = cookies();
-  const token = cookieStore.get("awaken_admin")?.value;
-  if (!token || token !== process.env.ADMIN_SESSION_TOKEN) {
+  const token = cookies().get("awaken_admin")?.value;
+  if (!(await validateAdminSession(token))) {
     redirect("/admin/login");
   }
 

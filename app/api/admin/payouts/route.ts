@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { listAffiliates, getPayoutRecordsForMonths, savePayoutRecord } from "@/lib/affiliate-db";
+import { validateAdminSession } from "@/lib/admin-auth";
 import { listOrders } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -15,14 +16,14 @@ function monthKey(iso: string) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-function checkAuth(): boolean {
-  const token = cookies().get("awaken_admin")?.value;
-  return !!(process.env.ADMIN_SESSION_TOKEN && token === process.env.ADMIN_SESSION_TOKEN);
+async function checkAuth(): Promise<boolean> {
+  const token = (await cookies()).get("awaken_admin")?.value;
+  return validateAdminSession(token);
 }
 
 // GET — full payout summary for all affiliates, including payout records
 export async function GET() {
-  if (!checkAuth()) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  if (!(await checkAuth())) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
 
   const [affiliates, orders] = await Promise.all([listAffiliates(), listOrders()]);
 
@@ -110,7 +111,7 @@ export async function GET() {
 
 // POST — record a payout for one affiliate for one month
 export async function POST(req: NextRequest) {
-  if (!checkAuth()) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  if (!(await checkAuth())) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
 
   const { affiliateId, month, amount, confirmationCode, note } = await req.json();
 

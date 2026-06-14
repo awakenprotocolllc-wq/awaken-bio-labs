@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateAdminSession } from "@/lib/admin-auth";
+import { getAffiliateSession } from "@/lib/affiliate-db";
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname, searchParams } = req.nextUrl;
 
   // ------------------------------------------------------------------
   // 1. Protect /admin/* (except /admin/login)
+  //    Validates token against KV — deleted sessions are rejected immediately.
   // ------------------------------------------------------------------
   if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login")) {
     const token = req.cookies.get("awaken_admin")?.value;
-    const expected = process.env.ADMIN_SESSION_TOKEN;
-
-    if (!expected || token !== expected) {
+    const valid = await validateAdminSession(token);
+    if (!valid) {
       const loginUrl = req.nextUrl.clone();
       loginUrl.pathname = "/admin/login";
       loginUrl.search = "";
@@ -19,11 +21,11 @@ export function middleware(req: NextRequest) {
   }
 
   // ------------------------------------------------------------------
-  // 2. Protect /affiliates/dashboard/* with real session cookie
+  // 2. Protect /affiliates/dashboard/* — verify session exists in KV
   // ------------------------------------------------------------------
   if (pathname.startsWith("/affiliates/dashboard")) {
-    const sessionToken = req.cookies.get("awaken_affiliate")?.value;
-    if (!sessionToken) {
+    const token = req.cookies.get("awaken_affiliate")?.value;
+    if (!token || !(await getAffiliateSession(token))) {
       const loginUrl = req.nextUrl.clone();
       loginUrl.pathname = "/affiliates/login";
       loginUrl.search = "";

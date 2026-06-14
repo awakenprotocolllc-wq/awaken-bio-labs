@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getOrder } from "@/lib/db";
+import { validateAdminSession } from "@/lib/admin-auth";
 
 const BASE = "https://ssapi.shipstation.com";
 
@@ -21,10 +22,9 @@ function parseAmount(price: string): number {
   return isNaN(n) ? 0 : n;
 }
 
-function checkAuth(): boolean {
+async function checkAuth(): Promise<boolean> {
   const token = cookies().get("awaken_admin")?.value;
-  const expected = process.env.ADMIN_SESSION_TOKEN;
-  return !!(expected && token === expected);
+  return validateAdminSession(token);
 }
 
 // GET — env var status + ShipStation connection test
