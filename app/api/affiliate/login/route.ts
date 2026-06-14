@@ -1,8 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { validateAffiliateLogin, createAffiliateSession } from "@/lib/affiliate-db";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    // 20 attempts per 15 minutes per IP
+    const { allowed } = await rateLimit(`affiliate-login:${clientIp(req)}`, 20, 60 * 15);
+    if (!allowed) {
+      return NextResponse.json({ ok: false, error: "Too many attempts. Try again later." }, { status: 429 });
+    }
+
     const { email, password } = await req.json();
     if (!email || !password) {
       return NextResponse.json({ ok: false, error: "Missing credentials" }, { status: 400 });

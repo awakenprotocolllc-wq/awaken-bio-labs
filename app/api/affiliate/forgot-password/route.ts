@@ -2,16 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 import { createPasswordResetToken, getAffiliateById } from "@/lib/affiliate-db";
 import { sendPasswordResetEmail } from "@/lib/affiliate-emails";
 import { kv } from "@vercel/kv";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://awakenbiolabs.com";
 
 // POST /api/affiliate/forgot-password
 // body: { email: string }
 // Always returns { ok: true } — never reveal whether email exists
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export async function POST(req: NextRequest) {
   try {
+    // 5 requests per hour per IP — prevent email spam
+    const { allowed } = await rateLimit(`forgot-password:${clientIp(req)}`, 5, 60 * 60);
+    if (!allowed) {
+      return NextResponse.json({ ok: false, error: "Too many attempts. Try again later." }, { status: 429 });
+    }
+
     const { email } = await req.json();
-    if (!email || typeof email !== "string") {
+    if (!email || typeof email !== "string" || !EMAIL_RE.test(email.trim())) {
       return NextResponse.json({ ok: false, error: "Missing email" }, { status: 400 });
     }
 

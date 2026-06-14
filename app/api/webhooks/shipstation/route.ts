@@ -32,8 +32,20 @@ type ShipStationShipmentsResponse = {
   shipments: ShipStationShipment[];
 };
 
+const SHIPSTATION_API_BASE = "https://ssapi.shipstation.com/";
+
 export async function POST(req: NextRequest) {
   try {
+    // Verify webhook secret if configured
+    const webhookSecret = process.env.SHIPSTATION_WEBHOOK_SECRET;
+    if (webhookSecret) {
+      const providedSecret = req.nextUrl.searchParams.get("secret");
+      if (!providedSecret || providedSecret !== webhookSecret) {
+        console.warn("[shipstation/webhook] Rejected: invalid or missing secret");
+        return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+      }
+    }
+
     const body = (await req.json()) as ShipStationWebhookBody;
     const { resource_url, resource_type } = body;
 
@@ -42,8 +54,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, skipped: true });
     }
 
-    if (!resource_url) {
+    if (!resource_url || typeof resource_url !== "string") {
       return NextResponse.json({ ok: false, error: "Missing resource_url" }, { status: 400 });
+    }
+
+    // SSRF protection: only allow requests to ShipStation's API domain
+    if (!resource_url.startsWith(SHIPSTATION_API_BASE)) {
+      console.warn("[shipstation/webhook] Rejected suspicious resource_url:", resource_url);
+      return NextResponse.json({ ok: false, error: "Invalid resource_url" }, { status: 400 });
     }
 
     // Fetch the actual shipment data from ShipStation

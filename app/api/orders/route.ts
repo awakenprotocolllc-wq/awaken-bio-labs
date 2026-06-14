@@ -3,6 +3,8 @@ import { kv } from "@vercel/kv";
 import { createOrder, updateOrderStatus, listOrders, calcSubtotal, type OrderItem } from "@/lib/db";
 import { sendCustomerOrderEmail, sendAdminOrderEmail } from "@/lib/order-emails";
 import { createShipStationOrder } from "@/lib/shipstation";
+import { products, getPriceForStrength, isOrderable } from "@/lib/products";
+import { validateDiscountCode } from "@/lib/affiliate-db";
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://awakenbiolabs.com";
 const QUIKLIE_BASE = "https://api.quiklie.com";
@@ -35,23 +37,72 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Card details are required" }, { status: 400 });
     }
 
-    const typedItems = items as OrderItem[];
-    const subtotal = calcSubtotal(typedItems);
+    // ── Server-side item validation: prices from catalog, never from client ──
+    if (!Array.isArray(items) || items.length === 0) {
+      return NextResponse.json({ ok: false, error: "Missing required fields" }, { status: 400 });
+    }
+    const validatedItems: OrderItem[] = [];
+    for (const item of items) {
+      const { product: productName, strength, qty } = item ?? {};
+      if (!productName || !strength || !qty || !Number.isInteger(qty) || qty < 1 || qty > 99) {
+        return NextResponse.json({ ok: false, error: "Invalid item in order" }, { status: 400 });
+      }
+      const catalogProduct = products.find((p) => p.name === productName);
+      if (!catalogProduct) {
+        return NextResponse.json({ ok: false, error: `Unknown product: ${productName}` }, { status: 400 });
+      }
+      const catalogPrice = getPriceForStrength(catalogProduct, strength);
+      if (!catalogPrice || !isOrderable(catalogProduct, strength)) {
+        return NextResponse.json({ ok: false, error: `Product not available: ${productName} ${strength}` }, { status: 400 });
+      }
+      validatedItems.push({ product: productName, strength, price: catalogPrice, qty });
+    }
+
+    // ── Compute subtotal from catalog prices ──
+    const subtotal = calcSubtotal(validatedItems);
+    const subtotalNum = parseFloat(subtotal.replace(/[^0-9.]/g, "")) || 0;
+
+    // ── Validate discount code server-side ──
     const refCode = req.cookies.get("awaken_ref")?.value || discountCode || undefined;
+    const codeToValidate = (discountCode || req.cookies.get("awaken_ref")?.value || "").trim().toUpperCase();
+    let validatedDiscountCode: string | undefined;
+    let validatedDiscountAmount: string | undefined;
+    if (codeToValidate) {
+      const { valid, discountRate } = await validateDiscountCode(codeToValidate);
+      if (valid) {
+        validatedDiscountCode = codeToValidate;
+        const discountNum = parseFloat((subtotalNum * discountRate).toFixed(2));
+        validatedDiscountAmount = `$${discountNum.toFixed(2)}`;
+      }
+    }
+    const discountNum = validatedDiscountAmount
+      ? parseFloat(validatedDiscountAmount.replace(/[^0-9.]/g, "")) || 0
+      : 0;
+
+    // ── Shipping — accept from client but clamp to sane range ──
+    const rawShipping = parseFloat((shippingCost || "$0").replace(/[^0-9.]/g, "")) || 0;
+    const shippingNum = Math.max(0, Math.min(rawShipping, 100));
+    const validatedShippingCost = shippingNum > 0 ? `$${shippingNum.toFixed(2)}` : undefined;
+
+    // ── Processing fee and total computed server-side ──
+    const baseForFee = subtotalNum - discountNum + shippingNum;
+    const processingFeeNum = paymentMethod === "card" ? parseFloat((baseForFee * 0.04).toFixed(2)) : 0;
+    const validatedProcessingFee = processingFeeNum > 0 ? `$${processingFeeNum.toFixed(2)}` : undefined;
+    const validatedOrderTotal = `$${(baseForFee + processingFeeNum).toFixed(2)}`;
 
     // ── Zelle path ──────────────────────────────────────────────────────────
     if (paymentMethod === "zelle") {
       const order = await createOrder({
         customer,
         shipping,
-        items: typedItems,
+        items: validatedItems,
         subtotal,
-        notes: notes || undefined,
+        notes: notes?.slice(0, 500) || undefined,
         refCode,
-        discountCode: discountCode || undefined,
-        discountAmount: discountAmount || undefined,
-        shippingCost: shippingCost || undefined,
-        orderTotal: orderTotal || undefined,
+        discountCode: validatedDiscountCode,
+        discountAmount: validatedDiscountAmount,
+        shippingCost: validatedShippingCost,
+        orderTotal: validatedOrderTotal,
         paymentMethod: "zelle",
       });
 
@@ -70,15 +121,15 @@ export async function POST(req: NextRequest) {
     const order = await createOrder({
       customer,
       shipping,
-      items: typedItems,
+      items: validatedItems,
       subtotal,
-      notes: notes || undefined,
+      notes: notes?.slice(0, 500) || undefined,
       refCode,
-      discountCode: discountCode || undefined,
-      discountAmount: discountAmount || undefined,
-      shippingCost: shippingCost || undefined,
-      processingFee: processingFee || undefined,
-      orderTotal: orderTotal || undefined,
+      discountCode: validatedDiscountCode,
+      discountAmount: validatedDiscountAmount,
+      shippingCost: validatedShippingCost,
+      processingFee: validatedProcessingFee,
+      orderTotal: validatedOrderTotal,
       paymentMethod: "card",
     });
 
@@ -91,9 +142,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Payment processor not configured. Please contact support." }, { status: 500 });
     }
 
-    // Parse total amount (use orderTotal if available, else subtotal) — includes 4% fee
-    const totalStr = orderTotal ?? subtotal;
-    const amount = parseFloat(totalStr.replace(/[^0-9.]/g, "")) || 0;
+    // Use server-computed total — never trust the client-supplied amount
+    const amount = parseFloat(validatedOrderTotal.replace(/[^0-9.]/g, "")) || 0;
 
     // Split full name into first/last
     const nameParts = customer.name.trim().split(/\s+/);

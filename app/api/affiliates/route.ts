@@ -1,10 +1,19 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { sendEmail, escape } from "@/lib/email";
 import { createApplication } from "@/lib/affiliate-db";
 import { sendApplicationReceivedEmail } from "@/lib/affiliate-emails";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 
-export async function POST(req: Request) {
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export async function POST(req: NextRequest) {
   try {
+    // 5 applications per hour per IP
+    const { allowed } = await rateLimit(`affiliate-apply:${clientIp(req)}`, 5, 60 * 60);
+    if (!allowed) {
+      return NextResponse.json({ ok: false, error: "Too many submissions. Try again later." }, { status: 429 });
+    }
+
     const data = await req.json();
     const { name, email, platform, audience, about, programType } = data ?? {};
 
@@ -13,6 +22,19 @@ export async function POST(req: Request) {
         { ok: false, error: "Missing required fields" },
         { status: 400 }
       );
+    }
+
+    if (!EMAIL_RE.test(String(email).trim())) {
+      return NextResponse.json({ ok: false, error: "Invalid email address" }, { status: 400 });
+    }
+    if (String(name).length > 200) {
+      return NextResponse.json({ ok: false, error: "Name is too long" }, { status: 400 });
+    }
+    if (about && String(about).length > 2000) {
+      return NextResponse.json({ ok: false, error: "About section is too long (max 2000 characters)" }, { status: 400 });
+    }
+    if (audience && String(audience).length > 500) {
+      return NextResponse.json({ ok: false, error: "Audience field is too long" }, { status: 400 });
     }
 
     const resolvedProgramType = programType === "licensee" ? "licensee" : "ambassador";

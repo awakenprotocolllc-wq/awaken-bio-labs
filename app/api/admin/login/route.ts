@@ -1,6 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  // 10 attempts per 15 minutes per IP
+  const { allowed } = await rateLimit(`admin-login:${clientIp(req)}`, 10, 60 * 15);
+  if (!allowed) {
+    return NextResponse.json({ ok: false, error: "Too many attempts. Try again later." }, { status: 429 });
+  }
+
   const { password } = (await req.json()) ?? {};
 
   const adminPassword = process.env.ADMIN_PASSWORD;
