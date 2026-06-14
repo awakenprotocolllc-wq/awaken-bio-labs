@@ -17,24 +17,26 @@ export async function POST(req: NextRequest) {
     const data = await req.json();
     const { name, email, platform, audience, about, programType } = data ?? {};
 
-    if (!name || !email || !platform) {
-      return NextResponse.json(
-        { ok: false, error: "Missing required fields" },
-        { status: 400 }
-      );
+    if (typeof name !== "string" || typeof email !== "string" || typeof platform !== "string") {
+      return NextResponse.json({ ok: false, error: "Missing required fields" }, { status: 400 });
     }
-
-    if (!EMAIL_RE.test(String(email).trim())) {
+    if (!name.trim() || !email.trim() || !platform.trim()) {
+      return NextResponse.json({ ok: false, error: "Missing required fields" }, { status: 400 });
+    }
+    if (!EMAIL_RE.test(email.trim())) {
       return NextResponse.json({ ok: false, error: "Invalid email address" }, { status: 400 });
     }
-    if (String(name).length > 200) {
-      return NextResponse.json({ ok: false, error: "Name is too long" }, { status: 400 });
+    if (name.length > 200) {
+      return NextResponse.json({ ok: false, error: "Name is too long (max 200 characters)" }, { status: 400 });
     }
-    if (about && String(about).length > 2000) {
+    if (platform.length > 200) {
+      return NextResponse.json({ ok: false, error: "Platform is too long (max 200 characters)" }, { status: 400 });
+    }
+    if (about !== undefined && (typeof about !== "string" || about.length > 2000)) {
       return NextResponse.json({ ok: false, error: "About section is too long (max 2000 characters)" }, { status: 400 });
     }
-    if (audience && String(audience).length > 500) {
-      return NextResponse.json({ ok: false, error: "Audience field is too long" }, { status: 400 });
+    if (audience !== undefined && (typeof audience !== "string" || audience.length > 500)) {
+      return NextResponse.json({ ok: false, error: "Audience field is too long (max 500 characters)" }, { status: 400 });
     }
 
     const resolvedProgramType = programType === "licensee" ? "licensee" : "ambassador";

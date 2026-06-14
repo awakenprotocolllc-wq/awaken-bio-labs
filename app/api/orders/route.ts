@@ -98,6 +98,9 @@ export async function POST(req: NextRequest) {
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ ok: false, error: "Missing required fields" }, { status: 400 });
     }
+    if (items.length > 20) {
+      return NextResponse.json({ ok: false, error: "Too many items in order (max 20 lines)" }, { status: 400 });
+    }
     const validatedItems: OrderItem[] = [];
     for (const item of items) {
       const { product: productName, strength, qty } = item ?? {};

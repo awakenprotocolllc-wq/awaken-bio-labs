@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     if ("currentPassword" in body || "newPassword" in body) {
       const { currentPassword, newPassword } = body;
 
-      if (!currentPassword || typeof currentPassword !== "string") {
+      if (!currentPassword || typeof currentPassword !== "string" || currentPassword.length > 128) {
         return NextResponse.json({ ok: false, error: "Current password is required." }, { status: 400 });
       }
       if (!newPassword || typeof newPassword !== "string" || newPassword.length < 6 || newPassword.length > 128) {
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     // ── Mode 1: forgot-password token flow ──
     const { token, password } = body;
 
-    if (!token || typeof token !== "string") {
+    if (!token || typeof token !== "string" || token.length > 256) {
       return NextResponse.json({ ok: false, error: "Missing reset token." }, { status: 400 });
     }
     if (!password || typeof password !== "string" || password.length < 8 || password.length > 128) {

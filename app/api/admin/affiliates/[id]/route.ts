@@ -15,6 +15,16 @@ import {
   type ProgramType,
 } from "@/lib/affiliate-db";
 import { sendContractSigningEmail, sendProgramSwitchEmail } from "@/lib/affiliate-emails";
+import { isStr, isNum, isEnum } from "@/lib/validate";
+
+const VALID_ACTIONS = [
+  "approve", "deny", "suspend", "reactivate", "archive",
+  "switch-program", "update-details", "set-password",
+  "force-activate", "resend-contract", "reonboard",
+] as const;
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const CODE_RE  = /^[A-Z0-9]{2,20}$/;
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://awakenbiolabs.com";
 
@@ -37,6 +47,10 @@ export async function PATCH(
 
   const body = await req.json();
   const { action, password, affiliateCode, commissionRate } = body ?? {};
+
+  if (!isEnum(action, VALID_ACTIONS)) {
+    return NextResponse.json({ ok: false, error: "Unknown action" }, { status: 400 });
+  }
 
   // --- Suspend / Reactivate ---
   if (action === "suspend" || action === "reactivate") {
@@ -87,10 +101,16 @@ export async function PATCH(
   // --- Update details (name, email, code, commission) ---
   if (action === "update-details") {
     const { name, email, affiliateCode, commissionRate } = body;
-    if (!name?.trim() || !email?.trim() || !affiliateCode?.trim()) {
+    if (!isStr(name, 200) || !isStr(email, 254) || !isStr(affiliateCode, 20)) {
       return NextResponse.json({ ok: false, error: "Name, email, and code are required" }, { status: 400 });
     }
-    if (typeof commissionRate !== "number" || commissionRate < 0 || commissionRate > 1) {
+    if (!EMAIL_RE.test(email.trim())) {
+      return NextResponse.json({ ok: false, error: "Invalid email address" }, { status: 400 });
+    }
+    if (!CODE_RE.test(affiliateCode.trim().toUpperCase())) {
+      return NextResponse.json({ ok: false, error: "Affiliate code must be 2–20 uppercase letters and numbers" }, { status: 400 });
+    }
+    if (!isNum(commissionRate, 0, 1)) {
       return NextResponse.json({ ok: false, error: "Commission rate must be between 0% and 100%" }, { status: 400 });
     }
     const updated = await updateAffiliateDetails(params.id, {
@@ -106,8 +126,8 @@ export async function PATCH(
   // --- Set password (admin only) ---
   if (action === "set-password") {
     const { newPassword } = body;
-    if (!newPassword || typeof newPassword !== "string" || newPassword.length < 6) {
-      return NextResponse.json({ ok: false, error: "Password must be at least 6 characters" }, { status: 400 });
+    if (!newPassword || typeof newPassword !== "string" || newPassword.length < 6 || newPassword.length > 128) {
+      return NextResponse.json({ ok: false, error: "Password must be 6–128 characters" }, { status: 400 });
     }
     const ok = await setAffiliatePassword(params.id, newPassword);
     if (!ok) return NextResponse.json({ ok: false, error: "Affiliate not found or write failed" }, { status: 404 });
@@ -196,17 +216,23 @@ export async function PATCH(
   }
 
   if (action === "approve") {
-    if (!password || password.length < 6) {
+    if (!password || typeof password !== "string" || password.length < 6 || password.length > 128) {
       return NextResponse.json(
-        { ok: false, error: "Password must be at least 6 characters" },
+        { ok: false, error: "Password must be 6–128 characters" },
         { status: 400 }
       );
+    }
+    if (affiliateCode !== undefined && (!isStr(affiliateCode, 20) || !CODE_RE.test(affiliateCode.trim().toUpperCase()))) {
+      return NextResponse.json({ ok: false, error: "Affiliate code must be 2–20 uppercase letters and numbers" }, { status: 400 });
+    }
+    if (commissionRate !== undefined && !isNum(commissionRate, 0, 1)) {
+      return NextResponse.json({ ok: false, error: "Commission rate must be between 0% and 100%" }, { status: 400 });
     }
 
     const code = (affiliateCode || generateAffiliateCode(app.name)).toUpperCase();
     const programType = app.programType ?? "ambassador";
     // Licensees are always 50% — not overridable
-    const rate = programType === "licensee" ? 0.50 : (typeof commissionRate === "number" ? commissionRate : 0.20);
+    const rate = programType === "licensee" ? 0.50 : (isNum(commissionRate, 0, 1) ? commissionRate : 0.20);
 
     // Create account in pending_contract state
     const account = await createAffiliateAccount(
@@ -241,5 +267,6 @@ export async function PATCH(
     return NextResponse.json({ ok: true, account });
   }
 
-  return NextResponse.json({ ok: false, error: "Unknown action" }, { status: 400 });
+  // Exhausted all VALID_ACTIONS branches — should not be reachable
+  return NextResponse.json({ ok: false, error: "Unhandled action" }, { status: 500 });
 }

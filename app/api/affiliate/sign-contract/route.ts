@@ -8,11 +8,14 @@ export async function POST(req: NextRequest) {
   try {
     const { token, signatureName } = await req.json();
 
-    if (!token || !signatureName?.trim()) {
-      return NextResponse.json(
-        { ok: false, error: "Missing token or signature" },
-        { status: 400 }
-      );
+    if (!token || typeof token !== "string" || token.length > 256) {
+      return NextResponse.json({ ok: false, error: "Missing token or signature" }, { status: 400 });
+    }
+    if (!signatureName || typeof signatureName !== "string" || !signatureName.trim()) {
+      return NextResponse.json({ ok: false, error: "Missing token or signature" }, { status: 400 });
+    }
+    if (signatureName.trim().length > 200) {
+      return NextResponse.json({ ok: false, error: "Signature name is too long (max 200 characters)" }, { status: 400 });
     }
 
     // Fetch token record FIRST — we need the stored password before calling signContract

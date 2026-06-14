@@ -66,7 +66,9 @@ export async function POST(req: NextRequest) {
   if (!checkAuth()) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
 
   const { orderId } = await req.json();
-  if (!orderId) return NextResponse.json({ ok: false, error: "orderId required" }, { status: 400 });
+  if (!orderId || typeof orderId !== "string" || orderId.trim().length === 0 || orderId.length > 50) {
+    return NextResponse.json({ ok: false, error: "orderId required" }, { status: 400 });
+  }
 
   const order = await getOrder(orderId);
   if (!order) return NextResponse.json({ ok: false, error: "Order not found" }, { status: 404 });

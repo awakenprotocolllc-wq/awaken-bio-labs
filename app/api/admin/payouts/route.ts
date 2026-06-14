@@ -114,15 +114,23 @@ export async function POST(req: NextRequest) {
 
   const { affiliateId, month, amount, confirmationCode, note } = await req.json();
 
-  if (!affiliateId || !month || !confirmationCode) {
+  if (typeof affiliateId !== "string" || !affiliateId.trim() || affiliateId.length > 100) {
     return NextResponse.json({ ok: false, error: "affiliateId, month, and confirmationCode are required." }, { status: 400 });
   }
-  if (typeof amount !== "number" || amount <= 0) {
+  if (typeof month !== "string" || !month.trim()) {
+    return NextResponse.json({ ok: false, error: "affiliateId, month, and confirmationCode are required." }, { status: 400 });
+  }
+  if (typeof confirmationCode !== "string" || !confirmationCode.trim() || confirmationCode.length > 200) {
+    return NextResponse.json({ ok: false, error: "affiliateId, month, and confirmationCode are required." }, { status: 400 });
+  }
+  if (typeof amount !== "number" || !Number.isFinite(amount) || amount <= 0 || amount > 1_000_000) {
     return NextResponse.json({ ok: false, error: "amount must be a positive number." }, { status: 400 });
   }
-  // Validate month format YYYY-MM
   if (!/^\d{4}-\d{2}$/.test(month)) {
     return NextResponse.json({ ok: false, error: "month must be YYYY-MM format." }, { status: 400 });
+  }
+  if (note !== undefined && (typeof note !== "string" || note.length > 1000)) {
+    return NextResponse.json({ ok: false, error: "note must be a string under 1000 characters." }, { status: 400 });
   }
 
   const record = await savePayoutRecord(affiliateId, month, {

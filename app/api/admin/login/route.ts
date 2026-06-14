@@ -8,7 +8,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Too many attempts. Try again later." }, { status: 429 });
   }
 
-  const { password } = (await req.json()) ?? {};
+  const body = (await req.json()) ?? {};
+  const { password } = body;
+
+  if (typeof password !== "string" || password.length === 0 || password.length > 128) {
+    return NextResponse.json({ ok: false, error: "Invalid password" }, { status: 401 });
+  }
 
   const adminPassword = process.env.ADMIN_PASSWORD;
   const sessionToken = process.env.ADMIN_SESSION_TOKEN;
