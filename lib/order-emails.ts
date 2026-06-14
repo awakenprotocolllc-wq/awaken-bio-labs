@@ -1,4 +1,4 @@
-import { sendEmail } from "./email";
+import { sendEmail, escape } from "./email";
 import { type Order } from "./db";
 
 // ---------------------------------------------------------------------------
@@ -10,10 +10,10 @@ function itemsRowsCustomer(items: Order["items"]): string {
     .map(
       (item) => `
     <tr>
-      <td style="padding:12px 14px;border-bottom:1px solid #2A2D33;color:#F4F4F2;font-family:'Courier New',monospace;font-size:13px;">${item.product}</td>
-      <td style="padding:12px 14px;border-bottom:1px solid #2A2D33;color:#57C7D6;font-family:'Courier New',monospace;font-size:13px;text-align:center;">${item.strength}</td>
+      <td style="padding:12px 14px;border-bottom:1px solid #2A2D33;color:#F4F4F2;font-family:'Courier New',monospace;font-size:13px;">${escape(item.product)}</td>
+      <td style="padding:12px 14px;border-bottom:1px solid #2A2D33;color:#57C7D6;font-family:'Courier New',monospace;font-size:13px;text-align:center;">${escape(item.strength)}</td>
       <td style="padding:12px 14px;border-bottom:1px solid #2A2D33;color:#F4F4F2;font-family:'Courier New',monospace;font-size:13px;text-align:center;">${item.qty}</td>
-      <td style="padding:12px 14px;border-bottom:1px solid #2A2D33;color:#57C7D6;font-family:'Courier New',monospace;font-size:13px;text-align:right;font-weight:bold;">${item.price}</td>
+      <td style="padding:12px 14px;border-bottom:1px solid #2A2D33;color:#57C7D6;font-family:'Courier New',monospace;font-size:13px;text-align:right;font-weight:bold;">${escape(item.price)}</td>
     </tr>`
     )
     .join("");
@@ -24,10 +24,10 @@ function itemsRowsAdmin(items: Order["items"]): string {
     .map(
       (item) => `
     <tr>
-      <td style="padding:8px 12px;border:1px solid #ddd;">${item.product}</td>
-      <td style="padding:8px 12px;border:1px solid #ddd;text-align:center;">${item.strength}</td>
+      <td style="padding:8px 12px;border:1px solid #ddd;">${escape(item.product)}</td>
+      <td style="padding:8px 12px;border:1px solid #ddd;text-align:center;">${escape(item.strength)}</td>
       <td style="padding:8px 12px;border:1px solid #ddd;text-align:center;">${item.qty}</td>
-      <td style="padding:8px 12px;border:1px solid #ddd;text-align:right;font-weight:bold;">${item.price}</td>
+      <td style="padding:8px 12px;border:1px solid #ddd;text-align:right;font-weight:bold;">${escape(item.price)}</td>
     </tr>`
     )
     .join("");
@@ -53,7 +53,7 @@ export async function sendCustomerOrderEmail(order: Order) {
     <p style="font-family:'Courier New',monospace;color:#57C7D6;font-size:11px;letter-spacing:0.25em;text-transform:uppercase;margin:0 0 12px;">AWAKEN BIO LABS</p>
     <h1 style="color:#F4F4F2;font-size:26px;margin:0 0 8px;font-weight:700;">Order Confirmed</h1>
     <p style="font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;margin:0;">
-      Order <strong style="color:#57C7D6;">#${order.id.toUpperCase()}</strong>
+      Order <strong style="color:#57C7D6;">#${escape(order.id.toUpperCase())}</strong>
       &nbsp;·&nbsp;
       ${new Date(order.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
     </p>
@@ -61,7 +61,7 @@ export async function sendCustomerOrderEmail(order: Order) {
 
   <!-- Confirmation message -->
   <p style="color:#D9D9DC;font-size:15px;line-height:1.7;margin:0 0 28px;">
-    Hi <strong style="color:#F4F4F2;">${order.customer.name}</strong>,<br /><br />
+    Hi <strong style="color:#F4F4F2;">${escape(order.customer.name)}</strong>,<br /><br />
     Your payment has been received and your order is confirmed. We&apos;re preparing your package and will ship it within 1 business day. You&apos;ll receive a shipping notification once it&apos;s on its way.
   </p>
 
@@ -72,7 +72,7 @@ export async function sendCustomerOrderEmail(order: Order) {
       📲 &nbsp;Action Required — Send Zelle Payment
     </p>
     <p style="font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;margin:0 0 6px;">
-      Amount: <strong style="color:#57C7D6;">${displayTotal}</strong>
+      Amount: <strong style="color:#57C7D6;">${escape(displayTotal)}</strong>
     </p>
     <p style="font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;margin:0 0 6px;">
       Zelle ID: <strong style="color:#F4F4F2;">awakenbiolabs</strong>
@@ -86,7 +86,7 @@ export async function sendCustomerOrderEmail(order: Order) {
   </div>` : `
   <div style="background:#0d2e1a;border:1px solid #1a5c35;padding:16px 20px;margin:0 0 28px;">
     <p style="font-family:'Courier New',monospace;color:#2ecc71;font-size:12px;letter-spacing:0.15em;text-transform:uppercase;margin:0;">
-      ✓ &nbsp;Payment confirmed &nbsp;·&nbsp; ${displayTotal}
+      ✓ &nbsp;Payment confirmed &nbsp;·&nbsp; ${escape(displayTotal)}
     </p>
   </div>`}
 
@@ -111,26 +111,26 @@ export async function sendCustomerOrderEmail(order: Order) {
       <table style="width:100%;border-collapse:collapse;">
         <tr>
           <td style="padding:4px 0;font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;">Subtotal</td>
-          <td style="padding:4px 0;font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;text-align:right;">${order.subtotal}</td>
+          <td style="padding:4px 0;font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;text-align:right;">${escape(order.subtotal)}</td>
         </tr>
         ${order.discountAmount ? `
         <tr>
-          <td style="padding:4px 0;font-family:'Courier New',monospace;color:#2ecc71;font-size:12px;">Discount${order.discountCode ? ` (${order.discountCode})` : ""}</td>
-          <td style="padding:4px 0;font-family:'Courier New',monospace;color:#2ecc71;font-size:12px;text-align:right;">−${order.discountAmount}</td>
+          <td style="padding:4px 0;font-family:'Courier New',monospace;color:#2ecc71;font-size:12px;">Discount${order.discountCode ? ` (${escape(order.discountCode)})` : ""}</td>
+          <td style="padding:4px 0;font-family:'Courier New',monospace;color:#2ecc71;font-size:12px;text-align:right;">−${escape(order.discountAmount)}</td>
         </tr>` : ""}
         ${order.shippingCost ? `
         <tr>
           <td style="padding:4px 0;font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;">Shipping — UPS 2-Day</td>
-          <td style="padding:4px 0;font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;text-align:right;">${order.shippingCost}</td>
+          <td style="padding:4px 0;font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;text-align:right;">${escape(order.shippingCost)}</td>
         </tr>` : ""}
         ${order.processingFee ? `
         <tr>
           <td style="padding:4px 0;font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;">Card Processing (4%)</td>
-          <td style="padding:4px 0;font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;text-align:right;">${order.processingFee}</td>
+          <td style="padding:4px 0;font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;text-align:right;">${escape(order.processingFee)}</td>
         </tr>` : ""}
         <tr>
           <td style="padding:10px 0 4px;border-top:1px solid #57C7D6;font-family:'Courier New',monospace;color:#D9D9DC;font-size:13px;font-weight:bold;text-transform:uppercase;letter-spacing:0.1em;">${order.paymentMethod === "zelle" ? "Order Total (Due via Zelle)" : "Total Charged"}</td>
-          <td style="padding:10px 0 4px;border-top:1px solid #57C7D6;font-family:'Courier New',monospace;color:#57C7D6;font-size:20px;font-weight:bold;text-align:right;">${displayTotal}</td>
+          <td style="padding:10px 0 4px;border-top:1px solid #57C7D6;font-family:'Courier New',monospace;color:#57C7D6;font-size:20px;font-weight:bold;text-align:right;">${escape(displayTotal)}</td>
         </tr>
       </table>
     </div>
@@ -140,16 +140,16 @@ export async function sendCustomerOrderEmail(order: Order) {
   <div style="background:#141518;border:1px solid #2A2D33;margin:0 0 24px;padding:20px;">
     <p style="font-family:'Courier New',monospace;color:#57C7D6;font-size:10px;letter-spacing:0.25em;text-transform:uppercase;margin:0 0 14px;">— SHIP TO —</p>
     <p style="color:#F4F4F2;font-size:14px;line-height:1.9;margin:0;">
-      ${order.customer.name}<br />
-      ${order.shipping.line1}<br />
-      ${order.shipping.city}, ${order.shipping.state} ${order.shipping.zip}
+      ${escape(order.customer.name)}<br />
+      ${escape(order.shipping.line1)}<br />
+      ${escape(order.shipping.city)}, ${escape(order.shipping.state)} ${escape(order.shipping.zip)}
     </p>
   </div>
 
   ${order.notes ? `
   <div style="background:#141518;border:1px solid #2A2D33;margin:0 0 24px;padding:20px;">
     <p style="font-family:'Courier New',monospace;color:#57C7D6;font-size:10px;letter-spacing:0.25em;text-transform:uppercase;margin:0 0 10px;">— ORDER NOTES —</p>
-    <p style="color:#D9D9DC;font-size:14px;line-height:1.6;margin:0;">${order.notes}</p>
+    <p style="color:#D9D9DC;font-size:14px;line-height:1.6;margin:0;">${escape(order.notes)}</p>
   </div>` : ""}
 
   <!-- Footer -->
@@ -197,7 +197,7 @@ export async function sendAdminOrderEmail(order: Order) {
   <table style="width:100%;border-collapse:collapse;margin:0 0 24px;">
     <tr>
       <td style="padding:8px 0;color:#666;font-size:13px;width:140px;">Order ID</td>
-      <td style="padding:8px 0;font-weight:bold;font-family:'Courier New',monospace;font-size:13px;">#${order.id.toUpperCase()}</td>
+      <td style="padding:8px 0;font-weight:bold;font-family:'Courier New',monospace;font-size:13px;">#${escape(order.id.toUpperCase())}</td>
     </tr>
     <tr>
       <td style="padding:8px 0;color:#666;font-size:13px;">Placed</td>
@@ -212,17 +212,17 @@ export async function sendAdminOrderEmail(order: Order) {
     </tr>
     <tr>
       <td style="padding:8px 0;color:#666;font-size:13px;">Total</td>
-      <td style="padding:8px 0;color:#0070d2;font-size:20px;font-weight:bold;">${displayTotal}</td>
+      <td style="padding:8px 0;color:#0070d2;font-size:20px;font-weight:bold;">${escape(displayTotal)}</td>
     </tr>
     ${order.discountCode ? `
     <tr>
       <td style="padding:8px 0;color:#666;font-size:13px;">Discount Code</td>
-      <td style="padding:8px 0;font-family:'Courier New',monospace;font-size:13px;color:#2e7d32;">${order.discountCode}${order.discountAmount ? ` (−${order.discountAmount})` : ""}</td>
+      <td style="padding:8px 0;font-family:'Courier New',monospace;font-size:13px;color:#2e7d32;">${escape(order.discountCode)}${order.discountAmount ? ` (−${escape(order.discountAmount)})` : ""}</td>
     </tr>` : ""}
     ${order.refCode && order.refCode !== order.discountCode ? `
     <tr>
       <td style="padding:8px 0;color:#666;font-size:13px;">Ref Code</td>
-      <td style="padding:8px 0;font-family:'Courier New',monospace;font-size:13px;">${order.refCode}</td>
+      <td style="padding:8px 0;font-family:'Courier New',monospace;font-size:13px;">${escape(order.refCode)}</td>
     </tr>` : ""}
   </table>
 
@@ -230,20 +230,20 @@ export async function sendAdminOrderEmail(order: Order) {
   <table style="width:100%;border-collapse:collapse;margin:0 0 24px;">
     <tr>
       <td style="padding:6px 0;color:#666;font-size:13px;width:140px;">Name</td>
-      <td style="padding:6px 0;font-size:13px;font-weight:600;">${order.customer.name}</td>
+      <td style="padding:6px 0;font-size:13px;font-weight:600;">${escape(order.customer.name)}</td>
     </tr>
     <tr>
       <td style="padding:6px 0;color:#666;font-size:13px;">Email</td>
-      <td style="padding:6px 0;font-size:13px;"><a href="mailto:${order.customer.email}" style="color:#0070d2;">${order.customer.email}</a></td>
+      <td style="padding:6px 0;font-size:13px;"><a href="mailto:${escape(order.customer.email)}" style="color:#0070d2;">${escape(order.customer.email)}</a></td>
     </tr>
-    ${order.customer.phone ? `<tr><td style="padding:6px 0;color:#666;font-size:13px;">Phone</td><td style="padding:6px 0;font-size:13px;">${order.customer.phone}</td></tr>` : ""}
+    ${order.customer.phone ? `<tr><td style="padding:6px 0;color:#666;font-size:13px;">Phone</td><td style="padding:6px 0;font-size:13px;">${escape(order.customer.phone)}</td></tr>` : ""}
   </table>
 
   <h3 style="color:#0A0B0D;margin:0 0 12px;font-size:15px;text-transform:uppercase;letter-spacing:0.05em;">Ship To</h3>
   <p style="margin:0 0 24px;font-size:14px;line-height:1.8;color:#333;padding:14px;background:#f5f5f5;border-left:4px solid #57C7D6;">
-    ${order.customer.name}<br />
-    ${order.shipping.line1}<br />
-    ${order.shipping.city}, ${order.shipping.state} ${order.shipping.zip}
+    ${escape(order.customer.name)}<br />
+    ${escape(order.shipping.line1)}<br />
+    ${escape(order.shipping.city)}, ${escape(order.shipping.state)} ${escape(order.shipping.zip)}
   </p>
 
   <h3 style="color:#0A0B0D;margin:0 0 12px;font-size:15px;text-transform:uppercase;letter-spacing:0.05em;">Items Ordered</h3>
@@ -260,12 +260,12 @@ export async function sendAdminOrderEmail(order: Order) {
     <tfoot>
       <tr style="background:#f0f0f0;font-weight:bold;">
         <td colspan="3" style="padding:12px;border:1px solid #ddd;font-size:14px;">TOTAL CHARGED</td>
-        <td style="padding:12px;border:1px solid #ddd;text-align:right;font-size:18px;color:#0070d2;">${displayTotal}</td>
+        <td style="padding:12px;border:1px solid #ddd;text-align:right;font-size:18px;color:#0070d2;">${escape(displayTotal)}</td>
       </tr>
     </tfoot>
   </table>
 
-  ${order.notes ? `<h3 style="color:#0A0B0D;margin:0 0 8px;font-size:15px;">Customer Notes</h3><p style="margin:0 0 24px;padding:14px;background:#f5f5f5;font-size:14px;line-height:1.6;color:#333;">${order.notes}</p>` : ""}
+  ${order.notes ? `<h3 style="color:#0A0B0D;margin:0 0 8px;font-size:15px;">Customer Notes</h3><p style="margin:0 0 24px;padding:14px;background:#f5f5f5;font-size:14px;line-height:1.6;color:#333;">${escape(order.notes)}</p>` : ""}
 
   ${order.paymentMethod === "zelle" ? `
   <div style="padding:16px;background:#fff3cd;border:1px solid #ffc107;border-radius:4px;">
