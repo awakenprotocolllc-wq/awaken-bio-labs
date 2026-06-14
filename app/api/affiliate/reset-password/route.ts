@@ -5,6 +5,8 @@ import {
   validateAffiliateLogin,
   setAffiliatePassword,
 } from "@/lib/affiliate-db";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
+import { validatePassword, checkBreachedPassword } from "@/lib/password";
 
 // POST /api/affiliate/reset-password
 //
@@ -13,6 +15,15 @@ import {
 //   2. In-dashboard change   — body: { currentPassword, newPassword }  (requires session cookie)
 export async function POST(req: NextRequest) {
   try {
+    // 5 attempts per minute per IP — applies to both modes
+    const { allowed } = await rateLimit(`password-change:${clientIp(req)}`, 5, 60);
+    if (!allowed) {
+      return NextResponse.json(
+        { ok: false, error: "Too many attempts. Please wait a moment and try again." },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json();
 
     // ── Mode 2: authenticated password change from dashboard ──
@@ -22,8 +33,10 @@ export async function POST(req: NextRequest) {
       if (!currentPassword || typeof currentPassword !== "string" || currentPassword.length > 128) {
         return NextResponse.json({ ok: false, error: "Current password is required." }, { status: 400 });
       }
-      if (!newPassword || typeof newPassword !== "string" || newPassword.length < 6 || newPassword.length > 128) {
-        return NextResponse.json({ ok: false, error: "New password must be 6–128 characters." }, { status: 400 });
+
+      const pwError = validatePassword(newPassword ?? "");
+      if (pwError) {
+        return NextResponse.json({ ok: false, error: pwError }, { status: 400 });
       }
 
       const sessionToken = req.cookies.get("awaken_affiliate")?.value;
@@ -42,6 +55,13 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ ok: false, error: "Current password is incorrect." }, { status: 403 });
       }
 
+      if (await checkBreachedPassword(newPassword)) {
+        return NextResponse.json(
+          { ok: false, error: "This password has appeared in a data breach. Please choose a different one." },
+          { status: 400 }
+        );
+      }
+
       const ok = await setAffiliatePassword(account.id, newPassword);
       if (!ok) {
         return NextResponse.json({ ok: false, error: "Failed to update password. Please try again." }, { status: 500 });
@@ -56,9 +76,15 @@ export async function POST(req: NextRequest) {
     if (!token || typeof token !== "string" || token.length > 256) {
       return NextResponse.json({ ok: false, error: "Missing reset token." }, { status: 400 });
     }
-    if (!password || typeof password !== "string" || password.length < 8 || password.length > 128) {
+
+    const pwError = validatePassword(password ?? "");
+    if (pwError) {
+      return NextResponse.json({ ok: false, error: pwError }, { status: 400 });
+    }
+
+    if (await checkBreachedPassword(password)) {
       return NextResponse.json(
-        { ok: false, error: "Password must be 8–128 characters." },
+        { ok: false, error: "This password has appeared in a data breach. Please choose a different one." },
         { status: 400 }
       );
     }

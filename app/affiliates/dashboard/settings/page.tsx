@@ -80,7 +80,7 @@ export default function SettingsPage() {
   async function handlePasswordSave(e: React.FormEvent) {
     e.preventDefault();
     setPassError(null);
-    if (newPass.length < 6) { setPassError("New password must be at least 6 characters."); return; }
+    if (newPass.length < 8) { setPassError("New password must be at least 8 characters."); return; }
     if (newPass !== confirmPass) { setPassError("Passwords do not match."); return; }
     setPassSaving(true);
     try {
@@ -208,7 +208,8 @@ export default function SettingsPage() {
             <div>
               <label className="block font-mono text-xs text-bone tracking-wider uppercase mb-2">New Password</label>
               <input type="password" value={newPass} onChange={(e) => setNewPass(e.target.value)} required
-                className="w-full bg-obsidian border border-slate text-paper font-sans px-4 h-12 min-h-[44px] focus:border-accent focus:outline-none transition-colors" />
+                minLength={8} placeholder="Min. 8 characters"
+                className="w-full bg-obsidian border border-slate text-paper font-sans px-4 h-12 min-h-[44px] focus:border-accent focus:outline-none transition-colors placeholder:text-bone/40" />
             </div>
             <div>
               <label className="block font-mono text-xs text-bone tracking-wider uppercase mb-2">Confirm New Password</label>
