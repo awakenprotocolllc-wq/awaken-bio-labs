@@ -433,6 +433,44 @@ export async function setAffiliatePassword(affiliateId: string, newPassword: str
 }
 
 // ---------------------------------------------------------------------------
+// Payout records  (admin records confirmed payments per affiliate per month)
+// ---------------------------------------------------------------------------
+
+export type PayoutRecord = {
+  affiliateId: string;
+  month: string;           // "YYYY-MM" — the earnings month being paid
+  amount: number;          // actual $ disbursed
+  confirmationCode: string; // ACH trace / wire ref / check number
+  paidAt: string;          // ISO timestamp
+  note?: string;
+};
+
+export async function savePayoutRecord(
+  affiliateId: string,
+  month: string,
+  data: { amount: number; confirmationCode: string; note?: string }
+): Promise<PayoutRecord> {
+  const record: PayoutRecord = { affiliateId, month, paidAt: new Date().toISOString(), ...data };
+  await kv.set(`aff:payoutrec:${affiliateId}:${month}`, record);
+  return record;
+}
+
+export async function getPayoutRecord(affiliateId: string, month: string): Promise<PayoutRecord | null> {
+  return kv.get<PayoutRecord>(`aff:payoutrec:${affiliateId}:${month}`);
+}
+
+export async function getPayoutRecordsForMonths(
+  affiliateId: string,
+  months: string[]
+): Promise<Record<string, PayoutRecord>> {
+  if (!months.length) return {};
+  const records = await Promise.all(months.map((m) => kv.get<PayoutRecord>(`aff:payoutrec:${affiliateId}:${m}`)));
+  const out: Record<string, PayoutRecord> = {};
+  months.forEach((m, i) => { if (records[i]) out[m] = records[i]!; });
+  return out;
+}
+
+// ---------------------------------------------------------------------------
 // Referral stats
 // ---------------------------------------------------------------------------
 
