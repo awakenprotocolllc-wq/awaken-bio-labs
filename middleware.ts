@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateAdminSession } from "@/lib/admin-auth";
 import { getAffiliateSession } from "@/lib/affiliate-db";
-import { getCustomerSession } from "@/lib/customer-db";
+import { verifyCustomerToken } from "@/lib/customer-session";
 import { clientIp } from "@/lib/rate-limit";
 
 export async function middleware(req: NextRequest) {
@@ -83,8 +83,8 @@ export async function middleware(req: NextRequest) {
     !publicAccountPaths.some((p) => pathname.startsWith(p))
   ) {
     const token = req.cookies.get("awaken_customer")?.value;
-    const customer = await getCustomerSession(token, context);
-    if (!customer) {
+    const valid = await verifyCustomerToken(token, context);
+    if (!valid) {
       const loginUrl = req.nextUrl.clone();
       loginUrl.pathname = "/account/login";
       loginUrl.search = `next=${encodeURIComponent(pathname)}`;
