@@ -164,7 +164,6 @@ export async function PATCH(
         contractUrl,
         commissionRate: aff.commissionRate,
       });
-      console.log("[resend-contract] sent to:", aff.email);
     } catch (err) {
       console.error("[resend-contract] email failed:", err);
       return NextResponse.json({ ok: false, error: "Failed to send email" }, { status: 500 });

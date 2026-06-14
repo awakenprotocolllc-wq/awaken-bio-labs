@@ -20,8 +20,7 @@ export async function sendEmail({ to, subject, html, replyTo }: SendArgs) {
   const from = process.env.EMAIL_FROM || "onboarding@resend.dev";
 
   if (!apiKey) {
-    console.log("[email:fallback] No RESEND_API_KEY set. Would have sent:");
-    console.log({ to: recipient, from, subject, replyTo });
+    console.log("[email:fallback] No RESEND_API_KEY set — email suppressed (set env var to enable delivery)");
     return { ok: true, fallback: true };
   }
 

@@ -28,7 +28,7 @@ import { createShipStationOrder } from "@/lib/shipstation";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    console.log("[quiklie/webhook] received:", JSON.stringify(body).slice(0, 500));
+    console.log("[quiklie/webhook] received: status=%s statusCode=%s txRef=%s", body.status, body.statusCode, body.transactionReferenceId ?? body.transactionId ?? "(none)");
 
     // Validate API key
     const incomingKey = req.headers.get("x-api-key") ?? req.headers.get("X-API-Key") ?? "";
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!orderId) {
-      console.error("[quiklie/webhook] Could not resolve orderId:", body);
+      console.error("[quiklie/webhook] Could not resolve orderId — txRef=%s customerRef=%s txId=%s", body.transactionReferenceId, body.customerReferenceId, body.transactionId);
       return NextResponse.json({ ok: false, error: "Order not found" });
     }
 

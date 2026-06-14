@@ -295,7 +295,6 @@ export async function POST(req: NextRequest) {
       });
 
       quiklieData = await quiklieRes.json();
-      console.log("[orders/quiklie] full response:", JSON.stringify(quiklieData));
     } catch (fetchErr) {
       console.error("[orders/quiklie] network error:", fetchErr);
       return NextResponse.json({ ok: false, error: "Payment gateway unreachable. Please try again." }, { status: 502 });
@@ -354,7 +353,7 @@ export async function POST(req: NextRequest) {
 
     // Unknown / error response
     const msg = (quiklieData.message as string) || "Payment could not be processed. Please try again.";
-    console.error("[orders/quiklie] unexpected statusCode:", statusCode, quiklieData);
+    console.error("[orders/quiklie] unexpected statusCode:", statusCode, (quiklieData.message as string) ?? "(no message)");
     return NextResponse.json({ ok: false, error: msg }, { status: 402 });
 
   } catch (err) {
