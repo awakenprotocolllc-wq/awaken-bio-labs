@@ -38,7 +38,7 @@ export type AffiliateAccount = {
 };
 
 // Internal — never returned to client
-type AffiliateAccountInternal = AffiliateAccount & { passwordHash: string };
+type AffiliateAccountInternal = AffiliateAccount & { passwordHash: string; passwordVersion?: number };
 
 export type ContractToken = {
   token: string;
@@ -243,7 +243,7 @@ export async function validateAffiliateLogin(email: string, password: string): P
   }
 
   if (!valid) return null;
-  const { passwordHash, ...safe } = account;
+  const { passwordHash, passwordVersion: _pv, ...safe } = account;
   return safe;
 }
 
@@ -257,19 +257,37 @@ export async function validateDiscountCode(code: string): Promise<{ valid: boole
 // Sessions
 // ---------------------------------------------------------------------------
 
+type AffiliateSessionRecord = { affiliateId: string; passwordVersion: number };
+
 export async function createAffiliateSession(affiliateId: string): Promise<string> {
   const token = randomBytes(32).toString("hex");
-  await kv.set(`aff:session:${token}`, affiliateId, { ex: 60 * 60 * 24 * 30 });
+  const account = await kv.get<AffiliateAccountInternal>(`aff:account:${affiliateId}`);
+  const passwordVersion = account?.passwordVersion ?? 0;
+  const record: AffiliateSessionRecord = { affiliateId, passwordVersion };
+  await kv.set(`aff:session:${token}`, record, { ex: 60 * 60 * 24 * 30 });
   return token;
 }
 
 export async function getAffiliateSession(token: string): Promise<AffiliateAccount | null> {
-  const id = await kv.get<string>(`aff:session:${token}`);
-  if (!id) return null;
-  const account = await kv.get<AffiliateAccountInternal>(`aff:account:${id}`);
-  // Block suspended and archived accounts from dashboard access
+  const raw = await kv.get<AffiliateSessionRecord | string>(`aff:session:${token}`);
+  if (!raw) return null;
+
+  // Support legacy sessions stored as plain affiliateId strings (pre-passwordVersion)
+  let affiliateId: string;
+  let sessionPasswordVersion: number;
+  if (typeof raw === "string") {
+    affiliateId = raw;
+    sessionPasswordVersion = 0;
+  } else {
+    affiliateId = raw.affiliateId;
+    sessionPasswordVersion = raw.passwordVersion;
+  }
+
+  const account = await kv.get<AffiliateAccountInternal>(`aff:account:${affiliateId}`);
+  // Block suspended/archived accounts and sessions created before the last password change
   if (!account || account.status !== "active") return null;
-  const { passwordHash, ...safe } = account;
+  if ((account.passwordVersion ?? 0) !== sessionPasswordVersion) return null;
+  const { passwordHash, passwordVersion: _pv, ...safe } = account;
   return safe;
 }
 
@@ -296,7 +314,7 @@ export async function updateAffiliateProgram(
     programSwitchedAt: new Date().toISOString(),
   };
   await kv.set(`aff:account:${id}`, updated);
-  const { passwordHash, ...safe } = updated;
+  const { passwordHash, passwordVersion: _pv3, ...safe } = updated;
   return safe;
 }
 
@@ -364,7 +382,7 @@ export async function updateAffiliateDetails(
   };
 
   await kv.set(`aff:account:${id}`, updated);
-  const { passwordHash, ...safe } = updated;
+  const { passwordHash, passwordVersion: _pv4, ...safe } = updated;
   return safe;
 }
 
@@ -424,10 +442,13 @@ export async function consumePasswordResetToken(token: string, newPassword: stri
 
   const newHash = await hashPassword(newPassword);
 
-  // Write new password hash to account
+  const newVersion = (account.passwordVersion ?? 0) + 1;
+
+  // Write new password hash + bump version (invalidates all existing sessions)
   await kv.set(`aff:account:${record.affiliateId}`, {
     ...account,
     passwordHash: newHash,
+    passwordVersion: newVersion,
   });
 
   // Verify the write actually landed before marking the token used
@@ -448,7 +469,9 @@ export async function setAffiliatePassword(affiliateId: string, newPassword: str
   const account = await kv.get<AffiliateAccountInternal>(`aff:account:${affiliateId}`);
   if (!account) return false;
   const newHash = await hashPassword(newPassword);
-  await kv.set(`aff:account:${affiliateId}`, { ...account, passwordHash: newHash });
+  const newVersion = (account.passwordVersion ?? 0) + 1;
+  // Bump passwordVersion to invalidate all existing sessions
+  await kv.set(`aff:account:${affiliateId}`, { ...account, passwordHash: newHash, passwordVersion: newVersion });
   // Verify write
   const verify = await kv.get<AffiliateAccountInternal>(`aff:account:${affiliateId}`);
   return !!verify && verify.passwordHash === newHash;
