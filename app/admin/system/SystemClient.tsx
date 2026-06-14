@@ -121,6 +121,10 @@ export default function SystemClient({ envVars, shipstation, rotationStatus }: P
               Payouts
             </Link>
             <span className="text-slate">·</span>
+            <Link href="/admin/customers" className="font-mono text-bone text-xs tracking-wider hover:text-accent transition-colors">
+              Customers
+            </Link>
+            <span className="text-slate">·</span>
             <span className="font-mono text-accent text-xs tracking-wider">System</span>
           </div>
         </div>

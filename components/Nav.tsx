@@ -61,6 +61,18 @@ export default function Nav() {
           </nav>
 
           <div className="flex items-center gap-3 sm:gap-4">
+            {/* Account icon */}
+            <a
+              href="/account"
+              aria-label="My account"
+              className="text-paper hover:text-accent transition-colors h-11 w-11 flex items-center justify-center"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square"/>
+                <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square"/>
+              </svg>
+            </a>
+
             {/* Cart icon with badge */}
             <button
               aria-label="Open cart"
@@ -148,9 +160,16 @@ export default function Nav() {
                 </motion.a>
               ))}
               <a
+                href="/account"
+                onClick={() => setOpen(false)}
+                className="mt-8 border border-slate text-paper font-sans text-2xl font-bold py-3 border-b border-slate"
+              >
+                My Account
+              </a>
+              <a
                 href="/shop"
                 onClick={() => setOpen(false)}
-                className="mt-8 bg-accent text-obsidian font-semibold px-6 py-4 text-center hover:bg-accent/80 transition-colors"
+                className="mt-4 bg-accent text-obsidian font-semibold px-6 py-4 text-center hover:bg-accent/80 transition-colors"
               >
                 Shop Now
               </a>

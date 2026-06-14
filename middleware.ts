@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateAdminSession } from "@/lib/admin-auth";
 import { getAffiliateSession } from "@/lib/affiliate-db";
+import { getCustomerSession } from "@/lib/customer-db";
 import { clientIp } from "@/lib/rate-limit";
 
 export async function middleware(req: NextRequest) {
@@ -70,7 +71,29 @@ export async function middleware(req: NextRequest) {
   }
 
   // ------------------------------------------------------------------
-  // 3. Set affiliate referral cookie when ?ref= is present
+  // 3. Protect /account/* (except public auth pages)
+  // ------------------------------------------------------------------
+  const publicAccountPaths = [
+    "/account/login", "/account/signup",
+    "/account/forgot-password", "/account/reset-password",
+    "/account/verify-email",
+  ];
+  if (
+    pathname.startsWith("/account") &&
+    !publicAccountPaths.some((p) => pathname.startsWith(p))
+  ) {
+    const token = req.cookies.get("awaken_customer")?.value;
+    const customer = await getCustomerSession(token, context);
+    if (!customer) {
+      const loginUrl = req.nextUrl.clone();
+      loginUrl.pathname = "/account/login";
+      loginUrl.search = `next=${encodeURIComponent(pathname)}`;
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // 4. Set affiliate referral cookie when ?ref= is present
   //    60-day window, last-click attribution
   // ------------------------------------------------------------------
   const ref = searchParams.get("ref");
@@ -93,6 +116,7 @@ export const config = {
   matcher: [
     "/admin/:path*",
     "/affiliates/dashboard/:path*",
+    "/account/:path*",
     // Match all pages (not static assets) to capture ?ref= on any URL
     "/((?!_next/static|_next/image|favicon\\.ico|.*\\.(?:png|jpg|jpeg|svg|gif|ico|webp)).*)",
   ],

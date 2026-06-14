@@ -1,8 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import Link from "next/link";
 import { useCart } from "@/lib/cart";
+import SuccessTransition from "@/components/SuccessTransition";
+import type { CustomerAccount, SavedPayment } from "@/lib/customer-db";
 
 function parsePrice(p: string): number {
   const n = parseFloat(p.replace(/[^0-9.]/g, ""));
@@ -30,6 +33,11 @@ export default function CheckoutForm() {
   const router = useRouter();
   const { items, addItem, updateQty, removeItem, clearCart } = useCart();
 
+  // Customer session (null = not checked yet or logged out, use sessionChecked to distinguish)
+  const [customer, setCustomer] = useState<CustomerAccount | null>(null);
+  const [savedPayment, setSavedPayment] = useState<Pick<SavedPayment, "last4"|"brand"|"expiryMonth"|"expiryYear"> | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
+
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -49,6 +57,8 @@ export default function CheckoutForm() {
     expiryYear: "",
     cvv: "",
   });
+  const [useSavedCard, setUseSavedCard]   = useState(false);
+  const [saveCard, setSaveCard]           = useState(false);
 
   // OTP flow state (statusCode 3)
   const [otpState, setOtpState] = useState<{ transactionId: string; orderId: string } | null>(null);
@@ -64,6 +74,49 @@ export default function CheckoutForm() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Success transition
+  const [successLabel, setSuccessLabel] = useState("");
+  const pendingRedirect = useRef<string>("");
+  const handleSuccessComplete = useCallback(() => {
+    router.push(pendingRedirect.current);
+  }, [router]);
+
+  // Check customer session on mount and pre-fill form
+  useEffect(() => {
+    fetch("/api/customer/me")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.ok && data.customer) {
+          const c: CustomerAccount = data.customer;
+          setCustomer(c);
+          setSavedPayment(data.savedPayment ?? null);
+          // Pre-fill name and email
+          setForm((f) => ({
+            ...f,
+            name:  f.name  || c.name,
+            email: f.email || c.email,
+          }));
+          // Pre-fill default address if available
+          const defaultAddr = c.addresses?.find((a) => a.isDefault);
+          if (defaultAddr) {
+            setForm((f) => ({
+              ...f,
+              line1: f.line1 || defaultAddr.line1,
+              city:  f.city  || defaultAddr.city,
+              state: f.state || defaultAddr.state,
+              zip:   f.zip   || defaultAddr.zip,
+            }));
+          }
+          // Offer saved card if one exists
+          if (data.savedPayment) setUseSavedCard(true);
+        } else {
+          setCustomer(null);
+        }
+        setSessionChecked(true);
+      })
+      .catch(() => { setCustomer(null); setSessionChecked(true); });
+  }, []);
 
   // Discount code state
   const [discountInput, setDiscountInput] = useState("");
@@ -186,13 +239,17 @@ export default function CheckoutForm() {
           processingFee: processingFee > 0 ? fmtPrice(processingFee) : undefined,
           orderTotal: fmtPrice(orderTotal),
           paymentMethod,
-          card: paymentMethod === "card" ? {
+          // If using saved card, signal the API to decrypt and use it
+          useSavedCard: useSavedCard && !!savedPayment,
+          card: paymentMethod === "card" && !useSavedCard ? {
             number: card.number.replace(/\s/g, ""),
             holderName: card.holderName,
             expiryMonth: card.expiryMonth,
             expiryYear: card.expiryYear,
             cvv: card.cvv,
           } : undefined,
+          saveCard: saveCard && paymentMethod === "card" && !useSavedCard,
+          customerId: customer ? customer.id : undefined,
           website: honeypot, // honeypot — backend rejects if non-empty
         }),
       });
@@ -208,13 +265,14 @@ export default function CheckoutForm() {
 
       clearCart();
 
-      // Zelle — go to confirmation with zelle instructions
+      // Zelle — show success then go to confirmation
       if (data.zelle) {
-        router.push(`/order-confirmation?id=${data.orderId}&method=zelle`);
+        pendingRedirect.current = `/order-confirmation?id=${data.orderId}&method=zelle`;
+        setSuccessLabel("Order placed");
         return;
       }
 
-      // 3DS required — redirect to Quiklie authentication page
+      // 3DS required — redirect to Quiklie authentication page (no overlay — leaving site)
       if (data.requires3DS && data.redirectUrl) {
         if (!String(data.redirectUrl).startsWith("https://")) {
           setError("Payment could not be processed. Please try again.");
@@ -225,15 +283,16 @@ export default function CheckoutForm() {
         return;
       }
 
-      // OTP required — show OTP input
+      // OTP required — show OTP input (no overlay — more steps needed)
       if (data.requiresOTP && data.transactionId) {
         setOtpState({ transactionId: data.transactionId, orderId: data.orderId });
         setLoading(false);
         return;
       }
 
-      // Direct success or pending
-      router.push(`/order-confirmation?id=${data.orderId}&method=card`);
+      // Direct card success — show success then go to confirmation
+      pendingRedirect.current = `/order-confirmation?id=${data.orderId}&method=card`;
+      setSuccessLabel("Payment confirmed");
 
     } catch {
       setError("Something went wrong. Please try again.");
@@ -263,11 +322,39 @@ export default function CheckoutForm() {
         setOtpLoading(false);
         return;
       }
-      router.push(`/order-confirmation?id=${otpState.orderId}`);
+      pendingRedirect.current = `/order-confirmation?id=${otpState.orderId}`;
+      setSuccessLabel("Payment confirmed");
     } catch {
       setOtpError("Network error. Please try again.");
       setOtpLoading(false);
     }
+  }
+
+  // Auth gate — require account before checkout
+  if (sessionChecked && !customer) {
+    return (
+      <div className="py-10 text-center space-y-6">
+        <p className="font-mono text-accent text-xs tracking-[0.25em]">— ACCOUNT REQUIRED —</p>
+        <h2 className="font-sans font-bold text-paper text-2xl">Sign in to place your order</h2>
+        <p className="font-sans text-bone text-sm">
+          An account is required to check out. It only takes a moment to create one.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Link
+            href={`/account/login?next=/checkout`}
+            className="bg-accent text-obsidian font-semibold font-sans px-8 h-12 flex items-center justify-center hover:bg-accent/80 transition-colors"
+          >
+            Sign In
+          </Link>
+          <Link
+            href={`/account/signup?next=/checkout`}
+            className="border border-accent text-accent font-sans font-semibold px-8 h-12 flex items-center justify-center hover:bg-accent/10 transition-colors"
+          >
+            Create Account
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -440,6 +527,23 @@ export default function CheckoutForm() {
         )}
       </div>
 
+      {/* Logged-in banner */}
+      {customer && (
+        <div className="flex items-center justify-between bg-green-400/5 border border-green-400/20 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-green-400 shrink-0">
+              <path d="M12 2L4 6v6c0 5.25 3.5 10.15 8 11.35C16.5 22.15 20 17.25 20 12V6l-8-4z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square"/>
+            </svg>
+            <p className="font-mono text-green-400 text-[10px] tracking-wider">
+              Signed in as <span className="text-green-300">{customer.name}</span>
+            </p>
+          </div>
+          <Link href="/account" className="font-mono text-green-400/60 text-[10px] hover:text-green-400 transition-colors">
+            My Account →
+          </Link>
+        </div>
+      )}
+
       {/* ── Customer info ── */}
       <div>
         <p className="font-mono text-accent text-xs tracking-[0.25em] mb-6">— YOUR DETAILS —</p>
@@ -543,7 +647,40 @@ export default function CheckoutForm() {
       {paymentMethod === "card" && <div>
         <p className="font-mono text-accent text-xs tracking-[0.25em] mb-6">— CARD DETAILS —</p>
 
-        {/* Card number */}
+        {/* Saved card option */}
+        {savedPayment && (
+          <div className="mb-5">
+            <button
+              type="button"
+              onClick={() => setUseSavedCard(!useSavedCard)}
+              className={`w-full flex items-center gap-4 border p-4 text-left transition-colors ${
+                useSavedCard ? "border-accent bg-accent/5" : "border-slate hover:border-accent/40"
+              }`}
+            >
+              <div className={`w-4 h-4 border-2 flex items-center justify-center shrink-0 ${useSavedCard ? "border-accent" : "border-slate"}`}>
+                {useSavedCard && <div className="w-2 h-2 bg-accent" />}
+              </div>
+              <div>
+                <p className="font-mono text-xs tracking-wider text-paper">
+                  {savedPayment.brand.toUpperCase()} ···· {savedPayment.last4}
+                </p>
+                <p className="font-mono text-bone/50 text-[10px] mt-0.5">
+                  Expires {savedPayment.expiryMonth}/{savedPayment.expiryYear} · Saved card
+                </p>
+              </div>
+            </button>
+            {useSavedCard && (
+              <p className="font-mono text-bone/40 text-[10px] mt-2 tracking-wider">Using saved card — or{" "}
+                <button type="button" onClick={() => setUseSavedCard(false)} className="text-accent hover:underline">
+                  enter a different card
+                </button>
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Manual card entry — only shown when not using saved card */}
+        {!useSavedCard && (<>
         <div className="mb-4">
           <label className="block font-mono text-bone text-xs tracking-wider uppercase mb-2">
             Card Number *
@@ -637,6 +774,7 @@ export default function CheckoutForm() {
             />
           </div>
         </div>
+        </>)}
 
         {/* Security note */}
         <div className="mt-4 flex items-center gap-2">
@@ -644,9 +782,22 @@ export default function CheckoutForm() {
             <path d="M12 2L4 6v6c0 5.25 3.5 10.15 8 11.35C16.5 22.15 20 17.25 20 12V6l-8-4z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square"/>
           </svg>
           <p className="font-mono text-bone/40 text-[10px] tracking-wider">
-            256-BIT SSL ENCRYPTED · YOUR CARD DATA IS NEVER STORED
+            256-BIT SSL ENCRYPTED · AES-256 SECURE STORAGE
           </p>
         </div>
+
+        {/* Save card opt-in (only for logged-in customers entering a new card) */}
+        {!useSavedCard && customer && (
+          <label className="flex items-center gap-2 mt-4 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={saveCard}
+              onChange={(e) => setSaveCard(e.target.checked)}
+              className="w-4 h-4 accent-accent"
+            />
+            <span className="font-mono text-bone/60 text-xs tracking-wider">Save card to my account for next time</span>
+          </label>
+        )}
       </div>}
 
       {/* ── Disclaimer ── */}
@@ -736,6 +887,10 @@ export default function CheckoutForm() {
             </form>
           </div>
         </div>
+      )}
+      {/* Success transition overlay — shown after a successful order */}
+      {successLabel && (
+        <SuccessTransition label={successLabel} onComplete={handleSuccessComplete} />
       )}
     </form>
   );

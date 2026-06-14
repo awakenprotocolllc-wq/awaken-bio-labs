@@ -37,6 +37,7 @@ export type Order = {
   discountAmount?: string; // e.g. "$10.00"
   paymentMethod?: "card" | "zelle";
   processingFee?: string; // e.g. "$4.18" — 4% card fee
+  customerId?: string;    // set when placed by a logged-in customer account
 };
 
 // ---------------------------------------------------------------------------
@@ -75,6 +76,13 @@ export async function createOrder(
   };
   await kv.set(`order:${order.id}`, order);
   await kv.zadd("orders", { score: Date.now(), member: order.id });
+
+  // Link to customer if this is an authenticated order
+  if (order.customerId) {
+    const { linkOrderToCustomer } = await import("./customer-db");
+    await linkOrderToCustomer(order.customerId, order.id);
+  }
+
   return order;
 }
 
