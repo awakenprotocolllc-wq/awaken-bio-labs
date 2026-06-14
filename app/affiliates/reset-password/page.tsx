@@ -1,19 +1,31 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import SiteShell from "@/components/SiteShell";
+
+type TokenStatus = "checking" | "valid" | "used" | "expired" | "invalid";
 
 function ResetPasswordForm() {
   const params = useSearchParams();
   const router = useRouter();
   const token = params.get("token") ?? "";
 
+  const [tokenStatus, setTokenStatus] = useState<TokenStatus>("checking");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [submitStatus, setSubmitStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Validate the token before showing the form — never make the user fill it out blind
+  useEffect(() => {
+    if (!token) { setTokenStatus("invalid"); return; }
+    fetch(`/api/affiliate/reset-password?token=${encodeURIComponent(token)}`)
+      .then((r) => r.json())
+      .then((data) => setTokenStatus(data.status ?? "invalid"))
+      .catch(() => setTokenStatus("invalid"));
+  }, [token]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,7 +40,7 @@ function ResetPasswordForm() {
       return;
     }
 
-    setStatus("loading");
+    setSubmitStatus("loading");
     try {
       const res = await fetch("/api/affiliate/reset-password", {
         method: "POST",
@@ -38,31 +50,55 @@ function ResetPasswordForm() {
       const data = await res.json();
       if (!data.ok) {
         setErrorMsg(data.error ?? "Something went wrong.");
-        setStatus("error");
+        setSubmitStatus("error");
       } else {
-        setStatus("done");
+        setSubmitStatus("done");
         setTimeout(() => router.push("/affiliates/login"), 2500);
       }
     } catch {
       setErrorMsg("Network error. Please try again.");
-      setStatus("error");
+      setSubmitStatus("error");
     }
   }
 
-  if (!token) {
+  // ── Checking ──
+  if (tokenStatus === "checking") {
     return (
-      <div className="text-center">
-        <p className="text-red-400 font-mono text-sm mb-6">
-          Invalid reset link. Please request a new one.
+      <div className="text-center py-12">
+        <p className="font-mono text-bone text-sm">Verifying link…</p>
+      </div>
+    );
+  }
+
+  // ── Invalid / expired / used ──
+  if (tokenStatus !== "valid") {
+    const messages: Record<Exclude<TokenStatus, "checking" | "valid">, string> = {
+      used: "This reset link has already been used.",
+      expired: "This reset link has expired.",
+      invalid: "This reset link is invalid.",
+    };
+    return (
+      <div className="bg-carbon border border-slate p-6 sm:p-8 text-center space-y-5">
+        <p className="font-mono text-sm text-red-400">
+          {messages[tokenStatus as Exclude<TokenStatus, "checking" | "valid">]}
         </p>
-        <Link href="/affiliates/login" className="text-accent hover:underline font-mono text-sm">
+        <p className="text-bone text-sm">
+          {tokenStatus === "used"
+            ? "If you need to change your password again, request a new link."
+            : "Reset links expire after 15 minutes. Please request a new one."}
+        </p>
+        <Link
+          href="/affiliates/login"
+          className="inline-block font-mono text-xs text-accent hover:underline"
+        >
           ← Back to login
         </Link>
       </div>
     );
   }
 
-  if (status === "done") {
+  // ── Success ──
+  if (submitStatus === "done") {
     return (
       <div className="text-center space-y-4">
         <div className="w-12 h-12 rounded-full bg-accent/10 border border-accent flex items-center justify-center mx-auto">
@@ -74,6 +110,7 @@ function ResetPasswordForm() {
     );
   }
 
+  // ── Form (token is valid) ──
   return (
     <form onSubmit={handleSubmit} className="bg-carbon border border-slate p-6 sm:p-8 space-y-5">
       <div>
@@ -104,7 +141,7 @@ function ResetPasswordForm() {
         />
       </div>
 
-      {(errorMsg || status === "error") && (
+      {(errorMsg || submitStatus === "error") && (
         <p className="font-mono text-[11px] text-red-400 tracking-wide">
           {errorMsg ?? "Something went wrong."}
         </p>
@@ -112,10 +149,10 @@ function ResetPasswordForm() {
 
       <button
         type="submit"
-        disabled={status === "loading"}
+        disabled={submitStatus === "loading"}
         className="w-full bg-accent text-obsidian font-semibold h-12 min-h-[44px] hover:bg-accent/80 transition-colors disabled:opacity-50"
       >
-        {status === "loading" ? "Updating…" : "Set New Password"}
+        {submitStatus === "loading" ? "Updating…" : "Set New Password"}
       </button>
 
       <div className="text-center pt-2">

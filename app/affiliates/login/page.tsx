@@ -86,7 +86,7 @@ export default function AffiliateLoginPage() {
                   </div>
                   <p className="text-paper font-sans font-semibold text-lg">Check your email.</p>
                   <p className="text-bone text-sm leading-relaxed">
-                    If that address is registered, we&apos;ve sent a reset link. It expires in 1 hour.
+                    If that address is registered, we&apos;ve sent a reset link. It expires in 15 minutes.
                   </p>
                   <button
                     onClick={() => { setShowForgot(false); setForgotStatus("idle"); setForgotEmail(""); }}

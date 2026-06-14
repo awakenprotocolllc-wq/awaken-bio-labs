@@ -439,7 +439,7 @@ export async function sendPasswordResetEmail({
             Reset your password.
           </h1>
           <p style="margin:12px 0 0;font-size:15px;color:#A09E9A;line-height:1.6;">
-            Hi ${escape(name)}, we received a request to reset your affiliate account password. Click the button below — this link is valid for <strong style="color:#E8E6E1;">1 hour</strong>.
+            Hi ${escape(name)}, we received a request to reset your affiliate account password. Click the button below — this link is valid for <strong style="color:#E8E6E1;">15 minutes</strong>.
           </p>
         </td></tr>
 

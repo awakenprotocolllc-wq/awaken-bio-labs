@@ -4,9 +4,18 @@ import {
   getAffiliateSession,
   validateAffiliateLogin,
   setAffiliatePassword,
+  peekPasswordResetToken,
 } from "@/lib/affiliate-db";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
 import { validatePassword, checkBreachedPassword } from "@/lib/password";
+
+// GET /api/affiliate/reset-password?token=xxx
+// Check a token's status without consuming it. Used by the reset page to validate before rendering the form.
+export async function GET(req: NextRequest) {
+  const token = req.nextUrl.searchParams.get("token") ?? "";
+  const status = await peekPasswordResetToken(token);
+  return NextResponse.json({ status });
+}
 
 // POST /api/affiliate/reset-password
 //

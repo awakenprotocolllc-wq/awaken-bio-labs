@@ -414,7 +414,9 @@ type PasswordResetToken = {
   used: boolean;
 };
 
-/** Creates a 1-hour reset token for the given email. Returns null silently if email not found. */
+const RESET_TTL = 15 * 60; // 15 minutes in seconds
+
+/** Creates a 15-minute reset token for the given email. Returns null silently if email not found. */
 export async function createPasswordResetToken(email: string): Promise<string | null> {
   const id = await kv.get<string>(`aff:email:${email.toLowerCase()}`);
   if (!id) return null;
@@ -423,11 +425,23 @@ export async function createPasswordResetToken(email: string): Promise<string | 
     token,
     affiliateId: id,
     email: email.toLowerCase(),
-    expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1 hour
+    expiresAt: new Date(Date.now() + RESET_TTL * 1000).toISOString(),
     used: false,
   };
-  await kv.set(`aff:pwreset:${token}`, record, { ex: 60 * 60 });
+  await kv.set(`aff:pwreset:${token}`, record, { ex: RESET_TTL });
   return token;
+}
+
+/** Check a token's status without consuming it — used to validate before showing the reset form. */
+export async function peekPasswordResetToken(
+  token: string
+): Promise<"valid" | "used" | "expired" | "invalid"> {
+  if (!token) return "invalid";
+  const record = await kv.get<PasswordResetToken>(`aff:pwreset:${token}`);
+  if (!record) return "invalid";
+  if (record.used) return "used";
+  if (new Date() > new Date(record.expiresAt)) return "expired";
+  return "valid";
 }
 
 /** Validates token, updates password hash, marks token used. Returns true on success. */
