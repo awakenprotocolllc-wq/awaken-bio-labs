@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateAdminSession } from "@/lib/admin-auth";
-import { getAffiliateSession } from "@/lib/affiliate-db";
+import { verifyAffiliateToken } from "@/lib/affiliate-session";
 import { verifyCustomerToken } from "@/lib/customer-session";
 import { clientIp } from "@/lib/rate-limit";
 
@@ -62,7 +62,7 @@ export async function middleware(req: NextRequest) {
   // ------------------------------------------------------------------
   if (pathname.startsWith("/affiliates/dashboard")) {
     const token = req.cookies.get("awaken_affiliate")?.value;
-    if (!token || !(await getAffiliateSession(token, context))) {
+    if (!(await verifyAffiliateToken(token, context))) {
       const loginUrl = req.nextUrl.clone();
       loginUrl.pathname = "/affiliates/login";
       loginUrl.search = "";
