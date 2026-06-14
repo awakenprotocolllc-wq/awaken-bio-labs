@@ -156,7 +156,6 @@ function OrderRow({
               <p className="font-mono text-accent text-[10px] tracking-[0.2em] mb-3">CUSTOMER</p>
               <p className="text-paper font-semibold text-sm">{order.customer.name}</p>
               <p className="text-bone text-sm">{order.customer.email}</p>
-              {order.customer.phone && <p className="text-bone text-sm">{order.customer.phone}</p>}
             </div>
             <div>
               <p className="font-mono text-accent text-[10px] tracking-[0.2em] mb-3">SHIP TO</p>

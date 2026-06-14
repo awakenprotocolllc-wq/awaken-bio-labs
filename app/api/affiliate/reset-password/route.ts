@@ -16,8 +16,20 @@ import { validatePassword, checkBreachedPassword } from "@/lib/password";
 
 // GET /api/affiliate/reset-password?token=xxx
 // Check a token's status without consuming it. Used by the reset page to validate before rendering the form.
+const TOKEN_RE = /^[0-9a-f]{64}$/;
+
 export async function GET(req: NextRequest) {
+  // 20 probes per minute per IP — caps enumeration without blocking normal use
+  const { allowed } = await rateLimit(`pwreset-check:${clientIp(req)}`, 20, 60);
+  if (!allowed) {
+    return NextResponse.json({ status: "invalid" }, { status: 429 });
+  }
+
   const token = req.nextUrl.searchParams.get("token") ?? "";
+  if (!TOKEN_RE.test(token)) {
+    return NextResponse.json({ status: "invalid" });
+  }
+
   const status = await peekPasswordResetToken(token);
   return NextResponse.json({ status });
 }

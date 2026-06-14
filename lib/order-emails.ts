@@ -236,7 +236,7 @@ export async function sendAdminOrderEmail(order: Order) {
       <td style="padding:6px 0;color:#666;font-size:13px;">Email</td>
       <td style="padding:6px 0;font-size:13px;"><a href="mailto:${escape(order.customer.email)}" style="color:#0070d2;">${escape(order.customer.email)}</a></td>
     </tr>
-    ${order.customer.phone ? `<tr><td style="padding:6px 0;color:#666;font-size:13px;">Phone</td><td style="padding:6px 0;font-size:13px;">${escape(order.customer.phone)}</td></tr>` : ""}
+
   </table>
 
   <h3 style="color:#0A0B0D;margin:0 0 12px;font-size:15px;text-transform:uppercase;letter-spacing:0.05em;">Ship To</h3>

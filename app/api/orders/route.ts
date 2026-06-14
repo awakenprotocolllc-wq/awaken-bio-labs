@@ -73,7 +73,10 @@ export async function POST(req: NextRequest) {
     if (String(customer.name).trim().length > 200) {
       return NextResponse.json({ ok: false, error: "Name is too long" }, { status: 400 });
     }
-    if (customer.phone && !PHONE_RE.test(String(customer.phone))) {
+    // Validate phone if provided but never persist it — used only for carrier delivery notifications
+    const customerPhone: string | undefined =
+      customer.phone && PHONE_RE.test(String(customer.phone)) ? String(customer.phone).trim() : undefined;
+    if (customer.phone && !customerPhone) {
       return NextResponse.json({ ok: false, error: "Invalid phone number" }, { status: 400 });
     }
 
@@ -186,10 +189,13 @@ export async function POST(req: NextRequest) {
     const validatedProcessingFee = processingFeeNum > 0 ? `$${processingFeeNum.toFixed(2)}` : undefined;
     const validatedOrderTotal = `$${(baseForFee + processingFeeNum).toFixed(2)}`;
 
+    // Strip phone before storage — it's used for carrier notifications only
+    const customerForStorage = { name: String(customer.name).trim(), email: String(customer.email).trim().toLowerCase() };
+
     // ── Zelle path ──────────────────────────────────────────────────────────
     if (paymentMethod === "zelle") {
       const order = await createOrder({
-        customer,
+        customer: customerForStorage,
         shipping,
         items: validatedItems,
         subtotal,
@@ -215,7 +221,7 @@ export async function POST(req: NextRequest) {
     // ── Card path (Quiklie S2S) ──────────────────────────────────────────────
     // 1. Save the order (pending_payment — confirmed only after Quiklie SUCCESS)
     const order = await createOrder({
-      customer,
+      customer: customerForStorage,
       shipping,
       items: validatedItems,
       subtotal,
@@ -261,7 +267,7 @@ export async function POST(req: NextRequest) {
       firstName,
       lastName,
       email: customer.email,
-      phone: customer.phone || "0000000000",
+      phone: customerPhone || "0000000000",
       amount,
       currencyCode: "USD",
       address: shipping.line1,
@@ -315,7 +321,7 @@ export async function POST(req: NextRequest) {
     if (statusCode === 1 || (quiklieData.status as string)?.toUpperCase() === "SUCCESS") {
       await updateOrderStatus(order.id, "paid");
       const paidOrder = { ...order, status: "paid" as const };
-      createShipStationOrder(paidOrder).catch((e) => console.error("[quiklie] ShipStation:", e));
+      createShipStationOrder(paidOrder, customerPhone).catch((e) => console.error("[quiklie] ShipStation:", e));
       await Promise.allSettled([
         sendCustomerOrderEmail(paidOrder),
         sendAdminOrderEmail(paidOrder),
@@ -326,6 +332,10 @@ export async function POST(req: NextRequest) {
     // statusCode 2 = 3DS required — redirect customer to Quiklie 3DS page
     if (statusCode === 2) {
       const redirectUrl = quiklieData.quikleeRedirectUrl as string;
+      if (!redirectUrl || !redirectUrl.startsWith("https://")) {
+        console.error("[orders/quiklie] 3DS redirect URL missing or not HTTPS:", redirectUrl);
+        return NextResponse.json({ ok: false, error: "Payment could not be processed. Please try again." }, { status: 502 });
+      }
       return NextResponse.json({ ok: true, orderId: order.id, requires3DS: true, redirectUrl });
     }
 
@@ -353,9 +363,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Unknown / error response
-    const msg = (quiklieData.message as string) || "Payment could not be processed. Please try again.";
     console.error("[orders/quiklie] unexpected statusCode:", statusCode, (quiklieData.message as string) ?? "(no message)");
-    return NextResponse.json({ ok: false, error: msg }, { status: 402 });
+    return NextResponse.json({ ok: false, error: "Payment could not be processed. Please try again." }, { status: 402 });
 
   } catch (err) {
     return apiError("POST /api/orders", err);

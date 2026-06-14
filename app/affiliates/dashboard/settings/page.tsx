@@ -39,6 +39,11 @@ export default function SettingsPage() {
   const [logoutEverywhereLoading, setLogoutEverywhereLoading] = useState(false);
   const [logoutEverywhereDone, setLogoutEverywhereDone] = useState(false);
 
+  // Delete account state
+  const [deleteStep, setDeleteStep] = useState<"idle" | "confirm" | "deleting" | "done">("idle");
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   useEffect(() => {
     setUser(getCurrentUser());
     // Load existing payout info (masked)
@@ -117,6 +122,31 @@ export default function SettingsPage() {
       }
     } finally {
       setPassSaving(false);
+    }
+  }
+
+  async function handleDeleteAccount(e: React.FormEvent) {
+    e.preventDefault();
+    setDeleteError(null);
+    setDeleteStep("deleting");
+    try {
+      const res = await fetch("/api/affiliate/delete-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: deletePassword }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setDeleteStep("done");
+        // Brief pause so user sees the confirmation, then redirect home
+        setTimeout(() => { window.location.href = "/"; }, 2500);
+      } else {
+        setDeleteError(data.error ?? "Failed to delete account.");
+        setDeleteStep("confirm");
+      }
+    } catch {
+      setDeleteError("Network error. Please try again.");
+      setDeleteStep("confirm");
     }
   }
 
@@ -258,6 +288,86 @@ export default function SettingsPage() {
               </button>
             </div>
           </form>
+          {/* Danger Zone — GDPR account deletion */}
+          <div className="bg-carbon border border-red-900/60 p-6 sm:p-8 space-y-4">
+            <div>
+              <h2 className="font-sans font-bold text-paper text-xl">Danger zone</h2>
+              <p className="font-mono text-[10px] text-red-400 tracking-wider uppercase mt-1">Irreversible action</p>
+            </div>
+
+            {deleteStep === "idle" && (
+              <>
+                <p className="text-bone text-sm leading-relaxed">
+                  Permanently delete your account and all associated data — your profile, banking information,
+                  application, sessions, and payout records. This cannot be undone.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setDeleteStep("confirm")}
+                  className="border border-red-600 text-red-400 font-semibold px-6 h-11 min-h-[44px] hover:bg-red-600/10 transition-colors font-mono text-xs"
+                >
+                  Delete my account
+                </button>
+              </>
+            )}
+
+            {(deleteStep === "confirm" || deleteStep === "deleting") && (
+              <form onSubmit={handleDeleteAccount} className="space-y-4">
+                <div className="bg-obsidian border border-red-900/40 p-4 space-y-1">
+                  <p className="font-mono text-xs text-red-400 font-bold tracking-wider uppercase">Are you sure?</p>
+                  <p className="text-bone text-sm leading-relaxed">
+                    This will permanently delete your account, banking info, and all records.
+                    Enter your password to confirm.
+                  </p>
+                </div>
+                <div>
+                  <label className="block font-mono text-xs text-bone tracking-wider uppercase mb-2">
+                    Current Password
+                  </label>
+                  <input
+                    type="password"
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                    required
+                    autoComplete="current-password"
+                    placeholder="Confirm with your password"
+                    disabled={deleteStep === "deleting"}
+                    className="w-full bg-obsidian border border-slate text-paper font-sans px-4 h-12 min-h-[44px] focus:border-red-500 focus:outline-none transition-colors placeholder:text-bone/40 disabled:opacity-50"
+                  />
+                </div>
+                {deleteError && (
+                  <p className="font-mono text-[10px] text-red-400">{deleteError}</p>
+                )}
+                <div className="flex gap-3">
+                  <button
+                    type="submit"
+                    disabled={deleteStep === "deleting" || !deletePassword}
+                    className="border border-red-600 text-red-400 font-semibold px-6 h-11 min-h-[44px] hover:bg-red-600/10 transition-colors disabled:opacity-50 font-mono text-xs"
+                  >
+                    {deleteStep === "deleting" ? "Deleting…" : "Permanently Delete Account"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setDeleteStep("idle"); setDeletePassword(""); setDeleteError(null); }}
+                    disabled={deleteStep === "deleting"}
+                    className="border border-slate text-bone font-semibold px-6 h-11 min-h-[44px] hover:border-accent hover:text-accent transition-colors font-mono text-xs disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {deleteStep === "done" && (
+              <div className="bg-obsidian border border-red-900/40 p-4">
+                <p className="font-mono text-xs text-red-400 font-bold tracking-wider uppercase mb-1">Account deleted</p>
+                <p className="text-bone text-sm">
+                  Your account and all associated data have been permanently removed.
+                  A confirmation has been sent to your email. Redirecting…
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Side card */}

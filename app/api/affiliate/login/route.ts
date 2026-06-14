@@ -3,6 +3,7 @@ import {
   validateAffiliateLogin,
   createAffiliateSession,
   deleteAffiliateSession,
+  toAffiliateProfile,
 } from "@/lib/affiliate-db";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
 import { containsAttack } from "@/lib/validate";
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest) {
     };
     const token = await createAffiliateSession(account.id, context);
 
-    const res = NextResponse.json({ ok: true, user: account });
+    const res = NextResponse.json({ ok: true, user: toAffiliateProfile(account) });
     res.cookies.set("awaken_affiliate", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

@@ -61,6 +61,7 @@ const UNIT_COSTS: Record<string, number> = {
 
   // Supplies
   "BAC Water|10ml":                   0,    // update when available
+  "BAC Water 2|10mg":                19.25,
 };
 
 /** Cost per single unit of a product+strength. Returns 0 if not configured. */

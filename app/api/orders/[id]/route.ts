@@ -40,7 +40,7 @@ export async function PATCH(
       );
     }
 
-    return NextResponse.json({ ok: true, order: updated });
+    return NextResponse.json({ ok: true, order: { id: updated.id, status: updated.status } });
   } catch (err) {
     return apiError("PATCH /api/orders/[id]", err);
   }

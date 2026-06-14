@@ -25,7 +25,14 @@ export async function rateLimitBurst(key: string): Promise<{ allowed: boolean }>
   return rateLimit(`burst:${key}`, 10, 60);
 }
 
-/** Extracts the most-specific IP from the request headers. */
+/**
+ * Extracts the client IP from request headers.
+ *
+ * Safe on Vercel: the edge network rewrites x-forwarded-for before the
+ * function receives the request, so callers cannot spoof it. If this app
+ * ever moves off Vercel, switch to a platform-provided trusted header or
+ * the connection's remote address — do not trust x-forwarded-for directly.
+ */
 export function clientIp(req: Request | { headers: Headers }): string {
   const headers = req instanceof Request ? req.headers : req.headers;
   return (

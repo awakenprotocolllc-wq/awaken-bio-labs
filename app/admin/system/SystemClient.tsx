@@ -13,15 +13,25 @@ type PushResult = {
   error?: string;
 };
 
+type RotationStatus = { changedAt: string | null; daysRemaining: number; isStale: boolean };
+
 type Props = {
   envVars: Record<string, EnvEntry>;
   shipstation: ShipStationStatus;
+  rotationStatus: RotationStatus;
 };
 
-export default function SystemClient({ envVars, shipstation }: Props) {
+export default function SystemClient({ envVars, shipstation, rotationStatus }: Props) {
   const [orderId, setOrderId] = useState("");
   const [pushResult, setPushResult] = useState<PushResult | null>(null);
   const [pushing, setPushing] = useState(false);
+
+  const [currentPw, setCurrentPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [pwError, setPwError] = useState<string | null>(null);
+  const [pwSuccess, setPwSuccess] = useState(false);
+  const [changingPw, setChangingPw] = useState(false);
 
   async function pushOrder() {
     if (!orderId.trim()) return;
@@ -51,6 +61,42 @@ export default function SystemClient({ envVars, shipstation }: Props) {
   async function handleLogout() {
     await fetch("/api/admin/logout", { method: "POST" });
     window.location.href = "/admin/login";
+  }
+
+  async function changePassword() {
+    setPwError(null);
+    setPwSuccess(false);
+    if (newPw !== confirmPw) {
+      setPwError("New passwords do not match.");
+      return;
+    }
+    if (newPw.length < 16) {
+      setPwError("New password must be at least 16 characters.");
+      return;
+    }
+    setChangingPw(true);
+    try {
+      const res = await fetch("/api/admin/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword: currentPw, newPassword: newPw }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        setPwError(data.error ?? "Failed to update password.");
+      } else {
+        setPwSuccess(true);
+        setCurrentPw("");
+        setNewPw("");
+        setConfirmPw("");
+        // Reload so the server-side rotation status badge refreshes
+        setTimeout(() => window.location.reload(), 1500);
+      }
+    } catch {
+      setPwError("Network error. Please try again.");
+    } finally {
+      setChangingPw(false);
+    }
   }
 
   return (
@@ -131,6 +177,79 @@ export default function SystemClient({ envVars, shipstation }: Props) {
                     {shipstation.error}
                   </pre>
                 )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── Password Rotation ── */}
+        <div>
+          <p className="font-mono text-bone text-[10px] tracking-[0.2em] uppercase mb-3">Password Rotation</p>
+          <div className={`bg-carbon border p-5 space-y-4 ${rotationStatus.isStale ? "border-red-500/50" : rotationStatus.daysRemaining <= 14 ? "border-amber-500/40" : "border-slate"}`}>
+
+            {/* Status badge */}
+            <div className="flex items-center gap-3">
+              <span className={`w-2 h-2 rounded-full shrink-0 ${rotationStatus.isStale ? "bg-red-400" : rotationStatus.daysRemaining <= 14 ? "bg-amber-400" : "bg-green-400"}`} />
+              <p className="font-mono text-xs font-bold tracking-wider">
+                {rotationStatus.isStale
+                  ? "OVERDUE — Password must be rotated to access banking data"
+                  : rotationStatus.changedAt === null
+                  ? "NOT YET INITIALIZED — Log in once to start the 90-day clock"
+                  : `${rotationStatus.daysRemaining} days remaining`}
+              </p>
+            </div>
+
+            {rotationStatus.changedAt && (
+              <p className="font-mono text-bone/60 text-[10px]">
+                Last rotated: {new Date(rotationStatus.changedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+              </p>
+            )}
+
+            <p className="font-mono text-bone text-xs">
+              Admin password must be changed every 90 days. When overdue, access to partner banking data is blocked until rotation is complete.
+            </p>
+
+            {/* Change password form */}
+            {pwSuccess ? (
+              <div className="border border-green-500/40 bg-green-500/5 p-4">
+                <p className="font-mono text-green-400 text-xs font-bold tracking-wider">Password updated — rotation clock reset.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <input
+                  type="password"
+                  value={currentPw}
+                  onChange={(e) => setCurrentPw(e.target.value)}
+                  placeholder="Current password"
+                  className="w-full bg-obsidian border border-slate text-paper font-mono text-xs px-3 py-2.5 focus:outline-none focus:border-accent placeholder:text-bone/40"
+                  autoComplete="current-password"
+                />
+                <input
+                  type="password"
+                  value={newPw}
+                  onChange={(e) => setNewPw(e.target.value)}
+                  placeholder="New password (16+ characters)"
+                  className="w-full bg-obsidian border border-slate text-paper font-mono text-xs px-3 py-2.5 focus:outline-none focus:border-accent placeholder:text-bone/40"
+                  autoComplete="new-password"
+                />
+                <input
+                  type="password"
+                  value={confirmPw}
+                  onChange={(e) => setConfirmPw(e.target.value)}
+                  placeholder="Confirm new password"
+                  className="w-full bg-obsidian border border-slate text-paper font-mono text-xs px-3 py-2.5 focus:outline-none focus:border-accent placeholder:text-bone/40"
+                  autoComplete="new-password"
+                />
+                {pwError && (
+                  <p className="font-mono text-red-400 text-xs">{pwError}</p>
+                )}
+                <button
+                  onClick={changePassword}
+                  disabled={changingPw || !currentPw || !newPw || !confirmPw}
+                  className="w-full bg-accent text-obsidian font-mono text-xs font-bold py-2.5 hover:bg-accent/80 transition-colors disabled:opacity-50"
+                >
+                  {changingPw ? "Updating…" : "Update Password"}
+                </button>
               </div>
             )}
           </div>

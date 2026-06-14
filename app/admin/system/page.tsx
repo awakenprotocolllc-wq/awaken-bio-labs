@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { validateAdminSession } from "@/lib/admin-auth";
+import { validateAdminSession, getPasswordRotationStatus } from "@/lib/admin-auth";
 import SystemClient from "./SystemClient";
 
 export const dynamic = "force-dynamic";
@@ -46,7 +46,10 @@ export default async function AdminSystemPage() {
     KV_REST_API_TOKEN: envStatus("KV_REST_API_TOKEN"),
   };
 
-  const shipstation = await testShipStation();
+  const [shipstation, rotationStatus] = await Promise.all([
+    testShipStation(),
+    getPasswordRotationStatus(),
+  ]);
 
-  return <SystemClient envVars={envVars} shipstation={shipstation} />;
+  return <SystemClient envVars={envVars} shipstation={shipstation} rotationStatus={rotationStatus} />;
 }

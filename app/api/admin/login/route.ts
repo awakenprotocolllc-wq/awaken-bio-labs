@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
-import { createAdminSession, deleteAdminSession } from "@/lib/admin-auth";
+import { createAdminSession, deleteAdminSession, getAdminPasswordHash, initAdminPasswordMeta } from "@/lib/admin-auth";
 
 export async function POST(req: NextRequest) {
   // 10 attempts per 15 minutes per IP
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Invalid password" }, { status: 401 });
   }
 
-  const adminPasswordHash = process.env.ADMIN_PASSWORD;
+  const adminPasswordHash = await getAdminPasswordHash();
   if (!adminPasswordHash) {
     return NextResponse.json({ ok: false, error: "Auth not configured" }, { status: 500 });
   }
@@ -32,6 +32,9 @@ export async function POST(req: NextRequest) {
   const existingToken = req.cookies.get("awaken_admin")?.value;
   if (existingToken) await deleteAdminSession(existingToken);
 
+  // Seed the 90-day rotation clock on first login if not yet initialized
+  await initAdminPasswordMeta();
+
   // Per-login session token stored in KV — invalidated on logout, bound to IP/UA
   const context = {
     ip: clientIp(req),
@@ -42,7 +45,7 @@ export async function POST(req: NextRequest) {
   const res = NextResponse.json({ ok: true });
   res.cookies.set("awaken_admin", sessionToken, {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "strict",
     path: "/",
     maxAge: 60 * 60 * 24 * 7, // 7 days
     secure: process.env.NODE_ENV === "production",

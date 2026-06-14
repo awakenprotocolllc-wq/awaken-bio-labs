@@ -480,3 +480,84 @@ export async function sendPasswordResetEmail({
     replyTo: SUPPORT,
   });
 }
+
+// ---------------------------------------------------------------------------
+// 7. Account deletion confirmation — GDPR
+// ---------------------------------------------------------------------------
+export async function sendAccountDeletionEmail(name: string, email: string) {
+  const deletedAt = new Date().toUTCString();
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#0A0B0D;font-family:'Helvetica Neue',Arial,sans-serif;color:#E8E6E1;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0A0B0D;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;">
+
+        <tr><td style="padding-bottom:32px;">
+          <p style="margin:0;font-family:monospace;font-size:11px;letter-spacing:0.2em;color:#57C7D6;text-transform:uppercase;">
+            — AWAKEN BIO LABS —
+          </p>
+        </td></tr>
+
+        <tr><td style="border-left:2px solid #E55A5A;padding-left:20px;padding-bottom:32px;">
+          <h1 style="margin:0;font-size:28px;font-weight:700;color:#F5F3EF;line-height:1.1;letter-spacing:-0.02em;">
+            Your account has been deleted.
+          </h1>
+          <p style="margin:12px 0 0;font-size:15px;color:#A09E9A;line-height:1.6;">
+            Hi ${escape(name)}, this confirms that your Awaken Bio Labs affiliate account and all associated data
+            have been permanently deleted as requested.
+          </p>
+        </td></tr>
+
+        <tr><td style="padding-bottom:32px;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#141517;border:1px solid #2A2B2F;padding:24px;">
+            <tr><td>
+              <p style="margin:0 0 6px;font-family:monospace;font-size:10px;color:#5A5856;letter-spacing:0.15em;text-transform:uppercase;">Deleted on</p>
+              <p style="margin:0 0 20px;font-size:14px;font-family:monospace;color:#A09E9A;">${deletedAt}</p>
+
+              <p style="margin:0 0 10px;font-family:monospace;font-size:10px;color:#5A5856;letter-spacing:0.15em;text-transform:uppercase;">What was removed</p>
+              <table width="100%" cellpadding="0" cellspacing="0">
+                ${[
+                  "Account credentials and profile",
+                  "Banking / payout information (ACH data)",
+                  "Original affiliate application",
+                  "Active sessions",
+                  "Payout records",
+                  "Email and affiliate code indexes",
+                ].map(item => `
+                <tr><td style="padding:6px 0;border-top:1px solid #1E1F23;">
+                  <p style="margin:0;font-size:13px;color:#A09E9A;">&#10003; &nbsp;${item}</p>
+                </td></tr>`).join("")}
+              </table>
+            </td></tr>
+          </table>
+        </td></tr>
+
+        <tr><td style="padding-bottom:24px;">
+          <p style="margin:0;font-size:14px;color:#A09E9A;line-height:1.7;">
+            If you did not request this deletion or believe it was made in error, contact us immediately at
+            <a href="mailto:${SUPPORT}" style="color:#57C7D6;text-decoration:none;">${SUPPORT}</a>.
+          </p>
+        </td></tr>
+
+        <tr><td style="border-top:1px solid #2A2B2F;padding-top:24px;">
+          <p style="margin:0;font-family:monospace;font-size:10px;color:#5A5856;letter-spacing:0.15em;text-transform:uppercase;line-height:1.8;">
+            AWAKEN BIO LABS LLC · <a href="mailto:${SUPPORT}" style="color:#5A5856;">${SUPPORT}</a>
+          </p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  return sendEmail({
+    to: email,
+    subject: "Your Awaken Bio Labs affiliate account has been deleted",
+    html,
+    replyTo: SUPPORT,
+  });
+}

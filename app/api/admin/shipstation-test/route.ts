@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
       state: paidOrder.shipping.state,
       postalCode: paidOrder.shipping.zip,
       country: "US",
-      phone: paidOrder.customer.phone ?? null,
+      phone: null,
     },
     shipTo: {
       name: paidOrder.customer.name,
@@ -82,7 +82,7 @@ export async function GET(req: NextRequest) {
       state: paidOrder.shipping.state,
       postalCode: paidOrder.shipping.zip,
       country: "US",
-      phone: paidOrder.customer.phone ?? null,
+      phone: null,
     },
     items: paidOrder.items.map((item, i) => ({
       lineItemKey: String(i),

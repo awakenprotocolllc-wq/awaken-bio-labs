@@ -216,6 +216,11 @@ export default function CheckoutForm() {
 
       // 3DS required — redirect to Quiklie authentication page
       if (data.requires3DS && data.redirectUrl) {
+        if (!String(data.redirectUrl).startsWith("https://")) {
+          setError("Payment could not be processed. Please try again.");
+          setLoading(false);
+          return;
+        }
         window.location.href = data.redirectUrl;
         return;
       }
@@ -441,7 +446,7 @@ export default function CheckoutForm() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Full Name *" name="name" value={form.name} onChange={handleField} />
           <Field label="Email Address *" name="email" type="email" value={form.email} onChange={handleField} />
-          <Field label="Phone (optional)" name="phone" type="tel" value={form.phone} onChange={handleField} />
+          <Field label="Phone (optional — for delivery notifications only)" name="phone" type="tel" value={form.phone} onChange={handleField} />
         </div>
       </div>
 

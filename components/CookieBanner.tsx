@@ -18,7 +18,7 @@ export default function CookieBanner() {
   }, []);
 
   function set(value: "accepted" | "declined") {
-    localStorage.setItem(KEY, JSON.stringify({ value, at: Date.now() }));
+    localStorage.setItem(KEY, value);
     setShow(false);
   }
 

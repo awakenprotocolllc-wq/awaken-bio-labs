@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
       state: order.shipping.state,
       postalCode: order.shipping.zip,
       country: "US",
-      phone: order.customer.phone ?? null,
+      phone: null,
     },
     shipTo: {
       name: order.customer.name,
@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
       state: order.shipping.state,
       postalCode: order.shipping.zip,
       country: "US",
-      phone: order.customer.phone ?? null,
+      phone: null,
     },
     items: order.items.map((item, i) => ({
       lineItemKey: String(i),

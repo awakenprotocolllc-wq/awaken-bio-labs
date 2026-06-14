@@ -1,6 +1,7 @@
 import { kv } from "@vercel/kv";
 import { createHash, randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
+import { encryptField, decryptField } from "./encryption";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -36,6 +37,27 @@ export type AffiliateAccount = {
   archivedAt?: string;
   programSwitchedAt?: string;
 };
+
+/** Fields safe to return to an authenticated affiliate — strips internal admin metadata. */
+export type AffiliateProfile = Pick<AffiliateAccount,
+  "id" | "name" | "email" | "affiliateCode" | "status" |
+  "programType" | "commissionRate" | "discountRate" | "joinedAt" | "contractSignedAt"
+>;
+
+export function toAffiliateProfile(account: AffiliateAccount): AffiliateProfile {
+  return {
+    id: account.id,
+    name: account.name,
+    email: account.email,
+    affiliateCode: account.affiliateCode,
+    status: account.status,
+    programType: account.programType,
+    commissionRate: account.commissionRate,
+    discountRate: account.discountRate,
+    joinedAt: account.joinedAt,
+    contractSignedAt: account.contractSignedAt,
+  };
+}
 
 // Internal — never returned to client
 type AffiliateAccountInternal = AffiliateAccount & { passwordHash: string; passwordVersion?: number };
@@ -266,6 +288,8 @@ type AffiliateSessionRecord = {
 
 type SessionContext = { ip: string; ua: string };
 
+const SESSION_TTL = 60 * 60 * 24 * 30; // 30 days
+
 export async function createAffiliateSession(
   affiliateId: string,
   context?: SessionContext
@@ -278,7 +302,10 @@ export async function createAffiliateSession(
     passwordVersion,
     ...(context ? { ip: context.ip, ua: context.ua.slice(0, 200) } : {}),
   };
-  await kv.set(`aff:session:${token}`, record, { ex: 60 * 60 * 24 * 30 });
+  await kv.set(`aff:session:${token}`, record, { ex: SESSION_TTL });
+  // Track token in a per-affiliate set so all sessions can be enumerated for bulk deletion.
+  await kv.sadd(`aff:sessions:${affiliateId}`, token);
+  await kv.expire(`aff:sessions:${affiliateId}`, SESSION_TTL);
   return token;
 }
 
@@ -383,15 +410,29 @@ export async function saveAffiliatePayoutInfo(
   info: Omit<AffiliatePayoutInfo, "updatedAt">
 ): Promise<void> {
   await kv.set(`aff:payout:${affiliateId}`, {
-    ...info,
-    updatedAt: new Date().toISOString(),
+    holderName:    info.holderName,
+    bankName:      info.bankName,
+    accountType:   info.accountType,
+    // Encrypt the two fields that together constitute a usable ACH identity.
+    // AES-256-GCM on top of Upstash's storage-level AES-256 encryption.
+    routingNumber: encryptField(info.routingNumber),
+    accountNumber: encryptField(info.accountNumber),
+    updatedAt:     new Date().toISOString(),
   });
 }
 
 export async function getAffiliatePayoutInfo(
   affiliateId: string
 ): Promise<AffiliatePayoutInfo | null> {
-  return kv.get<AffiliatePayoutInfo>(`aff:payout:${affiliateId}`);
+  const raw = await kv.get<AffiliatePayoutInfo>(`aff:payout:${affiliateId}`);
+  if (!raw) return null;
+  // decryptField is legacy-safe: plaintext values written before encryption
+  // was introduced are returned as-is and will be re-encrypted on next save.
+  return {
+    ...raw,
+    routingNumber: decryptField(raw.routingNumber),
+    accountNumber: decryptField(raw.accountNumber),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -613,4 +654,97 @@ export async function getAffiliateReferrals(affiliateCode: string): Promise<Refe
         items: o.items,
       };
     });
+}
+
+// ---------------------------------------------------------------------------
+// GDPR account deletion
+// ---------------------------------------------------------------------------
+
+/** Verify a plaintext password against the stored hash (bcrypt or legacy SHA-256). */
+export async function verifyAffiliatePassword(affiliateId: string, password: string): Promise<boolean> {
+  const account = await kv.get<AffiliateAccountInternal>(`aff:account:${affiliateId}`);
+  if (!account) return false;
+  const stored = account.passwordHash;
+  if (SHA256_RE.test(stored)) return stored === legacyHash(password);
+  return bcrypt.compare(password, stored);
+}
+
+async function scanKvPattern(pattern: string): Promise<string[]> {
+  const keys: string[] = [];
+  let cursor: string | number = 0;
+  do {
+    const result: [string, string[]] = await kv.scan(cursor, { match: pattern, count: 100 });
+    keys.push(...result[1]);
+    cursor = result[0];
+  } while (cursor !== "0");
+  return keys;
+}
+
+export type AccountDeletionResult = { keysDeleted: number; errors: string[] };
+
+/**
+ * Hard-delete every KV record linked to an affiliate.
+ * Call verifyAffiliatePassword before this — this function does no auth.
+ */
+export async function deleteAffiliateAccount(affiliateId: string): Promise<AccountDeletionResult | null> {
+  const account = await kv.get<AffiliateAccountInternal>(`aff:account:${affiliateId}`);
+  if (!account) return null;
+
+  const errors: string[] = [];
+  let keysDeleted = 0;
+
+  // ── 1. Deterministic keys ───────────────────────────────────────
+  const toDelete: string[] = [
+    `aff:account:${affiliateId}`,
+    `aff:email:${account.email}`,
+    `aff:code:${account.affiliateCode}`,
+    `aff:payout:${affiliateId}`,
+  ];
+  if (account.applicationId) toDelete.push(`aff:application:${account.applicationId}`);
+
+  // ── 2. Session tokens from reverse-index set ────────────────────
+  const sessionSetKey = `aff:sessions:${affiliateId}`;
+  try {
+    const tokens = (await kv.smembers(sessionSetKey)) as string[];
+    for (const t of tokens) toDelete.push(`aff:session:${t}`);
+    toDelete.push(sessionSetKey);
+  } catch (err) {
+    errors.push(`sessions: ${String(err)}`);
+  }
+
+  // ── 3. Payout records (scan — keyed by month, no index) ─────────
+  try {
+    const payoutKeys = await scanKvPattern(`aff:payoutrec:${affiliateId}:*`);
+    toDelete.push(...payoutKeys);
+  } catch (err) {
+    errors.push(`payout records: ${String(err)}`);
+  }
+
+  // ── 4. Delete all collected keys in one command ─────────────────
+  if (toDelete.length > 0) {
+    try {
+      const [first, ...rest] = toDelete;
+      keysDeleted += await kv.del(first, ...rest);
+    } catch (err) {
+      errors.push(`del: ${String(err)}`);
+    }
+  }
+
+  // ── 5. Remove from sorted sets ──────────────────────────────────
+  try {
+    await kv.zrem("aff:accounts", affiliateId);
+    keysDeleted++;
+  } catch (err) {
+    errors.push(`zrem aff:accounts: ${String(err)}`);
+  }
+  if (account.applicationId) {
+    try {
+      await kv.zrem("aff:applications", account.applicationId);
+      keysDeleted++;
+    } catch (err) {
+      errors.push(`zrem aff:applications: ${String(err)}`);
+    }
+  }
+
+  return { keysDeleted, errors };
 }

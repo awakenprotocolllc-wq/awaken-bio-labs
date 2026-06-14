@@ -25,6 +25,7 @@ export default function AffiliateDashboardShell({
   const pathname = usePathname();
   const [user, setUser] = useState<AffiliateUser | null>(null);
   const [mobileNav, setMobileNav] = useState(false);
+  const [timedOut, setTimedOut] = useState(false);
 
   useEffect(() => {
     // Fast path: show cached user immediately
@@ -41,6 +42,13 @@ export default function AffiliateDashboardShell({
     });
   }, [router]);
 
+  // Show a "having trouble?" prompt if auth takes longer than 8 seconds
+  useEffect(() => {
+    if (user) return;
+    const t = setTimeout(() => setTimedOut(true), 8000);
+    return () => clearTimeout(t);
+  }, [user]);
+
   async function handleLogout() {
     await logout();
     router.push("/affiliates/login");
@@ -48,8 +56,51 @@ export default function AffiliateDashboardShell({
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-obsidian flex items-center justify-center">
-        <p className="font-mono text-bone text-xs tracking-wider">LOADING…</p>
+      <div className="min-h-screen bg-obsidian flex flex-col items-center justify-center gap-10 relative overflow-hidden grain">
+        {/* Top accent rule */}
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-accent/50 to-transparent" />
+
+        {/* Brand mark */}
+        <div className="loading-fade text-center space-y-2" style={{ animationDelay: "0ms" }}>
+          <p className="font-mono text-[11px] text-accent tracking-[0.4em] uppercase">
+            — Awaken Bio Labs —
+          </p>
+          <p className="font-mono text-[10px] text-bone/30 tracking-[0.35em] uppercase">
+            Partner Portal
+          </p>
+        </div>
+
+        {/* Scanning progress bar */}
+        <div
+          className="loading-fade relative w-56 h-px bg-slate overflow-hidden"
+          style={{ animationDelay: "100ms" }}
+        >
+          <div className="absolute inset-y-0 left-0 w-14 bg-gradient-to-r from-transparent via-accent to-transparent loading-scan" />
+        </div>
+
+        {/* Status line / timeout */}
+        <div className="loading-fade text-center min-h-[3rem]" style={{ animationDelay: "200ms" }}>
+          {!timedOut ? (
+            <p className="font-mono text-[10px] text-bone/30 tracking-[0.25em] uppercase">
+              Verifying session
+            </p>
+          ) : (
+            <div className="space-y-3">
+              <p className="font-mono text-[10px] text-bone/50 tracking-wider">
+                Taking longer than expected.
+              </p>
+              <a
+                href="/affiliates/login"
+                className="block font-mono text-[10px] text-accent tracking-widest uppercase hover:underline transition-opacity hover:opacity-80"
+              >
+                ← Return to login
+              </a>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom accent rule */}
+        <div className="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-slate to-transparent" />
       </div>
     );
   }

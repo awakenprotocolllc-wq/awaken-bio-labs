@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   res.cookies.set("awaken_admin", "", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "strict",
     path: "/",
     maxAge: 0,
   });

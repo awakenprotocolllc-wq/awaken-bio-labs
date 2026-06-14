@@ -12,6 +12,35 @@ export async function middleware(req: NextRequest) {
   };
 
   // ------------------------------------------------------------------
+  // 0. CSRF protection: verify Origin on state-changing API requests
+  //    SameSite=Lax cookies are the primary guard; this is defense-in-depth
+  //    for pre-2020 browsers that don't enforce SameSite.
+  //    Webhooks (/api/webhooks/*) are server-to-server and never send Origin.
+  // ------------------------------------------------------------------
+  if (
+    ["POST", "PATCH", "PUT", "DELETE"].includes(req.method) &&
+    pathname.startsWith("/api/") &&
+    !pathname.startsWith("/api/webhooks/")
+  ) {
+    const origin = req.headers.get("origin");
+    if (origin) {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://awakenbiolabs.com";
+      let expectedOrigin: string;
+      try {
+        expectedOrigin = new URL(siteUrl).origin;
+      } catch {
+        expectedOrigin = siteUrl;
+      }
+      const allowed =
+        origin === expectedOrigin ||
+        (process.env.NODE_ENV !== "production" && /^https?:\/\/localhost(:\d+)?$/.test(origin));
+      if (!allowed) {
+        return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 403 });
+      }
+    }
+  }
+
+  // ------------------------------------------------------------------
   // 1. Protect /admin/* (except /admin/login)
   //    Validates token against KV with IP/UA binding.
   // ------------------------------------------------------------------

@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     if (!data.approved) {
       return NextResponse.json({
         ok: false,
-        error: data.message || "Incorrect OTP. Please try again.",
+        error: "Incorrect OTP. Please try again.",
       }, { status: 402 });
     }
 

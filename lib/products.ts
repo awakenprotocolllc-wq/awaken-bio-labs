@@ -128,4 +128,5 @@ export const products: Product[] = [
   { name: "Wolverine Blend",        subtitle: "TB-500 + BPC-157", strengths: ["20mg"], price: "$135.00", coa: "/coas/wolverine-blend.pdf", category: "All Other" },
   { name: "KLOW",                   strengths: ["80mg"],       price: "$145.00",         category: "All Other" },
   { name: "BAC Water",              strengths: ["10ml"],       price: "$9.50",           category: "All Other" },
+  { name: "BAC Water 2",            strengths: ["10mg"],       price: "$106.00",         category: "All Other" },
 ];

@@ -22,8 +22,12 @@ function parseAmount(price: string): number {
   return isNaN(n) ? 0 : n;
 }
 
-/** Push an order to ShipStation as "awaiting_shipment". */
-export async function createShipStationOrder(order: Order): Promise<void> {
+/**
+ * Push an order to ShipStation as "awaiting_shipment".
+ * Phone is passed separately — it is used for carrier delivery notifications
+ * but is not stored in the order record.
+ */
+export async function createShipStationOrder(order: Order, phone?: string): Promise<void> {
   if (!process.env.SHIPSTATION_API_KEY) {
     console.log("[shipstation] No API key — skipping order push for", order.id);
     return;
@@ -43,7 +47,7 @@ export async function createShipStationOrder(order: Order): Promise<void> {
       state: order.shipping.state,
       postalCode: order.shipping.zip,
       country: "US",
-      phone: order.customer.phone ?? null,
+      phone: phone ?? null,
     },
     shipTo: {
       name: order.customer.name,
@@ -52,7 +56,7 @@ export async function createShipStationOrder(order: Order): Promise<void> {
       state: order.shipping.state,
       postalCode: order.shipping.zip,
       country: "US",
-      phone: order.customer.phone ?? null,
+      phone: phone ?? null,
     },
     items: order.items.map((item, i) => ({
       lineItemKey: String(i),

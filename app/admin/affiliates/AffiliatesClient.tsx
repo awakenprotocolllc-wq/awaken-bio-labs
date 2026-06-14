@@ -57,6 +57,7 @@ export default function AffiliatesClient({
   const [payoutModal, setPayoutModal] = useState<PayoutModal | null>(null);
   const [payoutData, setPayoutData] = useState<Record<string, unknown> | null>(null);
   const [payoutLoading, setPayoutLoading] = useState(false);
+  const [payoutRotationRequired, setPayoutRotationRequired] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -279,11 +280,16 @@ export default function AffiliatesClient({
   async function openPayoutModal(id: string, name: string) {
     setPayoutModal({ id, name });
     setPayoutData(null);
+    setPayoutRotationRequired(false);
     setPayoutLoading(true);
     try {
       const res = await fetch(`/api/admin/affiliates/${id}/payout-info`);
       const data = await res.json();
-      setPayoutData(data.info ?? false);
+      if (!res.ok && data.rotationRequired) {
+        setPayoutRotationRequired(true);
+      } else {
+        setPayoutData(data.info ?? false);
+      }
     } finally {
       setPayoutLoading(false);
     }
@@ -460,7 +466,16 @@ export default function AffiliatesClient({
             </div>
             <p className="font-sans font-semibold text-paper">{payoutModal.name}</p>
             {payoutLoading && <p className="font-mono text-bone text-xs">Loading…</p>}
-            {!payoutLoading && !payoutData && (
+            {!payoutLoading && payoutRotationRequired && (
+              <div className="bg-obsidian border border-amber-500/40 p-4 space-y-2">
+                <p className="font-mono text-amber-400 text-xs font-bold tracking-wider">PASSWORD ROTATION REQUIRED</p>
+                <p className="font-mono text-bone text-xs">Your admin password is over 90 days old. Update it before accessing banking data.</p>
+                <a href="/admin/system" className="inline-block font-mono text-accent text-xs underline hover:text-accent/70 transition-colors">
+                  Go to System → Password Rotation
+                </a>
+              </div>
+            )}
+            {!payoutLoading && !payoutRotationRequired && !payoutData && (
               <div className="bg-obsidian border border-slate p-4">
                 <p className="font-mono text-bone text-sm">No payout info on file.</p>
                 <p className="font-mono text-bone/50 text-xs mt-1">Partner has not submitted ACH information yet.</p>

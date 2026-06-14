@@ -16,7 +16,7 @@ export default function AgeGate() {
   }, []);
 
   function confirm() {
-    localStorage.setItem(KEY, JSON.stringify({ verified: true, at: Date.now() }));
+    localStorage.setItem(KEY, "1");
     setShow(false);
   }
 

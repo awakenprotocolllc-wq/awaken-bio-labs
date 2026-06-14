@@ -20,7 +20,6 @@ export type Order = {
   customer: {
     name: string;
     email: string;
-    phone?: string;
   };
   shipping: {
     line1: string;
