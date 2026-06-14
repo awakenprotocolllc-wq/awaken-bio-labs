@@ -6,6 +6,7 @@ import {
 } from "@/lib/affiliate-db";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
 import { containsAttack } from "@/lib/validate";
+import { apiError } from "@/lib/api-error";
 
 export async function POST(req: NextRequest) {
   try {
@@ -52,7 +53,6 @@ export async function POST(req: NextRequest) {
     });
     return res;
   } catch (err) {
-    console.error("[affiliate/login]", err);
-    return NextResponse.json({ ok: false }, { status: 500 });
+    return apiError("POST /api/affiliate/login", err);
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listOrders } from "@/lib/db";
 import { validateAdminSession } from "@/lib/admin-auth";
+import { apiError } from "@/lib/api-error";
 
 const BASE = "https://ssapi.shipstation.com";
 
@@ -14,6 +15,7 @@ function authHeader(): string {
 // Verifies ShipStation credentials and optionally pushes the most recent paid order.
 // Protected by admin cookie.
 export async function GET(req: NextRequest) {
+  try {
   if (!(await validateAdminSession(req.cookies.get("awaken_admin")?.value))) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
@@ -117,4 +119,7 @@ export async function GET(req: NextRequest) {
     shipStationResponse: pushBody,
     payloadSent: payload,
   });
+  } catch (err) {
+    return apiError("GET /api/admin/shipstation-test", err);
+  }
 }

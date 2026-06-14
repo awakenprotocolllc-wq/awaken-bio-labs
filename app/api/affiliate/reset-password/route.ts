@@ -7,6 +7,7 @@ import {
   peekPasswordResetToken,
 } from "@/lib/affiliate-db";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
+import { apiError } from "@/lib/api-error";
 
 function sessionContext(req: NextRequest) {
   return { ip: clientIp(req), ua: req.headers.get("user-agent") ?? "" };
@@ -112,7 +113,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("[POST /api/affiliate/reset-password]", err);
-    return NextResponse.json({ ok: false, error: "Server error" }, { status: 500 });
+    return apiError("POST /api/affiliate/reset-password", err);
   }
 }

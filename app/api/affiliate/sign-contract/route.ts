@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getContractToken, signContract } from "@/lib/affiliate-db";
 import { sendWelcomeBackEmail } from "@/lib/affiliate-emails";
+import { apiError } from "@/lib/api-error";
 
 // POST /api/affiliate/sign-contract
 // body: { token: string; signatureName: string }
@@ -69,7 +70,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("[POST /api/affiliate/sign-contract]", err);
-    return NextResponse.json({ ok: false, error: "Server error" }, { status: 500 });
+    return apiError("POST /api/affiliate/sign-contract", err);
   }
 }

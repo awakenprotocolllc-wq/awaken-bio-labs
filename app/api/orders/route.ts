@@ -8,6 +8,7 @@ import { validateDiscountCode } from "@/lib/affiliate-db";
 import { rateLimit, rateLimitBurst, clientIp } from "@/lib/rate-limit";
 import { findAttack } from "@/lib/validate";
 import { validateAdminSession } from "@/lib/admin-auth";
+import { apiError } from "@/lib/api-error";
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://awakenbiolabs.com";
 const QUIKLIE_BASE = "https://api.quiklie.com";
@@ -357,8 +358,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: msg }, { status: 402 });
 
   } catch (err) {
-    console.error("[POST /api/orders]", err);
-    return NextResponse.json({ ok: false, error: "Server error" }, { status: 500 });
+    return apiError("POST /api/orders", err);
   }
 }
 
@@ -366,9 +366,13 @@ export async function POST(req: NextRequest) {
 // GET /api/orders — list all orders (admin only)
 // ---------------------------------------------------------------------------
 export async function GET(req: NextRequest) {
-  if (!(await validateAdminSession(req.cookies.get("awaken_admin")?.value))) {
-    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  try {
+    if (!(await validateAdminSession(req.cookies.get("awaken_admin")?.value))) {
+      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
+    const orders = await listOrders();
+    return NextResponse.json({ ok: true, orders });
+  } catch (err) {
+    return apiError("GET /api/orders", err);
   }
-  const orders = await listOrders();
-  return NextResponse.json({ ok: true, orders });
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getOrder } from "@/lib/db";
 import { validateAdminSession } from "@/lib/admin-auth";
+import { apiError } from "@/lib/api-error";
 
 const BASE = "https://ssapi.shipstation.com";
 
@@ -23,12 +24,13 @@ function parseAmount(price: string): number {
 }
 
 async function checkAuth(): Promise<boolean> {
-  const token = cookies().get("awaken_admin")?.value;
+  const token = (await cookies()).get("awaken_admin")?.value;
   return validateAdminSession(token);
 }
 
 // GET — env var status + ShipStation connection test
 export async function GET(req: NextRequest) {
+  try {
   if (!(await checkAuth())) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
 
   const envVars = {
@@ -59,10 +61,14 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json({ ok: true, envVars, shipstation });
+  } catch (err) {
+    return apiError("GET /api/admin/system-check", err);
+  }
 }
 
 // POST — push a specific order to ShipStation
 export async function POST(req: NextRequest) {
+  try {
   if (!(await checkAuth())) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
 
   const { orderId } = await req.json();
@@ -133,4 +139,7 @@ export async function POST(req: NextRequest) {
     httpStatus: res.status,
     shipStationResponse: parsed,
   });
+  } catch (err) {
+    return apiError("POST /api/admin/system-check", err);
+  }
 }

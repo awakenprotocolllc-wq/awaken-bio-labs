@@ -17,6 +17,7 @@ import {
 import { sendContractSigningEmail, sendCredentialsEmail, sendProgramSwitchEmail } from "@/lib/affiliate-emails";
 import { isStr, isNum, isEnum } from "@/lib/validate";
 import { validateAdminSession } from "@/lib/admin-auth";
+import { apiError } from "@/lib/api-error";
 
 const VALID_ACTIONS = [
   "approve", "deny", "suspend", "reactivate", "archive",
@@ -40,6 +41,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  try {
   if (!(await validateAdminSession(req.cookies.get("awaken_admin")?.value))) return NextResponse.json({ ok: false }, { status: 401 });
 
   const body = await req.json();
@@ -276,4 +278,7 @@ export async function PATCH(
 
   // Exhausted all VALID_ACTIONS branches — should not be reachable
   return NextResponse.json({ ok: false, error: "Unhandled action" }, { status: 500 });
+  } catch (err) {
+    return apiError("PATCH /api/admin/affiliates/[id]", err);
+  }
 }

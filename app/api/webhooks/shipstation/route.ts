@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { updateOrderStatus } from "@/lib/db";
+import { apiError } from "@/lib/api-error";
 import { fetchShipStationResource } from "@/lib/shipstation";
 
 // ---------------------------------------------------------------------------
@@ -96,6 +97,6 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("[shipstation/webhook] Error:", err);
     // Return 200 so ShipStation doesn't keep retrying on our parse errors
-    return NextResponse.json({ ok: false, error: "Internal error" });
+    return NextResponse.json({ ok: false, error: "Server error" });
   }
 }

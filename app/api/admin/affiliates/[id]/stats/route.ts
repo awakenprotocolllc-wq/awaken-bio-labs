@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAffiliateById, getAffiliateReferrals } from "@/lib/affiliate-db";
 import { validateAdminSession } from "@/lib/admin-auth";
+import { apiError } from "@/lib/api-error";
 
 function commissionValue(commission: string): number {
   return parseFloat(commission.replace(/[^0-9.]/g, "") || "0");
@@ -12,37 +13,41 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  if (!(await validateAdminSession(req.cookies.get("awaken_admin")?.value))) return NextResponse.json({ ok: false }, { status: 401 });
+  try {
+    if (!(await validateAdminSession(req.cookies.get("awaken_admin")?.value))) return NextResponse.json({ ok: false }, { status: 401 });
 
-  const account = await getAffiliateById(params.id);
-  if (!account) return NextResponse.json({ ok: false, error: "Affiliate not found" }, { status: 404 });
+    const account = await getAffiliateById(params.id);
+    if (!account) return NextResponse.json({ ok: false, error: "Affiliate not found" }, { status: 404 });
 
-  const referrals = await getAffiliateReferrals(account.affiliateCode);
+    const referrals = await getAffiliateReferrals(account.affiliateCode);
 
-  const confirmedEarnings = referrals
-    .filter((r) => r.status === "fulfilled")
-    .reduce((s, r) => s + commissionValue(r.commission), 0)
-    .toFixed(2);
+    const confirmedEarnings = referrals
+      .filter((r) => r.status === "fulfilled")
+      .reduce((s, r) => s + commissionValue(r.commission), 0)
+      .toFixed(2);
 
-  const pendingEarnings = referrals
-    .filter((r) => r.status === "pending_payment" || r.status === "paid")
-    .reduce((s, r) => s + commissionValue(r.commission), 0)
-    .toFixed(2);
+    const pendingEarnings = referrals
+      .filter((r) => r.status === "pending_payment" || r.status === "paid")
+      .reduce((s, r) => s + commissionValue(r.commission), 0)
+      .toFixed(2);
 
-  const activeReferrals = referrals.filter((r) => r.status !== "cancelled");
+    const activeReferrals = referrals.filter((r) => r.status !== "cancelled");
 
-  return NextResponse.json({
-    ok: true,
-    name: account.name,
-    email: account.email,
-    affiliateCode: account.affiliateCode,
-    commissionRate: account.commissionRate,
-    programType: account.programType,
-    status: account.status,
-    joinedAt: account.joinedAt,
-    referrals,
-    confirmedEarnings: `$${confirmedEarnings}`,
-    pendingEarnings: `$${pendingEarnings}`,
-    totalConversions: activeReferrals.length,
-  });
+    return NextResponse.json({
+      ok: true,
+      name: account.name,
+      email: account.email,
+      affiliateCode: account.affiliateCode,
+      commissionRate: account.commissionRate,
+      programType: account.programType,
+      status: account.status,
+      joinedAt: account.joinedAt,
+      referrals,
+      confirmedEarnings: `$${confirmedEarnings}`,
+      pendingEarnings: `$${pendingEarnings}`,
+      totalConversions: activeReferrals.length,
+    });
+  } catch (err) {
+    return apiError("GET /api/admin/affiliates/[id]/stats", err);
+  }
 }

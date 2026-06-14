@@ -4,6 +4,7 @@ import { sendPasswordResetEmail } from "@/lib/affiliate-emails";
 import { kv } from "@vercel/kv";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
 import { containsAttack } from "@/lib/validate";
+import { apiError } from "@/lib/api-error";
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://awakenbiolabs.com";
 
@@ -48,7 +49,6 @@ export async function POST(req: NextRequest) {
     // Always return success — don't leak whether the email is registered
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("[POST /api/affiliate/forgot-password]", err);
-    return NextResponse.json({ ok: false, error: "Server error" }, { status: 500 });
+    return apiError("POST /api/affiliate/forgot-password", err);
   }
 }

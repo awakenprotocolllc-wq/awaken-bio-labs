@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 
-export default function GlobalError({
+export default function ErrorBoundary({
   error,
   reset,
 }: {
@@ -11,8 +11,8 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log to server-side observability (Vercel captures console.error from client components)
-    console.error("[client-error]", error.digest ?? "(no digest)", error.message);
+    // Log digest only — Vercel correlates this with the full server-side error
+    console.error("[client-error] digest:", error.digest ?? "(no digest)");
   }, [error]);
 
   return (

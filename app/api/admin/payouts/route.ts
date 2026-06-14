@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { listAffiliates, getPayoutRecordsForMonths, savePayoutRecord } from "@/lib/affiliate-db";
 import { validateAdminSession } from "@/lib/admin-auth";
 import { listOrders } from "@/lib/db";
+import { apiError } from "@/lib/api-error";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,7 @@ async function checkAuth(): Promise<boolean> {
 
 // GET — full payout summary for all affiliates, including payout records
 export async function GET() {
+  try {
   if (!(await checkAuth())) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
 
   const [affiliates, orders] = await Promise.all([listAffiliates(), listOrders()]);
@@ -107,10 +109,14 @@ export async function GET() {
     affiliates: summaries,
     fetchedAt: new Date().toISOString(),
   });
+  } catch (err) {
+    return apiError("GET /api/admin/payouts", err);
+  }
 }
 
 // POST — record a payout for one affiliate for one month
 export async function POST(req: NextRequest) {
+  try {
   if (!(await checkAuth())) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
 
   const { affiliateId, month, amount, confirmationCode, note } = await req.json();
@@ -141,4 +147,7 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json({ ok: true, record });
+  } catch (err) {
+    return apiError("POST /api/admin/payouts", err);
+  }
 }

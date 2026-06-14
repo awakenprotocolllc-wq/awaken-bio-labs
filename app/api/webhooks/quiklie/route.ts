@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
+import { apiError } from "@/lib/api-error";
 import { getOrder, updateOrderStatus } from "@/lib/db";
 import { sendCustomerOrderEmail, sendAdminOrderEmail } from "@/lib/order-emails";
 import { createShipStationOrder } from "@/lib/shipstation";
@@ -105,7 +106,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, orderId });
 
   } catch (err) {
-    console.error("[POST /api/webhooks/quiklie]", err);
-    return NextResponse.json({ ok: false, error: "Server error" });
+    return apiError("POST /api/webhooks/quiklie", err);
   }
 }

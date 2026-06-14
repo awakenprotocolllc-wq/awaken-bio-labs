@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendEmail, escape } from "@/lib/email";
 import { rateLimit, rateLimitBurst, clientIp } from "@/lib/rate-limit";
+import { apiError } from "@/lib/api-error";
 import { findAttack } from "@/lib/validate";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -81,7 +82,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("[/api/contact] error:", err);
-    return NextResponse.json({ ok: false }, { status: 500 });
+    return apiError("POST /api/contact", err);
   }
 }

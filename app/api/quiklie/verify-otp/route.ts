@@ -3,6 +3,7 @@ import { getOrder, updateOrderStatus } from "@/lib/db";
 import { sendCustomerOrderEmail, sendAdminOrderEmail } from "@/lib/order-emails";
 import { createShipStationOrder } from "@/lib/shipstation";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
+import { apiError } from "@/lib/api-error";
 
 // POST /api/quiklie/verify-otp
 // Called from CheckoutForm when Quiklie returns statusCode 3 (OTP required)
@@ -74,7 +75,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true, orderId });
   } catch (err) {
-    console.error("[POST /api/quiklie/verify-otp]", err);
-    return NextResponse.json({ ok: false, error: "Server error" }, { status: 500 });
+    return apiError("POST /api/quiklie/verify-otp", err);
   }
 }
