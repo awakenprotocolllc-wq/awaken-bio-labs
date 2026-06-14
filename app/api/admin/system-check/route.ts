@@ -29,7 +29,7 @@ async function checkAuth(): Promise<boolean> {
 
 // GET — env var status + ShipStation connection test
 export async function GET(req: NextRequest) {
-  if (!checkAuth()) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  if (!(await checkAuth())) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
 
   const envVars = {
     QUIKLIE_API_KEY: envStatus("QUIKLIE_API_KEY"),
@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
 
 // POST — push a specific order to ShipStation
 export async function POST(req: NextRequest) {
-  if (!checkAuth()) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  if (!(await checkAuth())) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
 
   const { orderId } = await req.json();
   if (!orderId || typeof orderId !== "string" || orderId.trim().length === 0 || orderId.length > 50) {

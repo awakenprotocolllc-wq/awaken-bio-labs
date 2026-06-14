@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
+import { validateAdminSession } from "@/lib/admin-auth";
 
 /**
  * GET /api/health
@@ -36,13 +37,10 @@ async function runCheck(name: string, fn: () => Promise<string | void>): Promise
 }
 
 export async function GET(req: NextRequest) {
-  // Allow admin browser checks (admin cookie) and cron calls (Authorization header)
+  // Allow cron calls (Authorization: Bearer CRON_SECRET) and admin browser sessions (KV-validated)
   const authHeader = req.headers.get("authorization");
-  const adminCookie = req.cookies.get("awaken_admin")?.value;
-  const adminToken = process.env.ADMIN_SESSION_TOKEN;
-
   const isCron = CRON_SECRET ? authHeader === `Bearer ${CRON_SECRET}` : false;
-  const isAdmin = !!adminToken && adminCookie === adminToken;
+  const isAdmin = await validateAdminSession(req.cookies.get("awaken_admin")?.value);
 
   if (!isCron && !isAdmin) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
@@ -52,7 +50,7 @@ export async function GET(req: NextRequest) {
 
   // 1. Environment variables
   checks.push(await runCheck("env-vars", async () => {
-    const required = ["ADMIN_SESSION_TOKEN", "KV_REST_API_URL", "KV_REST_API_TOKEN", "RESEND_API_KEY", "NEXT_PUBLIC_SITE_URL"];
+    const required = ["ADMIN_PASSWORD", "KV_REST_API_URL", "KV_REST_API_TOKEN", "RESEND_API_KEY", "NEXT_PUBLIC_SITE_URL"];
     const missing = required.filter((k) => !process.env[k]);
     if (missing.length) throw new Error(`Missing: ${missing.join(", ")}`);
     return `All ${required.length} required vars set`;

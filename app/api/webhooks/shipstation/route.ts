@@ -36,14 +36,16 @@ const SHIPSTATION_API_BASE = "https://ssapi.shipstation.com/";
 
 export async function POST(req: NextRequest) {
   try {
-    // Verify webhook secret if configured
+    // Verify webhook secret — SHIPSTATION_WEBHOOK_SECRET must be set in Vercel env vars
     const webhookSecret = process.env.SHIPSTATION_WEBHOOK_SECRET;
-    if (webhookSecret) {
-      const providedSecret = req.nextUrl.searchParams.get("secret");
-      if (!providedSecret || providedSecret !== webhookSecret) {
-        console.warn("[shipstation/webhook] Rejected: invalid or missing secret");
-        return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
-      }
+    if (!webhookSecret) {
+      console.error("[shipstation/webhook] SHIPSTATION_WEBHOOK_SECRET is not configured");
+      return NextResponse.json({ ok: false, error: "Webhook not configured" }, { status: 500 });
+    }
+    const providedSecret = req.nextUrl.searchParams.get("secret");
+    if (!providedSecret || providedSecret !== webhookSecret) {
+      console.warn("[shipstation/webhook] Rejected: invalid or missing secret");
+      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
     }
 
     const body = (await req.json()) as ShipStationWebhookBody;

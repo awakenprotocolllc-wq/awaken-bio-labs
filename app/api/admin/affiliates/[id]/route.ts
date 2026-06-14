@@ -123,8 +123,8 @@ export async function PATCH(
   // --- Set password (admin only) ---
   if (action === "set-password") {
     const { newPassword } = body;
-    if (!newPassword || typeof newPassword !== "string" || newPassword.length < 6 || newPassword.length > 128) {
-      return NextResponse.json({ ok: false, error: "Password must be 6–128 characters" }, { status: 400 });
+    if (!newPassword || typeof newPassword !== "string" || newPassword.length < 8 || newPassword.length > 128) {
+      return NextResponse.json({ ok: false, error: "Password must be 8–128 characters" }, { status: 400 });
     }
     const ok = await setAffiliatePassword(params.id, newPassword);
     if (!ok) return NextResponse.json({ ok: false, error: "Affiliate not found or write failed" }, { status: 404 });
@@ -213,9 +213,9 @@ export async function PATCH(
   }
 
   if (action === "approve") {
-    if (!password || typeof password !== "string" || password.length < 6 || password.length > 128) {
+    if (!password || typeof password !== "string" || password.length < 8 || password.length > 128) {
       return NextResponse.json(
-        { ok: false, error: "Password must be 6–128 characters" },
+        { ok: false, error: "Password must be 8–128 characters" },
         { status: 400 }
       );
     }

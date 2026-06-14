@@ -2,12 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { getOrder, updateOrderStatus } from "@/lib/db";
 import { sendCustomerOrderEmail, sendAdminOrderEmail } from "@/lib/order-emails";
 import { createShipStationOrder } from "@/lib/shipstation";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 
 // POST /api/quiklie/verify-otp
 // Called from CheckoutForm when Quiklie returns statusCode 3 (OTP required)
 // body: { transactionId: string; otp: string; orderId: string }
 export async function POST(req: NextRequest) {
   try {
+    // 5 OTP attempts per minute per IP
+    const { allowed } = await rateLimit(`verify-otp:${clientIp(req)}`, 5, 60);
+    if (!allowed) {
+      return NextResponse.json({ ok: false, error: "Too many attempts. Please wait a moment." }, { status: 429 });
+    }
+
     const { transactionId, otp, orderId } = await req.json();
 
     if (!transactionId || !otp || !orderId) {
