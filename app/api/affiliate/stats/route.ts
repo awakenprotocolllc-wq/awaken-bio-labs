@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAffiliateSession, getAffiliateReferrals } from "@/lib/affiliate-db";
+import { clientIp } from "@/lib/rate-limit";
 
 function commissionValue(commission: string): number {
   return parseFloat(commission.replace(/[^0-9.]/g, "") || "0");
@@ -9,7 +10,7 @@ export async function GET(req: NextRequest) {
   const token = req.cookies.get("awaken_affiliate")?.value;
   if (!token) return NextResponse.json({ ok: false }, { status: 401 });
 
-  const account = await getAffiliateSession(token);
+  const account = await getAffiliateSession(token, { ip: clientIp(req), ua: req.headers.get("user-agent") ?? "" });
   if (!account) return NextResponse.json({ ok: false }, { status: 401 });
 
   const referrals = await getAffiliateReferrals(account.affiliateCode);

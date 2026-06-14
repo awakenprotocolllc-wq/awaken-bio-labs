@@ -6,6 +6,12 @@ export async function POST(req: NextRequest) {
   if (token) await deleteAdminSession(token); // invalidate server-side immediately
 
   const res = NextResponse.json({ ok: true });
-  res.cookies.set("awaken_admin", "", { httpOnly: true, path: "/", maxAge: 0 });
+  res.cookies.set("awaken_admin", "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
   return res;
 }

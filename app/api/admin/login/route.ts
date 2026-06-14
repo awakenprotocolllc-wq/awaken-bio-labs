@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
-import { createAdminSession } from "@/lib/admin-auth";
+import { createAdminSession, deleteAdminSession } from "@/lib/admin-auth";
 
 export async function POST(req: NextRequest) {
   // 10 attempts per 15 minutes per IP
@@ -28,8 +28,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Invalid password" }, { status: 401 });
   }
 
-  // Per-login session token stored in KV — invalidated on logout
-  const sessionToken = await createAdminSession();
+  // Delete any existing session before creating a new one (prevents session fixation)
+  const existingToken = req.cookies.get("awaken_admin")?.value;
+  if (existingToken) await deleteAdminSession(existingToken);
+
+  // Per-login session token stored in KV — invalidated on logout, bound to IP/UA
+  const context = {
+    ip: clientIp(req),
+    ua: req.headers.get("user-agent") ?? "",
+  };
+  const sessionToken = await createAdminSession(context);
 
   const res = NextResponse.json({ ok: true });
   res.cookies.set("awaken_admin", sessionToken, {

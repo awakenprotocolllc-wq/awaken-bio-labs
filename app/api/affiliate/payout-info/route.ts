@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAffiliateSession, saveAffiliatePayoutInfo, getAffiliatePayoutInfo } from "@/lib/affiliate-db";
+import { clientIp } from "@/lib/rate-limit";
 
 async function getSession(req: NextRequest) {
   const token = req.cookies.get("awaken_affiliate")?.value;
   if (!token) return null;
-  return getAffiliateSession(token);
+  return getAffiliateSession(token, { ip: clientIp(req), ua: req.headers.get("user-agent") ?? "" });
 }
 
 // GET — returns masked payout info for the affiliate

@@ -1,17 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateAdminSession } from "@/lib/admin-auth";
 import { getAffiliateSession } from "@/lib/affiliate-db";
+import { clientIp } from "@/lib/rate-limit";
 
 export async function middleware(req: NextRequest) {
   const { pathname, searchParams } = req.nextUrl;
 
+  const context = {
+    ip: clientIp(req),
+    ua: req.headers.get("user-agent") ?? "",
+  };
+
   // ------------------------------------------------------------------
   // 1. Protect /admin/* (except /admin/login)
-  //    Validates token against KV — deleted sessions are rejected immediately.
+  //    Validates token against KV with IP/UA binding.
   // ------------------------------------------------------------------
   if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login")) {
     const token = req.cookies.get("awaken_admin")?.value;
-    const valid = await validateAdminSession(token);
+    const valid = await validateAdminSession(token, context);
     if (!valid) {
       const loginUrl = req.nextUrl.clone();
       loginUrl.pathname = "/admin/login";
@@ -22,10 +28,11 @@ export async function middleware(req: NextRequest) {
 
   // ------------------------------------------------------------------
   // 2. Protect /affiliates/dashboard/* — verify session exists in KV
+  //    with IP/UA binding.
   // ------------------------------------------------------------------
   if (pathname.startsWith("/affiliates/dashboard")) {
     const token = req.cookies.get("awaken_affiliate")?.value;
-    if (!token || !(await getAffiliateSession(token))) {
+    if (!token || !(await getAffiliateSession(token, context))) {
       const loginUrl = req.nextUrl.clone();
       loginUrl.pathname = "/affiliates/login";
       loginUrl.search = "";
@@ -42,6 +49,7 @@ export async function middleware(req: NextRequest) {
     const res = NextResponse.next();
     res.cookies.set("awaken_ref", ref.toUpperCase(), {
       httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
       maxAge: 60 * 60 * 24 * 60, // 60 days
       path: "/",
       sameSite: "lax",

@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { validateAffiliateLogin, createAffiliateSession } from "@/lib/affiliate-db";
+import {
+  validateAffiliateLogin,
+  createAffiliateSession,
+  deleteAffiliateSession,
+} from "@/lib/affiliate-db";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
 import { containsAttack } from "@/lib/validate";
 
@@ -28,7 +32,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Invalid email or password" }, { status: 401 });
     }
 
-    const token = await createAffiliateSession(account.id);
+    // Delete any existing session before creating a new one (prevents session fixation)
+    const existingToken = req.cookies.get("awaken_affiliate")?.value;
+    if (existingToken) await deleteAffiliateSession(existingToken);
+
+    const context = {
+      ip: clientIp(req),
+      ua: req.headers.get("user-agent") ?? "",
+    };
+    const token = await createAffiliateSession(account.id, context);
 
     const res = NextResponse.json({ ok: true, user: account });
     res.cookies.set("awaken_affiliate", token, {

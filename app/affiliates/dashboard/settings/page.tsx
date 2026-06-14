@@ -35,6 +35,10 @@ export default function SettingsPage() {
   const [passError, setPassError] = useState<string | null>(null);
   const [passSaved, setPassSaved] = useState(false);
 
+  // Logout everywhere state
+  const [logoutEverywhereLoading, setLogoutEverywhereLoading] = useState(false);
+  const [logoutEverywhereDone, setLogoutEverywhereDone] = useState(false);
+
   useEffect(() => {
     setUser(getCurrentUser());
     // Load existing payout info (masked)
@@ -74,6 +78,20 @@ export default function SettingsPage() {
       }
     } finally {
       setPayoutSaving(false);
+    }
+  }
+
+  async function handleLogoutEverywhere() {
+    setLogoutEverywhereLoading(true);
+    try {
+      const res = await fetch("/api/affiliate/logout-everywhere", { method: "POST" });
+      const data = await res.json();
+      if (data.ok) {
+        setLogoutEverywhereDone(true);
+        setTimeout(() => setLogoutEverywhereDone(false), 4000);
+      }
+    } finally {
+      setLogoutEverywhereLoading(false);
     }
   }
 
@@ -224,6 +242,21 @@ export default function SettingsPage() {
             >
               {passSaved ? "✓ Updated" : passSaving ? "Saving…" : "Update Password"}
             </button>
+
+            <div className="border-t border-slate pt-5 mt-2">
+              <p className="font-mono text-[10px] text-bone tracking-wider uppercase mb-3">Active Sessions</p>
+              <p className="text-bone text-sm leading-relaxed mb-4">
+                Think your account may have been accessed from another device? Log out of all other sessions immediately.
+              </p>
+              <button
+                type="button"
+                onClick={handleLogoutEverywhere}
+                disabled={logoutEverywhereLoading}
+                className="border border-slate text-bone font-semibold px-6 h-11 min-h-[44px] hover:border-accent hover:text-accent transition-colors disabled:opacity-50 font-mono text-xs"
+              >
+                {logoutEverywhereDone ? "✓ All other sessions ended" : logoutEverywhereLoading ? "Revoking…" : "Log out everywhere"}
+              </button>
+            </div>
           </form>
         </div>
 

@@ -7,6 +7,10 @@ import {
   peekPasswordResetToken,
 } from "@/lib/affiliate-db";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
+
+function sessionContext(req: NextRequest) {
+  return { ip: clientIp(req), ua: req.headers.get("user-agent") ?? "" };
+}
 import { validatePassword, checkBreachedPassword } from "@/lib/password";
 
 // GET /api/affiliate/reset-password?token=xxx
@@ -53,7 +57,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ ok: false, error: "Not authenticated." }, { status: 401 });
       }
 
-      const account = await getAffiliateSession(sessionToken);
+      const account = await getAffiliateSession(sessionToken, sessionContext(req));
       if (!account) {
         return NextResponse.json({ ok: false, error: "Session expired. Please log in again." }, { status: 401 });
       }

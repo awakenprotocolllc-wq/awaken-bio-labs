@@ -257,42 +257,89 @@ export async function validateDiscountCode(code: string): Promise<{ valid: boole
 // Sessions
 // ---------------------------------------------------------------------------
 
-type AffiliateSessionRecord = { affiliateId: string; passwordVersion: number };
+type AffiliateSessionRecord = {
+  affiliateId: string;
+  passwordVersion: number;
+  ip?: string;
+  ua?: string; // truncated to 200 chars
+};
 
-export async function createAffiliateSession(affiliateId: string): Promise<string> {
+type SessionContext = { ip: string; ua: string };
+
+export async function createAffiliateSession(
+  affiliateId: string,
+  context?: SessionContext
+): Promise<string> {
   const token = randomBytes(32).toString("hex");
   const account = await kv.get<AffiliateAccountInternal>(`aff:account:${affiliateId}`);
   const passwordVersion = account?.passwordVersion ?? 0;
-  const record: AffiliateSessionRecord = { affiliateId, passwordVersion };
+  const record: AffiliateSessionRecord = {
+    affiliateId,
+    passwordVersion,
+    ...(context ? { ip: context.ip, ua: context.ua.slice(0, 200) } : {}),
+  };
   await kv.set(`aff:session:${token}`, record, { ex: 60 * 60 * 24 * 30 });
   return token;
 }
 
-export async function getAffiliateSession(token: string): Promise<AffiliateAccount | null> {
+export async function getAffiliateSession(
+  token: string,
+  context?: SessionContext
+): Promise<AffiliateAccount | null> {
   const raw = await kv.get<AffiliateSessionRecord | string>(`aff:session:${token}`);
   if (!raw) return null;
 
   // Support legacy sessions stored as plain affiliateId strings (pre-passwordVersion)
   let affiliateId: string;
   let sessionPasswordVersion: number;
+  let sessionUa: string | undefined;
+  let sessionIp: string | undefined;
   if (typeof raw === "string") {
     affiliateId = raw;
     sessionPasswordVersion = 0;
   } else {
     affiliateId = raw.affiliateId;
     sessionPasswordVersion = raw.passwordVersion;
+    sessionUa = raw.ua;
+    sessionIp = raw.ip;
   }
 
   const account = await kv.get<AffiliateAccountInternal>(`aff:account:${affiliateId}`);
   // Block suspended/archived accounts and sessions created before the last password change
   if (!account || account.status !== "active") return null;
   if ((account.passwordVersion ?? 0) !== sessionPasswordVersion) return null;
+
+  if (context) {
+    // User-agent mismatch → hard reject (UA is stable within a browser; mismatch = different client)
+    if (sessionUa && context.ua.slice(0, 200) !== sessionUa) {
+      console.warn(`[session] affiliate UA mismatch for ${affiliateId} — rejecting`);
+      return null;
+    }
+    // IP change → log only (mobile/VPN users change IPs legitimately)
+    if (sessionIp && context.ip !== sessionIp) {
+      console.log(`[session] affiliate IP change for ${affiliateId}: ${sessionIp} → ${context.ip}`);
+    }
+  }
+
   const { passwordHash, passwordVersion: _pv, ...safe } = account;
   return safe;
 }
 
 export async function deleteAffiliateSession(token: string): Promise<void> {
   await kv.del(`aff:session:${token}`);
+}
+
+/**
+ * Invalidate every active session for an affiliate by bumping passwordVersion.
+ * Call createAffiliateSession afterwards if the current user should stay logged in.
+ */
+export async function revokeAllAffiliateSessions(affiliateId: string): Promise<void> {
+  const account = await kv.get<AffiliateAccountInternal>(`aff:account:${affiliateId}`);
+  if (!account) return;
+  await kv.set(`aff:account:${affiliateId}`, {
+    ...account,
+    passwordVersion: (account.passwordVersion ?? 0) + 1,
+  });
 }
 
 // ---------------------------------------------------------------------------
