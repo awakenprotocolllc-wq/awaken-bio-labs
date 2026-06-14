@@ -230,8 +230,8 @@ export default function CheckoutForm() {
       // Direct success or pending
       router.push(`/order-confirmation?id=${data.orderId}&method=card`);
 
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } catch {
+      setError("Something went wrong. Please try again.");
       setLoading(false);
     }
   }

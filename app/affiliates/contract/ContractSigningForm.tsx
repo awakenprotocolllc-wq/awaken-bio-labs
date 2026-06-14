@@ -36,10 +36,13 @@ export default function ContractSigningForm({
         body: JSON.stringify({ token, signatureName: signatureName.trim() }),
       });
       const data = await res.json();
-      if (!data.ok) throw new Error(data.error ?? "Something went wrong.");
-      setDone(true);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+      if (!data.ok) {
+        setError(data.error ?? "Something went wrong. Please try again.");
+      } else {
+        setDone(true);
+      }
+    } catch {
+      setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
