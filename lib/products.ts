@@ -124,7 +124,7 @@ export const products: Product[] = [
   // All Other (formerly Sexual Health, Blends, Supplies)
   { name: "PT-141",                 strengths: ["10mg"],       price: "$36.00",          category: "All Other" },
   { name: "Kisspeptin-10",          strengths: ["10mg"],       price: "$75.00",          category: "All Other" },
-  { name: "BPC Blend",              strengths: ["70mg"],       price: "$110.50",         category: "All Other" },
+  { name: "Glow",                    subtitle: "BPC 10MG + GHK-Cu 50MG + TB-500 10MG", strengths: ["70mg"], price: "$110.50", category: "All Other" },
   { name: "Wolverine Blend",        subtitle: "TB-500 + BPC-157", strengths: ["20mg"], price: "$135.00", coa: "/coas/wolverine-blend.pdf", category: "All Other" },
   { name: "KLOW",                   strengths: ["80mg"],       price: "$145.00",         category: "All Other" },
   { name: "BAC Water",              strengths: ["10ml"],       price: "$9.50",           category: "All Other" },
