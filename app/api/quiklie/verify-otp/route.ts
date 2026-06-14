@@ -13,6 +13,15 @@ export async function POST(req: NextRequest) {
     if (!transactionId || !otp || !orderId) {
       return NextResponse.json({ ok: false, error: "Missing fields" }, { status: 400 });
     }
+    if (!/^\d{4,8}$/.test(String(otp).trim())) {
+      return NextResponse.json({ ok: false, error: "Invalid OTP format" }, { status: 400 });
+    }
+    if (typeof transactionId !== "string" || transactionId.length > 100) {
+      return NextResponse.json({ ok: false, error: "Invalid transaction ID" }, { status: 400 });
+    }
+    if (typeof orderId !== "string" || orderId.length > 50) {
+      return NextResponse.json({ ok: false, error: "Invalid order ID" }, { status: 400 });
+    }
 
     const apiKey = process.env.QUIKLIE_API_KEY;
     if (!apiKey) {

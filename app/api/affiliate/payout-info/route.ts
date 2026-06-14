@@ -39,8 +39,18 @@ export async function POST(req: NextRequest) {
   if (!holderName?.trim() || !routingNumber?.trim() || !accountNumber?.trim()) {
     return NextResponse.json({ ok: false, error: "Holder name, routing number, and account number are required." }, { status: 400 });
   }
+  if (String(holderName).trim().length > 200) {
+    return NextResponse.json({ ok: false, error: "Holder name is too long." }, { status: 400 });
+  }
+  if (bankName && String(bankName).trim().length > 200) {
+    return NextResponse.json({ ok: false, error: "Bank name is too long." }, { status: 400 });
+  }
   if (!/^\d{9}$/.test(routingNumber.replace(/\s/g, ""))) {
     return NextResponse.json({ ok: false, error: "Routing number must be 9 digits." }, { status: 400 });
+  }
+  const cleanAccount = String(accountNumber).replace(/\s/g, "");
+  if (!/^\d{4,17}$/.test(cleanAccount)) {
+    return NextResponse.json({ ok: false, error: "Account number must be 4–17 digits." }, { status: 400 });
   }
   if (!["checking", "savings"].includes(accountType)) {
     return NextResponse.json({ ok: false, error: "Account type must be checking or savings." }, { status: 400 });

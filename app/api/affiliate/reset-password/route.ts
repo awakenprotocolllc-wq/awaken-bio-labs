@@ -22,8 +22,8 @@ export async function POST(req: NextRequest) {
       if (!currentPassword || typeof currentPassword !== "string") {
         return NextResponse.json({ ok: false, error: "Current password is required." }, { status: 400 });
       }
-      if (!newPassword || typeof newPassword !== "string" || newPassword.length < 6) {
-        return NextResponse.json({ ok: false, error: "New password must be at least 6 characters." }, { status: 400 });
+      if (!newPassword || typeof newPassword !== "string" || newPassword.length < 6 || newPassword.length > 128) {
+        return NextResponse.json({ ok: false, error: "New password must be 6–128 characters." }, { status: 400 });
       }
 
       const sessionToken = req.cookies.get("awaken_affiliate")?.value;
@@ -56,9 +56,9 @@ export async function POST(req: NextRequest) {
     if (!token || typeof token !== "string") {
       return NextResponse.json({ ok: false, error: "Missing reset token." }, { status: 400 });
     }
-    if (!password || typeof password !== "string" || password.length < 8) {
+    if (!password || typeof password !== "string" || password.length < 8 || password.length > 128) {
       return NextResponse.json(
-        { ok: false, error: "Password must be at least 8 characters." },
+        { ok: false, error: "Password must be 8–128 characters." },
         { status: 400 }
       );
     }

@@ -9,6 +9,11 @@ import { validateDiscountCode } from "@/lib/affiliate-db";
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://awakenbiolabs.com";
 const QUIKLIE_BASE = "https://api.quiklie.com";
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const ZIP_RE   = /^\d{5}(-\d{4})?$/;
+const STATE_RE = /^[A-Za-z]{2}$/;
+const PHONE_RE = /^[\d\s\-().+]{7,20}$/;
+
 // ---------------------------------------------------------------------------
 // POST /api/orders — create order and process payment
 // paymentMethod "zelle" → save order + send Zelle instructions, no card processing
@@ -24,7 +29,7 @@ export async function POST(req: NextRequest) {
       card, // { number, holderName, expiryMonth, expiryYear, cvv }
     } = body ?? {};
 
-    // Validate required fields
+    // ── Field presence ────────────────────────────────────────────────────────
     if (
       !customer?.name || !customer?.email ||
       !shipping?.line1 || !shipping?.city || !shipping?.state || !shipping?.zip ||
@@ -33,8 +38,60 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Missing required fields" }, { status: 400 });
     }
 
-    if (paymentMethod === "card" && (!card?.number || !card?.holderName || !card?.expiryMonth || !card?.expiryYear || !card?.cvv)) {
-      return NextResponse.json({ ok: false, error: "Card details are required" }, { status: 400 });
+    // ── Payment method enum ───────────────────────────────────────────────────
+    if (paymentMethod !== "card" && paymentMethod !== "zelle") {
+      return NextResponse.json({ ok: false, error: "Invalid payment method" }, { status: 400 });
+    }
+
+    // ── Customer field validation ─────────────────────────────────────────────
+    if (!EMAIL_RE.test(String(customer.email).trim())) {
+      return NextResponse.json({ ok: false, error: "Invalid email address" }, { status: 400 });
+    }
+    if (String(customer.name).trim().length > 200) {
+      return NextResponse.json({ ok: false, error: "Name is too long" }, { status: 400 });
+    }
+    if (customer.phone && !PHONE_RE.test(String(customer.phone))) {
+      return NextResponse.json({ ok: false, error: "Invalid phone number" }, { status: 400 });
+    }
+
+    // ── Shipping field validation ─────────────────────────────────────────────
+    if (!STATE_RE.test(String(shipping.state))) {
+      return NextResponse.json({ ok: false, error: "State must be a 2-letter code (e.g. CA)" }, { status: 400 });
+    }
+    if (!ZIP_RE.test(String(shipping.zip).trim())) {
+      return NextResponse.json({ ok: false, error: "ZIP code must be 5 digits (e.g. 90210)" }, { status: 400 });
+    }
+    if (String(shipping.line1).trim().length > 200) {
+      return NextResponse.json({ ok: false, error: "Address is too long" }, { status: 400 });
+    }
+    if (String(shipping.city).trim().length > 100) {
+      return NextResponse.json({ ok: false, error: "City is too long" }, { status: 400 });
+    }
+
+    // ── Card field validation ─────────────────────────────────────────────────
+    if (paymentMethod === "card") {
+      if (!card?.number || !card?.holderName || !card?.expiryMonth || !card?.expiryYear || !card?.cvv) {
+        return NextResponse.json({ ok: false, error: "Card details are required" }, { status: 400 });
+      }
+      const cardDigits = String(card.number).replace(/[\s-]/g, "");
+      if (!/^\d{13,19}$/.test(cardDigits)) {
+        return NextResponse.json({ ok: false, error: "Invalid card number" }, { status: 400 });
+      }
+      const expMonth = Number(card.expiryMonth);
+      const expYear  = Number(card.expiryYear);
+      const nowYear  = new Date().getFullYear();
+      if (!Number.isInteger(expMonth) || expMonth < 1 || expMonth > 12) {
+        return NextResponse.json({ ok: false, error: "Invalid expiry month" }, { status: 400 });
+      }
+      if (!Number.isInteger(expYear) || expYear < nowYear || expYear > nowYear + 20) {
+        return NextResponse.json({ ok: false, error: "Invalid expiry year" }, { status: 400 });
+      }
+      if (!/^\d{3,4}$/.test(String(card.cvv).trim())) {
+        return NextResponse.json({ ok: false, error: "Invalid CVV" }, { status: 400 });
+      }
+      if (String(card.holderName).trim().length > 200) {
+        return NextResponse.json({ ok: false, error: "Cardholder name is too long" }, { status: 400 });
+      }
     }
 
     // ── Server-side item validation: prices from catalog, never from client ──
