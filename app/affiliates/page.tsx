@@ -47,6 +47,7 @@ export default function AffiliatesPage() {
       audience: fd.get("audience"),
       about: fd.get("about"),
       programType,
+      website: fd.get("website"), // honeypot — backend rejects if non-empty
     };
     try {
       const res = await fetch("/api/affiliates", {
@@ -146,6 +147,10 @@ export default function AffiliatesPage() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Honeypot — hidden from real users, filled by bots */}
+              <div aria-hidden="true" style={{ position: "absolute", left: "-9999px", width: 1, height: 1, overflow: "hidden" }}>
+                <input name="website" type="text" tabIndex={-1} autoComplete="off" />
+              </div>
 
               {/* Program type selector */}
               <div>

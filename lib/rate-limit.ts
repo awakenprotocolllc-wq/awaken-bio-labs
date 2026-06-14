@@ -20,6 +20,11 @@ export async function rateLimit(
   return { allowed: count <= limit };
 }
 
+/** Short-burst limit: 10 requests per 60 seconds per key. */
+export async function rateLimitBurst(key: string): Promise<{ allowed: boolean }> {
+  return rateLimit(`burst:${key}`, 10, 60);
+}
+
 /** Extracts the most-specific IP from the request headers. */
 export function clientIp(req: Request | { headers: Headers }): string {
   const headers = req instanceof Request ? req.headers : req.headers;

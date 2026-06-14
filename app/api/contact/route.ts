@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendEmail, escape } from "@/lib/email";
-import { rateLimit, clientIp } from "@/lib/rate-limit";
+import { rateLimit, rateLimitBurst, clientIp } from "@/lib/rate-limit";
+import { findAttack } from "@/lib/validate";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -14,14 +15,26 @@ const VALID_REASONS = new Set([
 
 export async function POST(req: NextRequest) {
   try {
-    // 10 submissions per hour per IP
-    const { allowed } = await rateLimit(`contact:${clientIp(req)}`, 10, 60 * 60);
-    if (!allowed) {
+    const ip = clientIp(req);
+
+    // Hourly cap: 10 per hour
+    const { allowed: hourlyOk } = await rateLimit(`contact:${ip}`, 10, 60 * 60);
+    if (!hourlyOk) {
       return NextResponse.json({ ok: false, error: "Too many submissions. Try again later." }, { status: 429 });
+    }
+    // Burst cap: 10 per minute
+    const { allowed: burstOk } = await rateLimitBurst(`contact:${ip}`);
+    if (!burstOk) {
+      return NextResponse.json({ ok: false, error: "Too many submissions. Slow down and try again." }, { status: 429 });
     }
 
     const data = await req.json();
-    const { name, email, reason, message } = data ?? {};
+    const { name, email, reason, message, website } = data ?? {};
+
+    // Honeypot: bots fill this, humans don't
+    if (website) {
+      return NextResponse.json({ ok: true }); // silently discard bot submissions
+    }
 
     if (!name || !email || !message) {
       return NextResponse.json(
@@ -40,6 +53,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Message is too long (max 5000 characters)" }, { status: 400 });
     }
     const safeReason = VALID_REASONS.has(reason) ? reason : "Other";
+
+    // Attack pattern detection
+    const attackField = findAttack({ name: String(name), message: String(message) });
+    if (attackField) {
+      console.warn(`[contact] attack pattern in field "${attackField}", ip: ${ip}`);
+      return NextResponse.json({ ok: false, error: "Submission rejected." }, { status: 400 });
+    }
 
     const html = `
       <h2>New Contact Form Submission</h2>

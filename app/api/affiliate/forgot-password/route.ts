@@ -3,6 +3,7 @@ import { createPasswordResetToken, getAffiliateById } from "@/lib/affiliate-db";
 import { sendPasswordResetEmail } from "@/lib/affiliate-emails";
 import { kv } from "@vercel/kv";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
+import { containsAttack } from "@/lib/validate";
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://awakenbiolabs.com";
 
@@ -22,6 +23,10 @@ export async function POST(req: NextRequest) {
     const { email } = await req.json();
     if (!email || typeof email !== "string" || !EMAIL_RE.test(email.trim())) {
       return NextResponse.json({ ok: false, error: "Missing email" }, { status: 400 });
+    }
+    if (containsAttack(email)) {
+      console.warn("[forgot-password] attack pattern in email, ip:", clientIp(req));
+      return NextResponse.json({ ok: true }); // don't reveal
     }
 
     const token = await createPasswordResetToken(email.trim().toLowerCase());

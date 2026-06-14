@@ -59,6 +59,9 @@ export default function CheckoutForm() {
   // Payment method
   const [paymentMethod, setPaymentMethod] = useState<"card" | "zelle">("card");
 
+  // Honeypot — hidden from real users; bots fill it; backend rejects non-empty
+  const [honeypot, setHoneypot] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -190,6 +193,7 @@ export default function CheckoutForm() {
             expiryYear: card.expiryYear,
             cvv: card.cvv,
           } : undefined,
+          website: honeypot, // honeypot — backend rejects if non-empty
         }),
       });
 
@@ -263,6 +267,11 @@ export default function CheckoutForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-10">
+      {/* Honeypot — hidden from real users, filled by bots */}
+      <div aria-hidden="true" style={{ position: "absolute", left: "-9999px", width: 1, height: 1, overflow: "hidden" }}>
+        <input type="text" tabIndex={-1} autoComplete="off" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} />
+      </div>
+
       {/* ── Order items ── */}
       <div>
         <p className="font-mono text-accent text-xs tracking-[0.25em] mb-4">— YOUR ORDER —</p>

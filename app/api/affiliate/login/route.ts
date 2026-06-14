@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateAffiliateLogin, createAffiliateSession } from "@/lib/affiliate-db";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
+import { containsAttack } from "@/lib/validate";
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,6 +16,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Missing credentials" }, { status: 400 });
     }
     if (email.length > 254 || password.length > 128) {
+      return NextResponse.json({ ok: false, error: "Invalid credentials" }, { status: 400 });
+    }
+    if (containsAttack(email)) {
+      console.warn("[affiliate/login] attack pattern in email, ip:", clientIp(req));
       return NextResponse.json({ ok: false, error: "Invalid credentials" }, { status: 400 });
     }
 

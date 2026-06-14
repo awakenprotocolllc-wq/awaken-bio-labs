@@ -46,6 +46,7 @@ export default function ContactPage() {
       email: fd.get("email"),
       reason: fd.get("reason"),
       message: fd.get("message"),
+      website: fd.get("website"), // honeypot — backend rejects if non-empty
     };
     try {
       const res = await fetch("/api/contact", {
@@ -115,6 +116,10 @@ export default function ContactPage() {
                 onSubmit={handleSubmit}
                 className="bg-carbon border border-slate p-6 sm:p-8 space-y-5"
               >
+                {/* Honeypot — hidden from real users, filled by bots */}
+                <div aria-hidden="true" style={{ position: "absolute", left: "-9999px", width: 1, height: 1, overflow: "hidden" }}>
+                  <input name="website" type="text" tabIndex={-1} autoComplete="off" />
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <Field label="Name" name="name" required />
                   <Field label="Email" name="email" type="email" required />

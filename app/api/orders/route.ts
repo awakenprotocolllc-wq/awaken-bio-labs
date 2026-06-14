@@ -5,6 +5,8 @@ import { sendCustomerOrderEmail, sendAdminOrderEmail } from "@/lib/order-emails"
 import { createShipStationOrder } from "@/lib/shipstation";
 import { products, getPriceForStrength, isOrderable } from "@/lib/products";
 import { validateDiscountCode } from "@/lib/affiliate-db";
+import { rateLimit, rateLimitBurst, clientIp } from "@/lib/rate-limit";
+import { findAttack } from "@/lib/validate";
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://awakenbiolabs.com";
 const QUIKLIE_BASE = "https://api.quiklie.com";
@@ -21,13 +23,32 @@ const PHONE_RE = /^[\d\s\-().+]{7,20}$/;
 // ---------------------------------------------------------------------------
 export async function POST(req: NextRequest) {
   try {
+    const ip = clientIp(req);
+
+    // Burst cap: 10 checkout submissions per minute per IP
+    const { allowed: burstOk } = await rateLimitBurst(`orders:${ip}`);
+    if (!burstOk) {
+      return NextResponse.json({ ok: false, error: "Too many requests. Slow down and try again." }, { status: 429 });
+    }
+    // Hourly cap: 30 per hour (allows a few retries per order attempt)
+    const { allowed: hourlyOk } = await rateLimit(`orders:${ip}`, 30, 60 * 60);
+    if (!hourlyOk) {
+      return NextResponse.json({ ok: false, error: "Too many submissions. Try again later." }, { status: 429 });
+    }
+
     const body = await req.json();
     const {
       customer, shipping, items, notes,
       discountCode, discountAmount, shippingCost, processingFee, orderTotal,
       paymentMethod, // "card" | "zelle"
       card, // { number, holderName, expiryMonth, expiryYear, cvv }
+      website, // honeypot — must be empty
     } = body ?? {};
+
+    // Honeypot: bots fill this field, humans don't see it
+    if (website) {
+      return NextResponse.json({ ok: true, orderId: "bot-discard" }); // silently discard
+    }
 
     // ── Field presence ────────────────────────────────────────────────────────
     if (
@@ -92,6 +113,19 @@ export async function POST(req: NextRequest) {
       if (String(card.holderName).trim().length > 200) {
         return NextResponse.json({ ok: false, error: "Cardholder name is too long" }, { status: 400 });
       }
+    }
+
+    // ── Attack pattern scan on free-text fields ───────────────────────────────
+    const attackField = findAttack({
+      name: typeof customer?.name === "string" ? customer.name : undefined,
+      email: typeof customer?.email === "string" ? customer.email : undefined,
+      address: typeof shipping?.line1 === "string" ? shipping.line1 : undefined,
+      city: typeof shipping?.city === "string" ? shipping.city : undefined,
+      notes: typeof notes === "string" ? notes : undefined,
+    });
+    if (attackField) {
+      console.warn(`[orders] attack pattern in field "${attackField}", ip: ${ip}`);
+      return NextResponse.json({ ok: false, error: "Submission rejected." }, { status: 400 });
     }
 
     // ── Server-side item validation: prices from catalog, never from client ──

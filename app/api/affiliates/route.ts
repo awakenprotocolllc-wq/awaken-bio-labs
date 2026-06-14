@@ -2,20 +2,33 @@ import { NextRequest, NextResponse } from "next/server";
 import { sendEmail, escape } from "@/lib/email";
 import { createApplication } from "@/lib/affiliate-db";
 import { sendApplicationReceivedEmail } from "@/lib/affiliate-emails";
-import { rateLimit, clientIp } from "@/lib/rate-limit";
+import { rateLimit, rateLimitBurst, clientIp } from "@/lib/rate-limit";
+import { findAttack } from "@/lib/validate";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: NextRequest) {
   try {
-    // 5 applications per hour per IP
-    const { allowed } = await rateLimit(`affiliate-apply:${clientIp(req)}`, 5, 60 * 60);
-    if (!allowed) {
+    const ip = clientIp(req);
+
+    // Hourly cap: 5 applications per hour
+    const { allowed: hourlyOk } = await rateLimit(`affiliate-apply:${ip}`, 5, 60 * 60);
+    if (!hourlyOk) {
       return NextResponse.json({ ok: false, error: "Too many submissions. Try again later." }, { status: 429 });
+    }
+    // Burst cap: 10 per minute
+    const { allowed: burstOk } = await rateLimitBurst(`affiliate-apply:${ip}`);
+    if (!burstOk) {
+      return NextResponse.json({ ok: false, error: "Too many submissions. Slow down and try again." }, { status: 429 });
     }
 
     const data = await req.json();
-    const { name, email, platform, audience, about, programType } = data ?? {};
+    const { name, email, platform, audience, about, programType, website } = data ?? {};
+
+    // Honeypot: bots fill this, humans don't
+    if (website) {
+      return NextResponse.json({ ok: true }); // silently discard
+    }
 
     if (typeof name !== "string" || typeof email !== "string" || typeof platform !== "string") {
       return NextResponse.json({ ok: false, error: "Missing required fields" }, { status: 400 });
@@ -37,6 +50,18 @@ export async function POST(req: NextRequest) {
     }
     if (audience !== undefined && (typeof audience !== "string" || audience.length > 500)) {
       return NextResponse.json({ ok: false, error: "Audience field is too long (max 500 characters)" }, { status: 400 });
+    }
+
+    // Attack pattern detection
+    const attackField = findAttack({
+      name: typeof name === "string" ? name : undefined,
+      platform: typeof platform === "string" ? platform : undefined,
+      audience: typeof audience === "string" ? audience : undefined,
+      about: typeof about === "string" ? about : undefined,
+    });
+    if (attackField) {
+      console.warn(`[affiliates] attack pattern in field "${attackField}", ip: ${ip}`);
+      return NextResponse.json({ ok: false, error: "Submission rejected." }, { status: 400 });
     }
 
     const resolvedProgramType = programType === "licensee" ? "licensee" : "ambassador";
