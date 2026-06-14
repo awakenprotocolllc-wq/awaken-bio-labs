@@ -575,6 +575,8 @@ export default function AffiliatesClient({
             <span className="text-slate">·</span>
             <span className="font-mono text-accent text-xs tracking-wider">Partners</span>
             <span className="text-slate">·</span>
+            <Link href="/admin/payouts" className="font-mono text-bone text-xs tracking-wider hover:text-accent transition-colors">Payouts</Link>
+            <span className="text-slate">·</span>
             <Link href="/admin/system" className="font-mono text-bone text-xs tracking-wider hover:text-accent transition-colors">System</Link>
           </div>
         </div>

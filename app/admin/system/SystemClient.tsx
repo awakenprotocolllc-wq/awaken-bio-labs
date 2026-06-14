@@ -68,7 +68,11 @@ export default function SystemClient({ envVars, shipstation }: Props) {
             </Link>
             <span className="text-slate">·</span>
             <Link href="/admin/affiliates" className="font-mono text-bone text-xs tracking-wider hover:text-accent transition-colors">
-              Affiliates
+              Partners
+            </Link>
+            <span className="text-slate">·</span>
+            <Link href="/admin/payouts" className="font-mono text-bone text-xs tracking-wider hover:text-accent transition-colors">
+              Payouts
             </Link>
             <span className="text-slate">·</span>
             <span className="font-mono text-accent text-xs tracking-wider">System</span>
