@@ -22,11 +22,20 @@ export async function POST(req: NextRequest) {
     if (!email || !name || !password) {
       return NextResponse.json({ ok: false, error: "Email, name, and password are required." }, { status: 400 });
     }
+    if (name.length > 120) {
+      return NextResponse.json({ ok: false, error: "Name must be 120 characters or fewer." }, { status: 400 });
+    }
+    if (email.length > 254) {
+      return NextResponse.json({ ok: false, error: "Email address is too long." }, { status: 400 });
+    }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ ok: false, error: "Invalid email address." }, { status: 400 });
     }
     if (password.length < 8) {
       return NextResponse.json({ ok: false, error: "Password must be at least 8 characters." }, { status: 400 });
+    }
+    if (institution.length > 200) {
+      return NextResponse.json({ ok: false, error: "Institution name must be 200 characters or fewer." }, { status: 400 });
     }
     if (!researcherCategory) {
       return NextResponse.json({ ok: false, error: "Please select your researcher category." }, { status: 400 });
