@@ -17,12 +17,18 @@ export async function POST(req: NextRequest) {
 
     // Always return success to prevent user enumeration
     const customer = await getCustomerByEmail(email);
-    if (customer) {
+    if (!customer) {
+      console.log(`[customer:forgot-password] No account for ${email} — suppressed`);
+    } else {
       const token = await createPasswordResetToken(email);
       if (token) {
-        await sendPasswordResetEmail(customer.email, customer.name, token).catch((err) => {
-          console.error("[customer:forgot-password] Email failed:", err);
-        });
+        try {
+          await sendPasswordResetEmail(customer.email, customer.name, token);
+          console.log(`[customer:forgot-password] Reset email sent to ${email}`);
+        } catch (err) {
+          // Surface full Resend error in Vercel function logs for diagnosis
+          console.error(`[customer:forgot-password] Email delivery failed for ${email}:`, err);
+        }
       }
     }
 
