@@ -44,6 +44,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (String(email).length > 254) {
+      return NextResponse.json({ ok: false, error: "Email address is too long" }, { status: 400 });
+    }
     if (!EMAIL_RE.test(String(email).trim())) {
       return NextResponse.json({ ok: false, error: "Invalid email address" }, { status: 400 });
     }
@@ -62,6 +65,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Submission rejected." }, { status: 400 });
     }
 
+    // Strip CR/LF from name before inserting into email subject to prevent header injection
+    const safeSubjectName = String(name).replace(/[\r\n]+/g, " ").trim();
+
     const html = `
       <h2>New Contact Form Submission</h2>
       <p><strong>From:</strong> ${escape(name)} &lt;${escape(email)}&gt;</p>
@@ -71,7 +77,7 @@ export async function POST(req: NextRequest) {
     `;
 
     const result = await sendEmail({
-      subject: `[Awaken Contact] ${safeReason} — ${name}`,
+      subject: `[Awaken Contact] ${safeReason} — ${safeSubjectName}`,
       html,
       replyTo: email,
     });
