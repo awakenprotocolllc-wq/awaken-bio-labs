@@ -9,7 +9,9 @@ import SuccessTransition from "@/components/SuccessTransition";
 export default function CustomerLoginPage() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get("next") ?? "/account";
+  const rawNext = params.get("next") ?? "";
+  // Allow only same-origin relative paths; reject absolute URLs and protocol-relative redirects
+  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/account";
 
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");

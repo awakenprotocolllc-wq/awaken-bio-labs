@@ -24,7 +24,9 @@ function passwordStrength(p: string): { score: number; label: string; color: str
 export default function CustomerSignupPage() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get("next") ?? "/account";
+  const rawNext = params.get("next") ?? "";
+  // Allow only same-origin relative paths; reject absolute URLs and protocol-relative redirects
+  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/account";
 
   const [name, setName]         = useState("");
   const [email, setEmail]       = useState("");
