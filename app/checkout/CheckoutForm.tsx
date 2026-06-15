@@ -5,6 +5,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { useCart } from "@/lib/cart";
 import SuccessTransition from "@/components/SuccessTransition";
+import CheckoutUpsell from "@/components/CheckoutUpsell";
 import type { CustomerAccount, SavedPayment } from "@/lib/customer-db";
 
 function parsePrice(p: string): number {
@@ -440,6 +441,9 @@ export default function CheckoutForm() {
             </div>
           </div>
         )}
+
+        {/* Upsell — behaviorally paired suggestions */}
+        <CheckoutUpsell />
 
         {/* Discount code */}
         {items.length > 0 && (

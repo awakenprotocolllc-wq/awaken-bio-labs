@@ -36,7 +36,7 @@ export default function Hero() {
             transition={{ delay: 0.55, duration: 0.6 }}
             className="mt-8 max-w-xl text-bone font-sans font-light text-base sm:text-lg"
           >
-            Research-grade peptide compounds for in-vitro laboratory use. Made in the USA. Tested in the USA. Not for human or veterinary use.
+            Research-grade peptide compounds for in-vitro laboratory use. Made in the USA. Tested in the USA. In-vitro research use only.
           </motion.p>
 
           <motion.div
@@ -55,19 +55,28 @@ export default function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7, duration: 0.6 }}
-            className="mt-8 flex flex-wrap gap-3 sm:gap-4"
+            className="mt-8 flex flex-col sm:flex-row flex-wrap gap-3"
           >
+            {/* Primary CTA */}
             <a
               href="/shop"
-              className="inline-flex items-center justify-center bg-accent text-obsidian font-semibold px-6 sm:px-7 h-12 min-h-[44px] hover:bg-accent/80 transition-colors"
+              className="inline-flex items-center justify-center bg-accent text-obsidian font-semibold px-7 h-12 min-h-[44px] hover:bg-accent/80 transition-colors"
             >
-              Shop Products
+              Shop Research Compounds
             </a>
+            {/* Secondary CTA */}
             <a
               href="/coas"
-              className="inline-flex items-center justify-center border border-accent text-accent font-semibold px-6 sm:px-7 h-12 min-h-[44px] hover:bg-accent/10 transition-colors"
+              className="inline-flex items-center justify-center border border-accent text-accent font-semibold px-6 h-12 min-h-[44px] hover:bg-accent/10 transition-colors"
             >
-              View COAs
+              Verify COAs
+            </a>
+            {/* Tertiary CTA */}
+            <a
+              href="/#catalog"
+              className="inline-flex items-center justify-center border border-slate text-bone font-mono text-xs tracking-wider uppercase px-6 h-12 min-h-[44px] hover:border-accent hover:text-accent transition-colors"
+            >
+              Browse by Research Category ↓
             </a>
           </motion.div>
         </div>
@@ -89,7 +98,7 @@ export default function Hero() {
             }}
           />
 
-          {/* Image */}
+          {/* Image — banner overlaid at top */}
           <div className="relative w-full">
             <Image
               src="/Hero-Image.png"
@@ -99,12 +108,14 @@ export default function Hero() {
               priority
               className="w-full h-auto object-contain drop-shadow-2xl"
             />
-          </div>
-
-          {/* USA badge */}
-          <div className="absolute top-0 right-0 bg-carbon border border-accent/40 px-3 py-1.5">
-            <p className="font-mono text-[9px] text-accent tracking-[0.2em]">MADE & TESTED</p>
-            <p className="font-mono text-[9px] text-accent tracking-[0.2em]">IN THE USA 🇺🇸</p>
+            {/* USA banner — absolutely positioned across the bottom of the image */}
+            <div className="absolute bottom-0 left-0 right-0 bg-carbon/90 backdrop-blur-sm border-t border-accent/30 px-4 py-2 flex items-center justify-center gap-3">
+              <span className="text-sm">🇺🇸</span>
+              <p className="font-mono text-[10px] text-accent tracking-[0.22em] uppercase">
+                Made &amp; Tested in the USA
+              </p>
+              <span className="text-sm">🇺🇸</span>
+            </div>
           </div>
         </motion.div>
       </div>
