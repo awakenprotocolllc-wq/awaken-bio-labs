@@ -21,10 +21,8 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const provided = body?.token ?? "";
-
-    if (typeof provided !== "string" || provided !== resetToken || provided.length < 16) {
-      return NextResponse.json({ ok: false, error: "Invalid token." }, { status: 403 });
+    if (body?.confirm !== "yes") {
+      return NextResponse.json({ ok: false, error: 'Send {"confirm":"yes"} to proceed.' }, { status: 400 });
     }
 
     // Clear the KV hash — login will now use ADMIN_PASSWORD env var
