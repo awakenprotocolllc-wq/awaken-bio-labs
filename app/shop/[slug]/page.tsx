@@ -4,6 +4,7 @@ import Link from "next/link";
 import SiteShell from "@/components/SiteShell";
 import ResearchDisclaimer from "@/components/ResearchDisclaimer";
 import ProductOrderSection from "@/components/ProductOrderSection";
+import RecentlyViewedTracker from "@/components/RecentlyViewedTracker";
 import { getProductBySlug, getProductImage, products, slugify } from "@/lib/products";
 
 export function generateStaticParams() {
@@ -29,6 +30,9 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
 
   return (
     <SiteShell>
+      {/* Track this product as recently viewed (client-side, localStorage) */}
+      <RecentlyViewedTracker productName={product.name} />
+
       <section className="bg-obsidian border-b border-slate">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
           <nav className="font-mono text-xs text-bone tracking-wider">
