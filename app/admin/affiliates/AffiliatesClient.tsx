@@ -54,6 +54,7 @@ export default function AffiliatesClient({
   const [changePassError, setChangePassError] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<EditForm | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
+  const [approveError, setApproveError] = useState<string | null>(null);
   const [payoutModal, setPayoutModal] = useState<PayoutModal | null>(null);
   const [payoutData, setPayoutData] = useState<Record<string, unknown> | null>(null);
   const [payoutLoading, setPayoutLoading] = useState(false);
@@ -92,22 +93,33 @@ export default function AffiliatesClient({
   async function handleApprove(e: React.FormEvent) {
     e.preventDefault();
     if (!approveForm) return;
+    setApproveError(null);
+    if (approveForm.password.length < 8) {
+      setApproveError("Password must be at least 8 characters.");
+      return;
+    }
     setWorking(approveForm.id);
-    const res = await fetch(`/api/admin/affiliates/${approveForm.id}`, {
-      method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "approve",
-        password: approveForm.password,
-        affiliateCode: approveForm.code,
-        commissionRate: parseFloat(approveForm.rate) / 100,
-      }),
-    });
-    const data = await res.json();
-    if (data.ok) {
-      setApplications((prev) => prev.map((a) => a.id === approveForm.id ? { ...a, status: "approved" as const } : a));
-      setAffiliates((prev) => [...prev, data.account]);
-      setApproveForm(null);
-      showToast("Contract sent ✓");
+    try {
+      const res = await fetch(`/api/admin/affiliates/${approveForm.id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "approve",
+          password: approveForm.password,
+          affiliateCode: approveForm.code,
+          commissionRate: parseFloat(approveForm.rate) / 100,
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setApplications((prev) => prev.map((a) => a.id === approveForm.id ? { ...a, status: "approved" as const } : a));
+        setAffiliates((prev) => [...prev, data.account]);
+        setApproveForm(null);
+        showToast("Contract sent ✓ — partner moved to Pending Contract");
+      } else {
+        setApproveError(data.error ?? "Something went wrong. Please try again.");
+      }
+    } catch {
+      setApproveError("Network error. Please try again.");
     }
     setWorking(null);
   }
@@ -717,12 +729,12 @@ export default function AffiliatesClient({
                       {!isApproving ? (
                         <div className="flex gap-3">
                           <button
-                            onClick={() => setApproveForm({
+                            onClick={() => { setApproveError(null); setApproveForm({
                               id: app.id, password: "",
                               code: app.name.replace(/[^a-z0-9]/gi, "").toUpperCase().slice(0, 8) || "PARTNER",
                               rate: isLicensee ? "50" : "20",
                               programType: app.programType ?? "ambassador",
-                            })}
+                            }); }}
                             className="bg-accent text-obsidian font-semibold font-mono text-xs tracking-wider px-5 h-10 min-h-[44px] hover:bg-accent/80 transition-colors"
                           >
                             Approve
@@ -773,22 +785,25 @@ export default function AffiliatesClient({
                               <label className="block font-mono text-bone text-[10px] tracking-wider uppercase mb-2">Password *</label>
                               <input
                                 type="text"
-                                placeholder="min 6 chars"
+                                placeholder="min 8 chars"
                                 value={approveForm.password}
-                                onChange={(e) => setApproveForm((f) => f && { ...f, password: e.target.value })}
+                                onChange={(e) => { setApproveForm((f) => f && { ...f, password: e.target.value }); setApproveError(null); }}
                                 className="w-full bg-carbon border border-slate text-paper font-mono text-sm px-3 h-10 focus:outline-none focus:border-accent"
                               />
                             </div>
                           </div>
                           <p className="font-mono text-bone/50 text-[10px]">
-                            Partner receives a contract signing link at {app.email}. Credentials are emailed after signing.
+                            Credentials are emailed to {app.email} immediately. A contract signing link follows — account activates after they sign.
                           </p>
+                          {approveError && (
+                            <p className="font-mono text-[10px] text-red-400 tracking-wide">{approveError}</p>
+                          )}
                           <div className="flex gap-3">
                             <button type="submit" disabled={working === approveForm.id}
                               className="bg-accent text-obsidian font-semibold font-mono text-xs px-5 h-10 min-h-[44px] hover:bg-accent/80 transition-colors disabled:opacity-50">
-                              {working === approveForm.id ? "Creating…" : "Send Contract →"}
+                              {working === approveForm.id ? "Sending…" : "Send Contract →"}
                             </button>
-                            <button type="button" onClick={() => setApproveForm(null)}
+                            <button type="button" onClick={() => { setApproveForm(null); setApproveError(null); }}
                               className="border border-slate text-bone font-mono text-xs px-5 h-10 min-h-[44px] hover:border-accent hover:text-accent transition-colors">
                               Cancel
                             </button>
