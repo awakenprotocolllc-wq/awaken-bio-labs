@@ -602,9 +602,36 @@ export default function CheckoutForm() {
       {/* ── Payment method ── */}
       <div>
         <p className="font-mono text-accent text-xs tracking-[0.25em] mb-6">— PAYMENT METHOD —</p>
-        <div className="border border-accent bg-accent/10 p-4">
-          <p className="font-mono text-accent text-xs tracking-wider uppercase mb-1">💳 Credit / Debit Card</p>
-          <p className="font-sans text-bone/60 text-xs">Visa, Mastercard, Amex · +4% processing fee</p>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => setPaymentMethod("card")}
+            className={`border p-4 text-left transition-colors ${
+              paymentMethod === "card"
+                ? "border-accent bg-accent/10"
+                : "border-slate hover:border-accent/50"
+            }`}
+          >
+            <p className={`font-mono text-xs tracking-wider uppercase mb-1 ${paymentMethod === "card" ? "text-accent" : "text-bone"}`}>
+              💳 Credit / Debit Card
+            </p>
+            <p className="font-sans text-bone/50 text-xs">Visa, Mastercard, Amex</p>
+            <p className="font-mono text-bone/40 text-[10px] mt-1">+4% processing fee</p>
+          </button>
+          <button
+            type="button"
+            onClick={() => setPaymentMethod("zelle")}
+            className={`border p-4 text-left transition-colors ${
+              paymentMethod === "zelle"
+                ? "border-accent bg-accent/10"
+                : "border-slate hover:border-accent/50"
+            }`}
+          >
+            <p className={`font-mono text-xs tracking-wider uppercase mb-1 ${paymentMethod === "zelle" ? "text-accent" : "text-bone"}`}>
+              📲 Zelle
+            </p>
+            <p className="font-sans text-bone/50 text-xs">No processing fee</p>
+          </button>
         </div>
       </div>
 
@@ -785,7 +812,11 @@ export default function CheckoutForm() {
         className="w-full bg-accent text-obsidian font-semibold h-14 min-h-[44px] text-base hover:bg-accent/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading
-          ? "Processing payment..."
+          ? paymentMethod === "card" ? "Processing payment..." : "Placing order..."
+          : paymentMethod === "zelle"
+          ? shippingReady
+            ? `Place Order — Pay via Zelle (${fmtPrice(orderTotal)})`
+            : `Place Order — Pay via Zelle`
           : shippingReady
           ? `Pay with Card — ${fmtPrice(orderTotal)}`
           : `Pay with Card — ${fmtPrice(afterDiscount)} + shipping`}
