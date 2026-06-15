@@ -5,16 +5,20 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { validateAdminSession } from "@/lib/admin-auth";
-import { clientIp } from "@/lib/rate-limit";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 import { apiError } from "@/lib/api-error";
 
 export async function POST(req: NextRequest) {
   try {
-    const context = { ip: clientIp(req), ua: req.headers.get("user-agent") ?? "" };
+    const ip = clientIp(req);
+    const context = { ip, ua: req.headers.get("user-agent") ?? "" };
     const token = req.cookies.get("awaken_admin")?.value;
     if (!(await validateAdminSession(token, context))) {
       return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
     }
+
+    const { allowed } = await rateLimit(`admin:test-email:${ip}`, 10, 60 * 60);
+    if (!allowed) return NextResponse.json({ ok: false, error: "Too many test emails. Try again later." }, { status: 429 });
 
     const body = await req.json().catch(() => ({}));
     const to: string = (body.to ?? "").trim();
@@ -48,7 +52,7 @@ export async function POST(req: NextRequest) {
       ok: res.ok,
       httpStatus: res.status,
       resendResponse: parsed,
-      config: { from, apiKeySet: true, apiKeyPrefix: apiKey.slice(0, 8) + "…" },
+      config: { from, apiKeySet: true },
     });
   } catch (err) {
     return apiError("admin:test-email", err);

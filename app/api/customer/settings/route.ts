@@ -23,7 +23,9 @@ export async function PATCH(req: NextRequest) {
         ...(trimmedName ? { name: trimmedName } : {}),
         ...(typeof marketingOptIn === "boolean" ? { marketingOptIn } : {}),
       });
-      return NextResponse.json({ ok: true, customer: updated });
+      // Strip adminNote — must not be visible to the customer
+      const { adminNote: _adminNote, ...updatedPublic } = updated ?? {};
+      return NextResponse.json({ ok: true, customer: updatedPublic });
     }
 
     if (action === "change_password") {

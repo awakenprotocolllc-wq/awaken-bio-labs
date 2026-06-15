@@ -39,7 +39,9 @@ export async function DELETE(req: NextRequest) {
     if (!customer) return NextResponse.json({ ok: false }, { status: 401 });
 
     const { addressId } = await req.json();
-    if (!addressId) return NextResponse.json({ ok: false, error: "addressId required." }, { status: 400 });
+    if (!addressId || typeof addressId !== "string" || addressId.length > 100) {
+      return NextResponse.json({ ok: false, error: "addressId required." }, { status: 400 });
+    }
 
     await deleteAddress(customer.id, addressId);
     return NextResponse.json({ ok: true });
@@ -56,7 +58,9 @@ export async function PATCH(req: NextRequest) {
     if (!customer) return NextResponse.json({ ok: false }, { status: 401 });
 
     const { addressId } = await req.json();
-    if (!addressId) return NextResponse.json({ ok: false, error: "addressId required." }, { status: 400 });
+    if (!addressId || typeof addressId !== "string" || addressId.length > 100) {
+      return NextResponse.json({ ok: false, error: "addressId required." }, { status: 400 });
+    }
 
     await setDefaultAddress(customer.id, addressId);
     return NextResponse.json({ ok: true });

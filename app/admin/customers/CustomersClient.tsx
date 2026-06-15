@@ -45,7 +45,7 @@ export default function CustomersClient({ initialCustomers }: { initialCustomers
       ["Name", "Email", "Marketing Opt-In", "Orders", "Total Spend", "Joined"].join(","),
       ...filtered.map((c) => [
         `"${c.name.replace(/"/g, '""')}"`,
-        c.email,
+        `"${c.email.replace(/"/g, '""')}"`,
         c.marketingOptIn ? "Yes" : "No",
         c.orderCount,
         c.totalSpend.toFixed(2),

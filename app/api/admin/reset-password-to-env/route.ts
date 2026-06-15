@@ -11,10 +11,14 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 import { apiError } from "@/lib/api-error";
 
 export async function POST(req: NextRequest) {
   try {
+    const { allowed } = await rateLimit(`admin:reset-pw-env:${clientIp(req)}`, 5, 60 * 60);
+    if (!allowed) return NextResponse.json({ ok: false, error: "Too many requests." }, { status: 429 });
+
     const resetToken = process.env.ADMIN_RESET_TOKEN;
     if (!resetToken) {
       return NextResponse.json({ ok: false, error: "Not enabled." }, { status: 403 });
