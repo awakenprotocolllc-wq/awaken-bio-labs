@@ -2,7 +2,7 @@
 // <ResearchDisclaimer variant="inline" className="mt-4" />
 
 const COPY =
-  "For Research Use Only. Not for human or veterinary use. These products have not been evaluated or approved by the FDA to diagnose, treat, cure, or prevent any disease or medical condition. In-vitro use only.";
+  "For In-Vitro Research Use Only. Not for diagnostic, clinical, or other regulated applications. These products have not been evaluated or approved by the FDA to diagnose, treat, cure, or prevent any disease or medical condition.";
 
 export default function ResearchDisclaimer({
   variant,

@@ -14,6 +14,10 @@ export async function POST(req: NextRequest) {
     const email: string = (body.email ?? "").trim().toLowerCase();
     const name: string  = (body.name  ?? "").trim();
     const password: string = body.password ?? "";
+    const researcherCategory: string = (body.researcherCategory ?? "").trim();
+    const businessType: string = (body.businessType ?? "").trim();
+    const institution: string = (body.institution ?? "").trim();
+    const certifiedAge: boolean = body.certifiedAge === true;
 
     if (!email || !name || !password) {
       return NextResponse.json({ ok: false, error: "Email, name, and password are required." }, { status: 400 });
@@ -24,10 +28,28 @@ export async function POST(req: NextRequest) {
     if (password.length < 8) {
       return NextResponse.json({ ok: false, error: "Password must be at least 8 characters." }, { status: 400 });
     }
+    if (!researcherCategory) {
+      return NextResponse.json({ ok: false, error: "Please select your researcher category." }, { status: 400 });
+    }
+    if (!businessType) {
+      return NextResponse.json({ ok: false, error: "Please select your business type." }, { status: 400 });
+    }
+    if (!certifiedAge) {
+      return NextResponse.json({ ok: false, error: "You must certify you are 21 or older and agree to the research use terms." }, { status: 400 });
+    }
+
+    const VALID_CATEGORIES = ["Analytical Chemistry", "Private Research Organization", "Education Institution", "Hospital/Medical Institution"];
+    const VALID_BUSINESS_TYPES = ["Sole Proprietor", "LLC", "S-Corp", "C-Corp"];
+    if (!VALID_CATEGORIES.includes(researcherCategory)) {
+      return NextResponse.json({ ok: false, error: "Invalid researcher category." }, { status: 400 });
+    }
+    if (!VALID_BUSINESS_TYPES.includes(businessType)) {
+      return NextResponse.json({ ok: false, error: "Invalid business type." }, { status: 400 });
+    }
 
     let customer;
     try {
-      customer = await createCustomer(email, name, password);
+      customer = await createCustomer(email, name, password, { researcherCategory, businessType, institution: institution || undefined });
     } catch (err) {
       if (err instanceof Error && err.message === "EMAIL_TAKEN") {
         return NextResponse.json({ ok: false, error: "An account with this email already exists." }, { status: 409 });

@@ -6,12 +6,12 @@ import PageHeader from "@/components/PageHeader";
 
 const faqs = [
   {
-    q: "Are your products for human consumption?",
-    a: "No. All Awaken Bio Labs products are sold strictly for in-vitro research and laboratory experimentation. They are not intended for human or animal consumption.",
+    q: "Are your products for in-vitro use only?",
+    a: "Yes. All Awaken Bio Labs products are sold strictly for in-vitro research and laboratory experimentation. They are not for diagnostic, clinical, or other regulated applications.",
   },
   {
     q: "How fast do orders ship?",
-    a: "Orders placed before 1PM Eastern ship same day via FedEx 2-Day. Orders after 1PM ship the following business day. Cold-chain handling is applied where required.",
+    a: "All orders ship the next business day via UPS 2-Day. Orders placed on Fridays or over the weekend ship the following Monday — we do not ship on weekends. Cold-chain handling is applied where required.",
   },
   {
     q: "Where can I find Certificates of Analysis?",

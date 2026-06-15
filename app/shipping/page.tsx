@@ -12,8 +12,8 @@ export default function ShippingPage() {
     >
       <h2>1. Processing Time</h2>
       <ul>
-        <li>Orders placed before 1:00 PM ET on a business day ship the same day.</li>
-        <li>Orders placed after the cutoff or on weekends/holidays ship the next business day.</li>
+        <li>All orders are sent out the next business day after the order is placed.</li>
+        <li>Orders placed on Fridays or over the weekend will ship the following Monday — we do not ship on weekends.</li>
         <li>Custom or back-ordered items may require additional processing time — you will be notified by email.</li>
       </ul>
 

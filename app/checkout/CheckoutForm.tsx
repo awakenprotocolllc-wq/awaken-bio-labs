@@ -429,7 +429,6 @@ export default function CheckoutForm() {
             <div className="flex-1 min-w-0">
               <p className="font-mono text-accent text-[10px] tracking-[0.2em] uppercase mb-1">— ADD-ON —</p>
               <p className="font-sans font-semibold text-paper text-sm">BAC Water <span className="text-bone font-normal">· 10ml</span></p>
-              <p className="font-sans text-bone text-xs mt-0.5">Bacteriostatic water for reconstitution — required for all lyophilized peptides.</p>
             </div>
             <div className="text-right shrink-0">
               <p className="font-mono text-accent text-sm font-bold mb-2">$9.50</p>
@@ -574,11 +573,15 @@ export default function CheckoutForm() {
             </svg>
             <div className="flex-1">
               <span className="font-mono text-accent text-xs tracking-wider">{shipping.label}</span>
-              <span className="font-mono text-bone/50 text-xs ml-2">· Ships Mon / Wed / Fri</span>
+              <span className="font-mono text-bone/50 text-xs ml-2">· Next business day</span>
             </div>
             <span className="font-mono text-accent text-sm font-bold">{fmtPrice(shipping.cost)}</span>
           </div>
         )}
+        {/* Friday / weekend shipping disclaimer */}
+        <p className="font-mono text-bone/40 text-[10px] mt-2 leading-relaxed tracking-wider">
+          Orders are sent out the next business day after ordering. Orders placed on Fridays or weekends will ship the following Monday. No weekend shipping.
+        </p>
       </div>
 
       {/* ── Notes ── */}
@@ -599,48 +602,10 @@ export default function CheckoutForm() {
       {/* ── Payment method ── */}
       <div>
         <p className="font-mono text-accent text-xs tracking-[0.25em] mb-6">— PAYMENT METHOD —</p>
-        <div className="grid grid-cols-2 gap-3 mb-2">
-          <button
-            type="button"
-            onClick={() => setPaymentMethod("card")}
-            className={`border p-4 text-left transition-colors ${
-              paymentMethod === "card"
-                ? "border-accent bg-accent/10"
-                : "border-slate hover:border-accent/50"
-            }`}
-          >
-            <p className={`font-mono text-xs tracking-wider uppercase mb-1 ${paymentMethod === "card" ? "text-accent" : "text-bone"}`}>
-              💳 Credit / Debit Card
-            </p>
-            <p className="font-sans text-bone/50 text-xs">Visa, Mastercard, Amex</p>
-            <p className="font-mono text-bone/40 text-[10px] mt-1">+4% processing fee</p>
-          </button>
-          <button
-            type="button"
-            onClick={() => setPaymentMethod("zelle")}
-            className={`border p-4 text-left transition-colors ${
-              paymentMethod === "zelle"
-                ? "border-accent bg-accent/10"
-                : "border-slate hover:border-accent/50"
-            }`}
-          >
-            <p className={`font-mono text-xs tracking-wider uppercase mb-1 ${paymentMethod === "zelle" ? "text-accent" : "text-bone"}`}>
-              📲 Zelle
-            </p>
-            <p className="font-sans text-bone/50 text-xs">No processing fee</p>
-            <p className="font-mono text-bone/40 text-[10px] mt-1">Ships after payment confirmed</p>
-          </button>
+        <div className="border border-accent bg-accent/10 p-4">
+          <p className="font-mono text-accent text-xs tracking-wider uppercase mb-1">💳 Credit / Debit Card</p>
+          <p className="font-sans text-bone/60 text-xs">Visa, Mastercard, Amex · +4% processing fee</p>
         </div>
-
-        {paymentMethod === "zelle" && (
-          <div className="bg-carbon border border-accent/20 px-4 py-3 mt-3">
-            <p className="font-mono text-accent text-[10px] tracking-wider uppercase mb-1">Zelle Instructions</p>
-            <p className="font-sans text-bone text-xs leading-relaxed">
-              After placing your order you&apos;ll receive an email with the exact total. Send via Zelle to{" "}
-              <strong className="text-paper">awakenbiolabs</strong> (Awaken Biolabs LLC). Your order ships once payment is confirmed.
-            </p>
-          </div>
-        )}
       </div>
 
       {/* ── Payment details (card only) ── */}
@@ -803,11 +768,8 @@ export default function CheckoutForm() {
       {/* ── Disclaimer ── */}
       <div className="bg-carbon border border-slate p-4">
         <p className="font-mono text-white/40 text-[11px] tracking-widest uppercase leading-relaxed">
-          By placing this order you confirm all products are for in-vitro research use only and not for
-          human or veterinary consumption.{" "}
-          {paymentMethod === "card"
-            ? "Payment is processed securely via Visa, Mastercard, or Amex. A 4% card processing fee is included in your total."
-            : "You will receive Zelle payment instructions by email after placing your order."}
+          By placing this order you confirm all products are for in-vitro research use only — not for diagnostic, clinical, or other regulated applications.
+          Payment is processed securely via Visa, Mastercard, or Amex. A 4% card processing fee is included in your total.
         </p>
       </div>
 
@@ -823,11 +785,7 @@ export default function CheckoutForm() {
         className="w-full bg-accent text-obsidian font-semibold h-14 min-h-[44px] text-base hover:bg-accent/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading
-          ? paymentMethod === "card" ? "Processing payment..." : "Placing order..."
-          : paymentMethod === "zelle"
-          ? shippingReady
-            ? `Place Order — Pay via Zelle (${fmtPrice(orderTotal)})`
-            : `Place Order — Pay via Zelle`
+          ? "Processing payment..."
           : shippingReady
           ? `Pay with Card — ${fmtPrice(orderTotal)}`
           : `Pay with Card — ${fmtPrice(afterDiscount)} + shipping`}

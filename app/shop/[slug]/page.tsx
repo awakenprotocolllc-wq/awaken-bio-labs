@@ -15,7 +15,7 @@ export function generateMetadata({ params }: { params: { slug: string } }) {
   if (!product) return { title: "Not Found" };
   return {
     title: `${product.name} · Awaken Bio Labs`,
-    description: `${product.name} — ${product.category}. For in-vitro research use only. Not for human or veterinary use. Third-party tested, ≥99% purity.`,
+    description: `${product.name} — ${product.category}. For in-vitro research use only. Not for diagnostic, clinical, or other regulated applications. Third-party tested, ≥99% purity.`,
   };
 }
 
@@ -78,7 +78,7 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
               <Detail label="Form" value="Lyophilized powder" />
               <Detail label="Purity" value="≥ 99% (HPLC verified)" />
               <Detail label="Storage" value="Refrigerate after reconstitution" />
-              <Detail label="Shipping" value="FedEx 2-Day · Same-day if before 1PM" />
+              <Detail label="Shipping" value="UPS 2-Day · Ships next business day" />
             </div>
 
             <div className="mt-8 bg-carbon border border-slate p-5">
@@ -87,9 +87,9 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
               </p>
               <p className="text-bone text-sm leading-relaxed">
                 {product.name} is intended solely for in-vitro research and laboratory
-                experimentation by qualified professionals. Not for human consumption, veterinary use,
-                or therapeutic application of any kind. Statements have not been evaluated by the FDA.
-                Not intended to diagnose, treat, cure, or prevent any disease or medical condition.
+                experimentation by qualified professionals. For in-vitro research use only — not for
+                diagnostic, clinical, or other regulated applications. Statements have not been
+                evaluated by the FDA. Not intended to diagnose, treat, cure, or prevent any disease.
               </p>
             </div>
           </div>

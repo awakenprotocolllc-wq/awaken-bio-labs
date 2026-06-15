@@ -27,8 +27,8 @@ export default function TermsPage() {
       <p>
         All products sold by {business.name} are intended <strong>solely for
         in-vitro research and laboratory experimentation</strong>. They are not drugs,
-        food, or cosmetics. They are <strong>not for human or animal consumption,
-        therapeutic, or diagnostic use</strong>. Statements made on this website
+        food, or cosmetics. They are <strong>not for diagnostic, clinical, or other
+        regulated applications</strong>. Statements made on this website
         have not been evaluated by the U.S. Food and Drug Administration (FDA).
       </p>
 

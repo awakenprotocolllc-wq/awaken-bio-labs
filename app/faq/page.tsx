@@ -42,7 +42,7 @@ const sections = [
       },
       {
         q: "How fast do orders ship?",
-        a: "Orders confirmed before 1PM Eastern ship same day via FedEx 2-Day. Orders confirmed after 1PM ship the following business day. Cold-chain handling is applied where required.",
+        a: "All orders ship the next business day via UPS 2-Day. Orders placed on Fridays or over the weekend ship the following Monday — we do not ship on weekends. Cold-chain handling is applied where required.",
       },
       {
         q: "Do you ship internationally?",
@@ -58,8 +58,8 @@ const sections = [
     heading: "Research & Compliance",
     faqs: [
       {
-        q: "Are your products for human consumption?",
-        a: "No. All Awaken Bio Labs products are sold strictly for in-vitro research, laboratory analysis, and scientific experimentation. They are not intended for human consumption, veterinary use, or therapeutic application of any kind.",
+        q: "Are your products for in-vitro use only?",
+        a: "Yes. All Awaken Bio Labs products are sold strictly for in-vitro research, laboratory analysis, and scientific experimentation. They are not for diagnostic, clinical, or other regulated applications of any kind.",
       },
       {
         q: "Who can purchase from Awaken Bio Labs?",
@@ -67,7 +67,7 @@ const sections = [
       },
       {
         q: "Are these products FDA approved?",
-        a: "No. Research compounds sold on this site are not FDA-approved for human use. Statements made on this website have not been evaluated by the FDA and are not intended to diagnose, treat, cure, or prevent any disease.",
+        a: "No. Research compounds sold on this site are not FDA-approved. Statements made on this website have not been evaluated by the FDA and are not intended to diagnose, treat, cure, or prevent any disease.",
       },
     ],
   },

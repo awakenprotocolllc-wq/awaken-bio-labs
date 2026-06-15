@@ -26,6 +26,9 @@ export type CustomerAccount = {
   marketingOptIn: boolean;
   addresses: CustomerAddress[];
   adminNote?: string;
+  researcherCategory?: string;
+  businessType?: string;
+  institution?: string;
 };
 
 type CustomerAccountInternal = CustomerAccount & {
@@ -115,7 +118,8 @@ function decryptCard(value: string): string {
 export async function createCustomer(
   email: string,
   name: string,
-  password: string
+  password: string,
+  meta?: { researcherCategory?: string; businessType?: string; institution?: string }
 ): Promise<CustomerAccount> {
   const existing = await kv.get<string>(`cust:email:${email.toLowerCase()}`);
   if (existing) throw new Error("EMAIL_TAKEN");
@@ -131,6 +135,9 @@ export async function createCustomer(
     createdAt: new Date().toISOString(),
     marketingOptIn: false,
     addresses: [],
+    ...(meta?.researcherCategory ? { researcherCategory: meta.researcherCategory } : {}),
+    ...(meta?.businessType ? { businessType: meta.businessType } : {}),
+    ...(meta?.institution ? { institution: meta.institution } : {}),
   };
 
   await kv.set(`cust:${id}`, account);

@@ -24,7 +24,7 @@ const OG_DESCRIPTION =
 export const metadata: Metadata = {
   title: "Awaken Bio Labs — Research-Grade Peptide Compounds",
   description:
-    "Research-grade peptide compounds for in-vitro laboratory use. Third-party tested, US-manufactured. Not for human or veterinary use.",
+    "Research-grade peptide compounds for in-vitro laboratory use. Third-party tested, US-manufactured. In-vitro research use only.",
   openGraph: {
     title: "Awaken Bio Labs — Research-Grade Peptide Compounds",
     description: OG_DESCRIPTION,
