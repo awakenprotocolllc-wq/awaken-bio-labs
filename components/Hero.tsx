@@ -98,16 +98,7 @@ export default function Hero() {
             }}
           />
 
-          {/* USA banner — sits on top of the image */}
-          <div className="w-full bg-carbon border border-accent/30 px-4 py-2 flex items-center justify-center gap-3 mb-3">
-            <span className="text-base">🇺🇸</span>
-            <p className="font-mono text-[10px] text-accent tracking-[0.22em] uppercase">
-              Made &amp; Tested in the USA
-            </p>
-            <span className="text-base">🇺🇸</span>
-          </div>
-
-          {/* Image */}
+          {/* Image — banner overlaid at top */}
           <div className="relative w-full">
             <Image
               src="/Hero-Image.png"
@@ -117,6 +108,14 @@ export default function Hero() {
               priority
               className="w-full h-auto object-contain drop-shadow-2xl"
             />
+            {/* USA banner — absolutely positioned over the top of the image */}
+            <div className="absolute top-0 left-0 right-0 bg-carbon/90 backdrop-blur-sm border-b border-accent/30 px-4 py-2 flex items-center justify-center gap-3">
+              <span className="text-sm">🇺🇸</span>
+              <p className="font-mono text-[10px] text-accent tracking-[0.22em] uppercase">
+                Made &amp; Tested in the USA
+              </p>
+              <span className="text-sm">🇺🇸</span>
+            </div>
           </div>
         </motion.div>
       </div>
