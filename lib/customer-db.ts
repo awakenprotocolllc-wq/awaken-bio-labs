@@ -55,7 +55,7 @@ type SessionContext = { ip: string; ua: string };
 // ---------------------------------------------------------------------------
 
 function genId(prefix = "cust_"): string {
-  return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  return prefix + randomBytes(8).toString("hex");
 }
 
 const BCRYPT_ROUNDS = 12;

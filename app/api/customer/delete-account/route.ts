@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCustomerSession, deleteCustomerAccount, getCustomerById } from "@/lib/customer-db";
+import { getCustomerSession, deleteCustomerAccount } from "@/lib/customer-db";
 import { sendAccountDeletionEmail } from "@/lib/customer-emails";
-import { clientIp } from "@/lib/rate-limit";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 import { apiError } from "@/lib/api-error";
 import bcrypt from "bcryptjs";
 import { kv } from "@vercel/kv";
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = clientIp(req);
+    const { allowed } = await rateLimit(`customer:delete:${ip}`, 5, 60 * 60);
+    if (!allowed) return NextResponse.json({ ok: false, error: "Too many attempts. Try again later." }, { status: 429 });
+
     const token = req.cookies.get("awaken_customer")?.value;
-    const context = { ip: clientIp(req), ua: req.headers.get("user-agent") ?? "" };
+    const context = { ip, ua: req.headers.get("user-agent") ?? "" };
     const customer = await getCustomerSession(token, context);
     if (!customer) return NextResponse.json({ ok: false }, { status: 401 });
 

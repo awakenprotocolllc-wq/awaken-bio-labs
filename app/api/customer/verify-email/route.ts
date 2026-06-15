@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { consumeVerificationToken, getCustomerById } from "@/lib/customer-db";
-import { sendWelcomeEmail } from "@/lib/customer-emails";
+import { consumeVerificationToken } from "@/lib/customer-db";
 import { apiError } from "@/lib/api-error";
 
 export async function GET(req: NextRequest) {

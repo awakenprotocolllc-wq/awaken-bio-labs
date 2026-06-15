@@ -13,7 +13,9 @@ export async function GET(req: NextRequest) {
 
     const savedPayment = await getCustomerPaymentDisplay(customer.id);
 
-    return NextResponse.json({ ok: true, customer, savedPayment });
+    // Strip adminNote — internal field, must not be visible to the customer
+    const { adminNote: _adminNote, ...customerPublic } = customer;
+    return NextResponse.json({ ok: true, customer: customerPublic, savedPayment });
   } catch (err) {
     return apiError("customer:me", err);
   }

@@ -15,8 +15,16 @@ export async function POST(req: NextRequest) {
     if (!line1 || !city || !state || !zip) {
       return NextResponse.json({ ok: false, error: "All address fields are required." }, { status: 400 });
     }
+    if (
+      typeof line1 !== "string" || line1.length > 200 ||
+      typeof city  !== "string" || city.length  > 100 ||
+      typeof state !== "string" || state.length  > 50  ||
+      typeof zip   !== "string" || zip.length    > 20
+    ) {
+      return NextResponse.json({ ok: false, error: "One or more address fields are too long." }, { status: 400 });
+    }
 
-    const address = await saveAddress(customer.id, { line1, city, state, zip, isDefault: !!isDefault });
+    const address = await saveAddress(customer.id, { line1: line1.trim(), city: city.trim(), state: state.trim(), zip: zip.trim(), isDefault: !!isDefault });
     return NextResponse.json({ ok: true, address });
   } catch (err) {
     return apiError("customer:addresses", err);
