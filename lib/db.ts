@@ -38,6 +38,9 @@ export type Order = {
   paymentMethod?: "card" | "zelle";
   processingFee?: string; // e.g. "$4.18" — 4% card fee
   customerId?: string;    // set when placed by a logged-in customer account
+  orderSource?: "affiliate";                      // affiliate personal order
+  affiliateId?: string;                           // which affiliate placed it
+  affiliateOrderType?: "ambassador" | "licensee"; // for admin badge
 };
 
 // ---------------------------------------------------------------------------

@@ -8,6 +8,7 @@ import { getCurrentUser, refreshUser, logout, type AffiliateUser } from "@/lib/a
 
 const nav = [
   { label: "Overview", href: "/affiliates/dashboard", icon: "▦" },
+  { label: "Order", href: "/affiliates/dashboard/order", icon: "⊕" },
   { label: "Links & Codes", href: "/affiliates/dashboard/links", icon: "↗" },
   { label: "Payouts", href: "/affiliates/dashboard/payouts", icon: "$" },
   { label: "Creatives", href: "/affiliates/dashboard/creatives", icon: "✦" },

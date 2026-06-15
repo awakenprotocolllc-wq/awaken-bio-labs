@@ -86,6 +86,15 @@ function OrderRow({
               month: "short", day: "numeric", year: "numeric",
             })}
           </span>
+          {order.orderSource === "affiliate" && (
+            <span className={`inline-block mt-1 font-mono text-[9px] px-2 py-0.5 border tracking-wider ${
+              order.affiliateOrderType === "licensee"
+                ? "bg-purple-500/20 text-purple-300 border-purple-500/40"
+                : "bg-amber-500/20 text-amber-300 border-amber-500/40"
+            }`}>
+              {order.affiliateOrderType === "licensee" ? "LICENSEE ORDER" : "AMBASSADOR ORDER"}
+            </span>
+          )}
         </div>
 
         <div className="hidden sm:block">

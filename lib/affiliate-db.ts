@@ -1,7 +1,7 @@
 import { kv } from "@vercel/kv";
 import { createHash, randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
-import { encryptField, decryptField } from "./encryption";
+import { encryptField, decryptField } from "./encryption"; // used for payout info + payment cards
 
 // ---------------------------------------------------------------------------
 // Types
@@ -630,6 +630,87 @@ export type ReferralOrder = {
   status: string;
   items: { product: string; strength: string; qty: number; price: string }[];
 };
+
+// ---------------------------------------------------------------------------
+// Affiliate saved address
+// ---------------------------------------------------------------------------
+
+export type AffiliateAddress = {
+  line1: string;
+  city: string;
+  state: string;
+  zip: string;
+};
+
+export async function saveAffiliateAddress(affiliateId: string, address: AffiliateAddress): Promise<void> {
+  await kv.set(`aff:address:${affiliateId}`, address);
+}
+
+export async function getAffiliateAddress(affiliateId: string): Promise<AffiliateAddress | null> {
+  return kv.get<AffiliateAddress>(`aff:address:${affiliateId}`);
+}
+
+// ---------------------------------------------------------------------------
+// Affiliate saved payment card (AES-256-GCM — same key as payout encryption)
+// ---------------------------------------------------------------------------
+
+export type AffiliatePaymentDisplay = {
+  last4: string;
+  brand: "visa" | "mc" | "amex" | "other";
+  expiryMonth: string;
+  expiryYear: string;
+};
+
+type AffiliatePaymentRecord = AffiliatePaymentDisplay & { encryptedCard: string };
+
+type RawCard = {
+  number: string;
+  holderName: string;
+  expiryMonth: string;
+  expiryYear: string;
+  cvv: string;
+};
+
+function detectCardBrand(number: string): AffiliatePaymentDisplay["brand"] {
+  const n = number.replace(/\D/g, "");
+  if (/^4/.test(n)) return "visa";
+  if (/^5[1-5]/.test(n) || /^2[2-7]/.test(n)) return "mc";
+  if (/^3[47]/.test(n)) return "amex";
+  return "other";
+}
+
+export async function saveAffiliatePayment(
+  affiliateId: string,
+  card: RawCard
+): Promise<AffiliatePaymentDisplay> {
+  const digits = card.number.replace(/\D/g, "");
+  const last4  = digits.slice(-4);
+  const brand  = detectCardBrand(digits);
+  const encryptedCard = encryptField(JSON.stringify(card));
+  const record: AffiliatePaymentRecord = { last4, brand, expiryMonth: card.expiryMonth, expiryYear: card.expiryYear, encryptedCard };
+  await kv.set(`aff:payment:${affiliateId}`, record);
+  return { last4, brand, expiryMonth: card.expiryMonth, expiryYear: card.expiryYear };
+}
+
+export async function getAffiliatePaymentDisplay(affiliateId: string): Promise<AffiliatePaymentDisplay | null> {
+  const raw = await kv.get<AffiliatePaymentRecord>(`aff:payment:${affiliateId}`);
+  if (!raw) return null;
+  return { last4: raw.last4, brand: raw.brand, expiryMonth: raw.expiryMonth, expiryYear: raw.expiryYear };
+}
+
+export async function getAffiliatePaymentDecrypted(affiliateId: string): Promise<RawCard | null> {
+  const raw = await kv.get<AffiliatePaymentRecord>(`aff:payment:${affiliateId}`);
+  if (!raw?.encryptedCard) return null;
+  try {
+    return JSON.parse(decryptField(raw.encryptedCard)) as RawCard;
+  } catch {
+    return null;
+  }
+}
+
+export async function deleteAffiliatePayment(affiliateId: string): Promise<void> {
+  await kv.del(`aff:payment:${affiliateId}`);
+}
 
 export async function getAffiliateReferrals(affiliateCode: string): Promise<ReferralOrder[]> {
   const { listOrders } = await import("./db");
