@@ -108,8 +108,8 @@ export default function Hero() {
               priority
               className="w-full h-auto object-contain drop-shadow-2xl"
             />
-            {/* USA banner — absolutely positioned over the top of the image */}
-            <div className="absolute top-0 left-0 right-0 bg-carbon/90 backdrop-blur-sm border-b border-accent/30 px-4 py-2 flex items-center justify-center gap-3">
+            {/* USA banner — absolutely positioned across the bottom of the image */}
+            <div className="absolute bottom-0 left-0 right-0 bg-carbon/90 backdrop-blur-sm border-t border-accent/30 px-4 py-2 flex items-center justify-center gap-3">
               <span className="text-sm">🇺🇸</span>
               <p className="font-mono text-[10px] text-accent tracking-[0.22em] uppercase">
                 Made &amp; Tested in the USA
