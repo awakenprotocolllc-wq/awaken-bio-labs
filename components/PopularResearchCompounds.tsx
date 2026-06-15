@@ -8,7 +8,7 @@ import { products, slugify, getProductImage, getPriceForStrength } from "@/lib/p
 // Featured product names in display order
 const FEATURED_NAMES = [
   "GLP3-R (Retatrutide)",
-  "Glow",
+  "GLOW",
   "NAD+",
   "MOTS-C",
   "GHK-Cu",

@@ -12,7 +12,7 @@ const POPULARITY_ORDER: Record<string, number> = {
   "GLP3-R (Retatrutide)": 1,
   "BPC-157": 2,
   "TB-500": 3,
-  "Glow": 4,
+  "GLOW": 4,
   "NAD+": 5,
   "MOTS-C": 6,
   "GHK-Cu": 7,

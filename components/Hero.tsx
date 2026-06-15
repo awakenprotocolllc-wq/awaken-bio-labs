@@ -98,6 +98,15 @@ export default function Hero() {
             }}
           />
 
+          {/* USA banner — sits on top of the image */}
+          <div className="w-full bg-carbon border border-accent/30 px-4 py-2 flex items-center justify-center gap-3 mb-3">
+            <span className="text-base">🇺🇸</span>
+            <p className="font-mono text-[10px] text-accent tracking-[0.22em] uppercase">
+              Made &amp; Tested in the USA
+            </p>
+            <span className="text-base">🇺🇸</span>
+          </div>
+
           {/* Image */}
           <div className="relative w-full">
             <Image
@@ -108,12 +117,6 @@ export default function Hero() {
               priority
               className="w-full h-auto object-contain drop-shadow-2xl"
             />
-          </div>
-
-          {/* USA badge */}
-          <div className="absolute top-0 right-0 bg-carbon border border-accent/40 px-3 py-1.5">
-            <p className="font-mono text-[9px] text-accent tracking-[0.2em]">MADE & TESTED</p>
-            <p className="font-mono text-[9px] text-accent tracking-[0.2em]">IN THE USA 🇺🇸</p>
           </div>
         </motion.div>
       </div>
