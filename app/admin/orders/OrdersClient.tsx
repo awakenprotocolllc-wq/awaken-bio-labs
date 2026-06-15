@@ -104,10 +104,19 @@ function OrderRow({
           )}
         </div>
 
-        <div className="hidden sm:block">
+        <div className="hidden sm:block space-y-1">
           <span className={`font-mono text-[10px] px-2 py-1 border tracking-wider ${STATUS_COLORS[order.status]}`}>
             {STATUS_LABELS[order.status]}
           </span>
+          {order.paymentMethod && (
+            <span className={`block font-mono text-[9px] px-2 py-0.5 border tracking-wider w-fit ${
+              order.paymentMethod === "zelle"
+                ? "bg-purple-500/20 text-purple-300 border-purple-500/40"
+                : "bg-slate/40 text-bone/70 border-slate"
+            }`}>
+              {order.paymentMethod === "zelle" ? "Zelle" : "Card"}
+            </span>
+          )}
         </div>
 
         <div className="hidden sm:block" onClick={(e) => e.stopPropagation()}>
@@ -131,6 +140,15 @@ function OrderRow({
           <span className={`inline-block font-mono text-[9px] px-2 py-0.5 border mt-1 tracking-wider ${STATUS_COLORS[order.status]}`}>
             {STATUS_LABELS[order.status]}
           </span>
+          {order.paymentMethod && (
+            <span className={`inline-block font-mono text-[9px] px-2 py-0.5 border mt-1 ml-1 tracking-wider ${
+              order.paymentMethod === "zelle"
+                ? "bg-purple-500/20 text-purple-300 border-purple-500/40"
+                : "bg-slate/40 text-bone/70 border-slate"
+            }`}>
+              {order.paymentMethod === "zelle" ? "Zelle" : "Card"}
+            </span>
+          )}
         </div>
       </div>
 
@@ -151,7 +169,7 @@ function OrderRow({
             </select>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <div>
               <p className="font-mono text-accent text-[10px] tracking-[0.2em] mb-3">CUSTOMER</p>
               <p className="text-paper font-semibold text-sm">{order.customer.name}</p>
@@ -163,6 +181,25 @@ function OrderRow({
                 {order.shipping.line1}<br />
                 {order.shipping.city}, {order.shipping.state} {order.shipping.zip}
               </p>
+            </div>
+            <div>
+              <p className="font-mono text-accent text-[10px] tracking-[0.2em] mb-3">PAYMENT</p>
+              {order.paymentMethod ? (
+                <span className={`inline-block font-mono text-xs px-3 py-1 border tracking-wider ${
+                  order.paymentMethod === "zelle"
+                    ? "bg-purple-500/20 text-purple-300 border-purple-500/40"
+                    : "bg-slate/40 text-bone border-slate"
+                }`}>
+                  {order.paymentMethod === "zelle" ? "Zelle" : "Card Processor"}
+                </span>
+              ) : (
+                <span className="text-bone/40 text-sm">—</span>
+              )}
+              {order.processingFee && order.paymentMethod === "card" && (
+                <p className="font-mono text-bone/50 text-[10px] mt-2">
+                  Processing fee: {order.processingFee}
+                </p>
+              )}
             </div>
           </div>
 
@@ -215,6 +252,12 @@ function OrderRow({
                   <tr>
                     <td colSpan={4} className="pt-1 font-mono text-bone text-xs tracking-wider uppercase">Shipping</td>
                     <td className="pt-1 text-right font-mono text-bone text-xs">{order.shippingCost}</td>
+                  </tr>
+                )}
+                {order.processingFee && (
+                  <tr>
+                    <td colSpan={4} className="pt-1 font-mono text-bone text-xs tracking-wider uppercase">Processing Fee <span className="text-bone/40">(4%)</span></td>
+                    <td className="pt-1 text-right font-mono text-bone text-xs">{order.processingFee}</td>
                   </tr>
                 )}
                 {order.orderTotal && (
