@@ -44,6 +44,7 @@ export default function AffiliatesPage() {
       name: fd.get("name"),
       email: fd.get("email"),
       platform: fd.get("platform"),
+      username: fd.get("username"),
       audience: fd.get("audience"),
       about: fd.get("about"),
       programType,
@@ -195,6 +196,11 @@ export default function AffiliatesPage() {
                 required
               />
               <Field
+                label="Username / Handle"
+                name="username"
+                placeholder="@yourusername"
+              />
+              <Field
                 label={programType === "licensee" ? "Monthly Patient / Client Volume (approx.)" : "Audience Size (approx.)"}
                 name="audience"
               />
@@ -236,9 +242,9 @@ export default function AffiliatesPage() {
 }
 
 function Field({
-  label, name, type = "text", required,
+  label, name, type = "text", required, placeholder,
 }: {
-  label: string; name: string; type?: string; required?: boolean;
+  label: string; name: string; type?: string; required?: boolean; placeholder?: string;
 }) {
   return (
     <div>
@@ -249,6 +255,7 @@ function Field({
         type={type}
         name={name}
         required={required}
+        placeholder={placeholder}
         className="w-full bg-obsidian border border-slate text-paper font-sans px-4 h-12 min-h-[44px] focus:border-accent focus:outline-none transition-colors"
       />
     </div>

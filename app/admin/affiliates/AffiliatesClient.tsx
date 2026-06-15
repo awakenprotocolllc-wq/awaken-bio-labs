@@ -680,6 +680,7 @@ export default function AffiliatesClient({
                     </div>
                     <div className="hidden sm:block">
                       <p className="font-mono text-bone text-xs truncate">{app.platform}</p>
+                      {app.username && <p className="font-mono text-accent/70 text-[10px] mt-0.5">{app.username}</p>}
                       {app.audience && <p className="font-mono text-bone/50 text-[10px] mt-0.5">{app.audience}</p>}
                     </div>
                     <div className="hidden sm:flex">
@@ -700,12 +701,17 @@ export default function AffiliatesClient({
                           <p className="text-bone text-sm leading-relaxed">{app.about}</p>
                         </div>
                       )}
-                      <div className="text-xs font-mono text-bone">
-                        Applied: {new Date(app.appliedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                        {" · "}
-                        <span className={`${PROGRAM_BADGE[app.programType ?? "ambassador"]} px-1.5 py-0.5 border text-[10px]`}>
-                          {isLicensee ? "LICENSEE · 50%" : "AMBASSADOR · 20%"}
-                        </span>
+                      <div className="text-xs font-mono text-bone space-y-1">
+                        {app.username && (
+                          <p><span className="text-bone/50">Handle:</span> <span className="text-accent">{app.username}</span></p>
+                        )}
+                        <p>
+                          Applied: {new Date(app.appliedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                          {" · "}
+                          <span className={`${PROGRAM_BADGE[app.programType ?? "ambassador"]} px-1.5 py-0.5 border text-[10px]`}>
+                            {isLicensee ? "LICENSEE · 50%" : "AMBASSADOR · 20%"}
+                          </span>
+                        </p>
                       </div>
 
                       {!isApproving ? (

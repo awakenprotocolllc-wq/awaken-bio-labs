@@ -14,6 +14,7 @@ export type AffiliateApplication = {
   name: string;
   email: string;
   platform: string;
+  username?: string;
   audience?: string;
   about?: string;
   status: "pending" | "approved" | "denied";
@@ -107,7 +108,7 @@ export function generateAffiliateCode(name: string): string {
 // ---------------------------------------------------------------------------
 
 export async function createApplication(
-  data: Pick<AffiliateApplication, "name" | "email" | "platform" | "audience" | "about" | "programType">
+  data: Pick<AffiliateApplication, "name" | "email" | "platform" | "username" | "audience" | "about" | "programType">
 ): Promise<AffiliateApplication> {
   const id = genId("app_");
   const app: AffiliateApplication = { ...data, id, status: "pending", appliedAt: new Date().toISOString() };

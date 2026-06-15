@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await req.json();
-    const { name, email, platform, audience, about, programType, website } = data ?? {};
+    const { name, email, platform, username, audience, about, programType, website } = data ?? {};
 
     // Honeypot: bots fill this, humans don't
     if (website) {
@@ -45,6 +45,9 @@ export async function POST(req: NextRequest) {
     }
     if (platform.length > 200) {
       return NextResponse.json({ ok: false, error: "Platform is too long (max 200 characters)" }, { status: 400 });
+    }
+    if (username !== undefined && (typeof username !== "string" || username.length > 100)) {
+      return NextResponse.json({ ok: false, error: "Username is too long (max 100 characters)" }, { status: 400 });
     }
     if (about !== undefined && (typeof about !== "string" || about.length > 2000)) {
       return NextResponse.json({ ok: false, error: "About section is too long (max 2000 characters)" }, { status: 400 });
@@ -68,7 +71,7 @@ export async function POST(req: NextRequest) {
     const resolvedProgramType = programType === "licensee" ? "licensee" : "ambassador";
 
     // Save to KV so admin can review and approve
-    await createApplication({ name, email, platform, audience, about, programType: resolvedProgramType });
+    await createApplication({ name, email, platform, username: username || undefined, audience, about, programType: resolvedProgramType });
 
     // Send confirmation to applicant (non-blocking)
     sendApplicationReceivedEmail(name, email).catch((err) =>
@@ -82,6 +85,7 @@ export async function POST(req: NextRequest) {
       <p><strong>Name:</strong> ${escape(name)}</p>
       <p><strong>Email:</strong> ${escape(email)}</p>
       <p><strong>Platform:</strong> ${escape(platform)}</p>
+      <p><strong>Username / Handle:</strong> ${escape(username || "—")}</p>
       <p><strong>Audience size:</strong> ${escape(audience || "—")}</p>
       <hr />
       <p><strong>About their audience:</strong></p>
