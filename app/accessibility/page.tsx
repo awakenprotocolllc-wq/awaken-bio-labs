@@ -85,19 +85,6 @@ export default function AccessibilityPage() {
                   {business.email}
                 </a>
               </li>
-              <li>
-                <span className="text-bone/70 text-[10px] uppercase tracking-wider block mb-1">Phone</span>
-                <a
-                  href={`tel:${business.phone.replace(/\D/g, "")}`}
-                  className="text-accent hover:underline"
-                >
-                  {business.phone}
-                </a>
-                <span className="block text-bone/60 text-[11px] mt-0.5">
-                  {/* TODO: Replace with verified business phone number before launch */}
-                  {business.hours}
-                </span>
-              </li>
             </ul>
             <p className="mt-4">
               Please include the page URL, a description of the issue, and the assistive
