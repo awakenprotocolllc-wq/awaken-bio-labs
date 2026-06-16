@@ -34,12 +34,12 @@ export default function Nav() {
   return (
     <>
       <header
-        className={`sticky top-0 z-50 w-full transition-colors duration-200 ${
+        className={`sticky top-0 z-[100] w-full transition-colors duration-200 ${
           scrolled
-            ? "bg-carbon/90 border-b border-slate"
-            : "bg-obsidian/70 border-b border-transparent"
+            ? "bg-carbon/95 border-b border-slate"
+            : "bg-obsidian/80 border-b border-transparent"
         }`}
-        style={{ backdropFilter: "blur(12px)" }}
+        style={{ backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)" }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-6">
           {/* Logo — goes home */}
@@ -145,7 +145,7 @@ export default function Nav() {
                 </svg>
               </button>
             </div>
-            <nav className="flex flex-col px-6 py-8 gap-2">
+            <nav className="flex flex-col px-5 py-6 gap-2 overflow-y-auto">
               {links.map((l, i) => (
                 <motion.a
                   key={l.label}
@@ -154,25 +154,28 @@ export default function Nav() {
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1 + i * 0.05 }}
-                  className="text-paper font-sans text-3xl font-bold py-3 border-b border-slate"
+                  className="text-paper font-sans text-2xl font-bold py-4 px-4 border border-accent/20 bg-accent/[0.04] hover:bg-accent/10 hover:border-accent/50 transition-colors"
                 >
                   {l.label}
                 </motion.a>
               ))}
-              <a
-                href="/account"
-                onClick={() => setOpen(false)}
-                className="mt-8 border border-slate text-paper font-sans text-2xl font-bold py-3 border-b border-slate"
-              >
-                My Account
-              </a>
-              <a
-                href="/shop"
-                onClick={() => setOpen(false)}
-                className="mt-4 bg-accent text-obsidian font-semibold px-6 py-4 text-center hover:bg-accent/80 transition-colors"
-              >
-                Shop Now
-              </a>
+
+              <div className="mt-4 flex flex-col gap-3">
+                <a
+                  href="/account"
+                  onClick={() => setOpen(false)}
+                  className="block w-full text-center text-paper font-sans text-xl font-bold py-4 px-4 border border-accent/30 bg-accent/[0.06] hover:bg-accent/15 hover:border-accent/60 transition-colors"
+                >
+                  My Account
+                </a>
+                <a
+                  href="/shop"
+                  onClick={() => setOpen(false)}
+                  className="block w-full text-center bg-accent text-obsidian font-semibold text-xl py-4 px-4 hover:bg-accent/80 transition-colors"
+                >
+                  Shop Now
+                </a>
+              </div>
             </nav>
           </motion.div>
         )}

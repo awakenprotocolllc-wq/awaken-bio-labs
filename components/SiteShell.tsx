@@ -2,6 +2,7 @@ import AnnouncementBar from "./AnnouncementBar";
 import Nav from "./Nav";
 import Footer from "./Footer";
 import CartProviderWrapper from "./CartProviderWrapper";
+import ScrollToTop from "./ScrollToTop";
 
 export default function SiteShell({ children }: { children: React.ReactNode }) {
   return (
@@ -11,6 +12,7 @@ export default function SiteShell({ children }: { children: React.ReactNode }) {
         <Nav />
         <div className="flex-1">{children}</div>
         <Footer />
+        <ScrollToTop />
       </main>
     </CartProviderWrapper>
   );
