@@ -43,7 +43,7 @@ function QtyControl({ qty, onChange }: { qty: number; onChange: (n: number) => v
       >−</button>
       <span className="font-mono text-paper text-sm w-6 text-center">{qty}</span>
       <button
-        onClick={() => onChange(Math.min(99, qty + 1))}
+        onClick={() => onChange(Math.min(15, qty + 1))}
         className="w-7 h-7 border border-slate text-bone hover:border-accent hover:text-accent transition-colors font-mono text-sm leading-none"
       >+</button>
     </div>
@@ -269,7 +269,7 @@ export default function AffiliateOrderPage() {
     <AffiliateDashboardShell title="Order.">
       <div className="mb-6">
         <p className="font-mono text-accent text-[10px] tracking-[0.25em] mb-1">— PARTNER PRICING —</p>
-        <p className="text-bone text-sm">All compounds listed at your <span className="text-paper font-semibold">30% partner discount</span>. No promo code needed. COGs apply.</p>
+        <p className="text-bone text-sm">All compounds listed at your <span className="text-paper font-semibold">30% partner discount</span>.</p>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-8 items-start">
@@ -562,7 +562,7 @@ export default function AffiliateOrderPage() {
           </button>
 
           <p className="font-mono text-[10px] text-bone/40 text-center">
-            30% partner discount applied automatically · no promo code needed
+            30% partner discount applied automatically
           </p>
         </div>
       </div>

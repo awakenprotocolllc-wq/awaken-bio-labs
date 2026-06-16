@@ -69,8 +69,8 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ ok: false, error: "Invalid item format." }, { status: 400 });
       }
       const qty_ = parseInt(String(qty), 10);
-      if (isNaN(qty_) || qty_ < 1 || qty_ > 99) {
-        return NextResponse.json({ ok: false, error: `Invalid quantity for ${productName}.` }, { status: 400 });
+      if (isNaN(qty_) || qty_ < 1 || qty_ > 15) {
+        return NextResponse.json({ ok: false, error: `Quantity for ${productName} must be between 1 and 15.` }, { status: 400 });
       }
 
       const product = products.find((p) => p.name === productName);
