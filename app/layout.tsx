@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import AgeGate from "@/components/AgeGate";
@@ -51,6 +52,18 @@ export default function RootLayout({
         <AgeGate />
         <CookieBanner />
         <Analytics />
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-MGV01ZQ646"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-MGV01ZQ646');
+          `}
+        </Script>
       </body>
     </html>
   );
