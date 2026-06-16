@@ -10,11 +10,13 @@ export type Product = {
   /** Per-strength COA overrides — takes priority over coa for a given strength */
   coaMap?: Record<string, string>;
   category:
-    | "GHRH/GHRP"
-    | "Regeneration"
-    | "GLP3-R"
-    | "Neuro Research"
-    | "Defence Peptide Research"
+    | "GH Axis"
+    | "Repair & Recovery"
+    | "Metabolic Research"
+    | "Cognitive Research"
+    | "Longevity Research"
+    | "Blends"
+    | "Supplies"
     | "All Other";
 };
 
@@ -53,80 +55,86 @@ export function getProductImage(product: Product): string {
 
 export const categories = [
   "All",
-  "Regeneration",
-  "Neuro Research",
-  "GLP3-R",
-  "GHRH/GHRP",
-  "Defence Peptide Research",
+  "GH Axis",
+  "Repair & Recovery",
+  "Metabolic Research",
+  "Cognitive Research",
+  "Longevity Research",
+  "Blends",
+  "Supplies",
   "All Other",
 ] as const;
 
 export const products: Product[] = [
-  // GHRH/GHRP (formerly GH Axis)
-  { name: "CJC-1295 (with DAC)",    strengths: ["5mg"],        price: "$65.00",          category: "GHRH/GHRP" },
-  { name: "CJC-1295 (without DAC)", strengths: ["10mg"],       price: "$55.00",          category: "GHRH/GHRP" },
-  { name: "Ipamorelin",             strengths: ["10mg"],       price: "$60.00",          category: "GHRH/GHRP" },
-  { name: "GHRP-6 Acetate",         strengths: ["10mg"],       price: "$45.00",          category: "GHRH/GHRP" },
-  { name: "Sermorelin Acetate",     strengths: ["10mg"],       price: "$75.00",          category: "GHRH/GHRP" },
-  { name: "AOD-9604",               strengths: ["5mg"],        price: "$50.00",          category: "GHRH/GHRP" },
-  { name: "IGF-1 LR3",              strengths: ["1mg"],        price: "$65.00",          category: "GHRH/GHRP" },
-  { name: "IGF-DES",                strengths: ["1mg"],        price: "$74.50",          category: "GHRH/GHRP" },
+  // GH Axis
+  { name: "CJC-1295 (with DAC)",    strengths: ["5mg"],        price: "$65.00",          category: "GH Axis" },
+  { name: "CJC-1295 (without DAC)", strengths: ["10mg"],       price: "$55.00",          category: "GH Axis" },
+  { name: "Ipamorelin",             strengths: ["10mg"],       price: "$60.00",          category: "GH Axis" },
+  { name: "GHRP-6 Acetate",         strengths: ["10mg"],       price: "$45.00",          category: "GH Axis" },
+  { name: "Sermorelin Acetate",     strengths: ["10mg"],       price: "$75.00",          category: "GH Axis" },
+  { name: "AOD-9604",               strengths: ["5mg"],        price: "$50.00",          category: "GH Axis" },
+  { name: "IGF-1 LR3",              strengths: ["1mg"],        price: "$65.00",          category: "GH Axis" },
+  { name: "IGF-DES",                strengths: ["1mg"],        price: "$74.50",          category: "GH Axis" },
 
-  // GLP-1(R) (formerly Metabolic)
+  // Metabolic Research
   {
     name: "GLP3-R (Retatrutide)",
     strengths: ["10mg", "30mg"],
     price: "$102.00 – $261.00",
     priceMap: { "10mg": "$102.00", "30mg": "$261.00" },
     coaMap: { "10mg": "/coas/retatrutide-10mg.pdf", "30mg": "/coas/retatrutide-30mg.pdf" },
-    category: "GLP3-R",
+    category: "Metabolic Research",
   },
-  { name: "5-Amino-1MQ",            strengths: ["5mg"],        price: "$70.00",          category: "GLP3-R" },
+  { name: "5-Amino-1MQ",            strengths: ["5mg"],        price: "$70.00",          category: "Metabolic Research" },
 
-  // Regeneration (formerly Repair & Recovery)
-  { name: "BPC-157",                strengths: ["10mg"],       price: "$52.50",          coa: "/coas/bpc-157.pdf",  category: "Regeneration" },
-  { name: "TB-500",                 strengths: ["10mg"],       price: "$57.00",          coa: "/coas/tb-500.pdf",   category: "Regeneration" },
+  // Repair & Recovery
+  { name: "BPC-157",                strengths: ["10mg"],       price: "$52.50",          coa: "/coas/bpc-157.pdf",  category: "Repair & Recovery" },
+  { name: "TB-500",                 strengths: ["10mg"],       price: "$57.00",          coa: "/coas/tb-500.pdf",   category: "Repair & Recovery" },
   {
     name: "GHK-Cu",
     strengths: ["50mg", "100mg"],
     price: "$45.00 – $61.50",
     priceMap: { "50mg": "$45.00", "100mg": "$61.50" },
     coa: "/coas/ghk-cu.pdf",
-    category: "Regeneration",
+    category: "Repair & Recovery",
   },
-  { name: "Snap-8",                 strengths: ["10mg"],       price: "$35.00",          category: "Regeneration" },
-  { name: "SLU-PP-322",             strengths: ["5mg"],        price: "$65.00",          category: "Regeneration" },
-  { name: "KPV (Lysine-Proline-Valine)", strengths: ["10mg"], price: "$75.00",          category: "Regeneration" },
-  { name: "PNC-27",                 strengths: ["10mg"],       price: "$150.00",         category: "Regeneration" },
+  { name: "Snap-8",                 strengths: ["10mg"],       price: "$35.00",          category: "Repair & Recovery" },
+  { name: "SLU-PP-322",             strengths: ["5mg"],        price: "$65.00",          category: "Repair & Recovery" },
+  { name: "KPV (Lysine-Proline-Valine)", strengths: ["10mg"], price: "$75.00",          category: "Repair & Recovery" },
+  { name: "PNC-27",                 strengths: ["10mg"],       price: "$150.00",         category: "Repair & Recovery" },
 
-  // Neuro Research (formerly Cognitive)
-  { name: "Selank",                 strengths: ["10mg"],       price: "$48.50",          category: "Neuro Research" },
-  { name: "Semax",                  strengths: ["10mg"],       price: "$48.50",          category: "Neuro Research" },
-  { name: "DSIP",                   strengths: ["15mg"],       price: "$70.00",          category: "Neuro Research" },
-  { name: "Pinealon",               strengths: ["20mg"],       price: "$65.00",          category: "Neuro Research" },
-  { name: "Oxytocin",               strengths: ["2mg"],        price: "$30.00",          category: "Neuro Research" },
+  // Cognitive Research
+  { name: "Selank",                 strengths: ["10mg"],       price: "$48.50",          category: "Cognitive Research" },
+  { name: "Semax",                  strengths: ["10mg"],       price: "$48.50",          category: "Cognitive Research" },
+  { name: "DSIP",                   strengths: ["15mg"],       price: "$70.00",          category: "Cognitive Research" },
+  { name: "Pinealon",               strengths: ["20mg"],       price: "$65.00",          category: "Cognitive Research" },
+  { name: "Oxytocin",               strengths: ["2mg"],        price: "$30.00",          category: "Cognitive Research" },
 
-  // Defence Peptide Research (formerly Longevity)
-  { name: "Epithalon",              strengths: ["10mg"],       price: "$40.00",          category: "Defence Peptide Research" },
+  // Longevity Research
+  { name: "Epithalon",              strengths: ["10mg"],       price: "$40.00",          category: "Longevity Research" },
   {
     name: "MOTS-C",
     strengths: ["10mg", "40mg"],
     price: "$48.50 – $120.00",
     priceMap: { "10mg": "$48.50", "40mg": "$120.00" },
     coaMap: { "10mg": "/coas/mots-c-10mg.pdf" },
-    category: "Defence Peptide Research",
+    category: "Longevity Research",
   },
-  { name: "SS-31",                  strengths: ["50mg"],       price: "$150.00",         category: "Defence Peptide Research" },
-  { name: "FOX-04",                 strengths: ["10mg"],       price: "$217.50",         category: "Defence Peptide Research" },
-  { name: "NAD+",                   strengths: ["500mg"],      price: "$82.00",          coa: "/coas/nad-plus.pdf", category: "Defence Peptide Research" },
-  { name: "Glutathione",            strengths: ["1500mg"],     price: "$84.00",          category: "Defence Peptide Research" },
+  { name: "SS-31",                  strengths: ["50mg"],       price: "$150.00",         category: "Longevity Research" },
+  { name: "FOX-04",                 strengths: ["10mg"],       price: "$217.50",         category: "Longevity Research" },
+  { name: "NAD+",                   strengths: ["500mg"],      price: "$82.00",          coa: "/coas/nad-plus.pdf", category: "Longevity Research" },
+  { name: "Glutathione",            strengths: ["1500mg"],     price: "$84.00",          category: "Longevity Research" },
 
-  // All Other (formerly Sexual Health, Blends, Supplies)
+  // All Other
   { name: "PT-141",                 strengths: ["10mg"],       price: "$36.00",          category: "All Other" },
   { name: "Kisspeptin-10",          strengths: ["10mg"],       price: "$75.00",          category: "All Other" },
-  { name: "GLOW",                    subtitle: "BPC 10MG + GHK-Cu 50MG + TB-500 10MG", strengths: ["70mg"], price: "$110.50", category: "All Other" },
-  { name: "Wolverine Blend",        subtitle: "TB-500 + BPC-157", strengths: ["20mg"], price: "$135.00", coa: "/coas/wolverine-blend.pdf", category: "All Other" },
-  { name: "KLOW",                   strengths: ["80mg"],       price: "$145.00",         category: "All Other" },
-  { name: "BAC Water",              strengths: ["10ml"],       price: "$9.50",           category: "All Other" },
-  { name: "BAC Water 2",            strengths: ["10mg"],       price: "$106.00",         category: "All Other" },
+
+  // Blends
+  { name: "GLOW",                    subtitle: "BPC 10MG + GHK-Cu 50MG + TB-500 10MG", strengths: ["70mg"], price: "$110.50", category: "Blends" },
+  { name: "Wolverine Blend",        subtitle: "TB-500 + BPC-157", strengths: ["20mg"], price: "$135.00", coa: "/coas/wolverine-blend.pdf", category: "Blends" },
+  { name: "KLOW",                   strengths: ["80mg"],       price: "$145.00",         category: "Blends" },
+
+  // Supplies
+  { name: "BAC Water",              strengths: ["10ml"],       price: "$9.50",           category: "Supplies" },
+  { name: "BAC Water 2",            strengths: ["10mg"],       price: "$106.00",         category: "Supplies" },
 ];

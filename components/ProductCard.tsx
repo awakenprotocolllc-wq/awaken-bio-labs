@@ -5,7 +5,18 @@ import Image from "next/image";
 import Link from "next/link";
 import { type Product, getProductImage, slugify } from "@/lib/products";
 
+function getFirstCoaUrl(product: Product): string | undefined {
+  if (product.coaMap) {
+    const first = Object.values(product.coaMap).find(Boolean);
+    if (first) return first as string;
+  }
+  if (product.coa && product.coa !== "pending") return product.coa;
+  return undefined;
+}
+
 export default function ProductCard({ product }: { product: Product }) {
+  const coaUrl = getFirstCoaUrl(product);
+
   return (
     <motion.div
       layout
@@ -59,6 +70,25 @@ export default function ProductCard({ product }: { product: Product }) {
           ))}
         </div>
 
+        {coaUrl ? (
+          <a
+            href={coaUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="relative z-20 inline-flex items-center gap-1.5 font-mono text-[10px] tracking-wider uppercase text-accent border border-accent/40 hover:border-accent hover:bg-accent/10 px-3 h-8 transition-colors self-start"
+          >
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+              <path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" strokeWidth="2" />
+            </svg>
+            View COA
+          </a>
+        ) : (
+          <span className="relative z-20 inline-flex items-center gap-1.5 font-mono text-[10px] tracking-wider uppercase text-bone/40 border border-slate px-3 h-8 self-start">
+            <span className="w-1.5 h-1.5 rounded-full bg-bone/30" />
+            COA Coming Soon
+          </span>
+        )}
+
         <div className="flex items-center justify-between pt-2 border-t border-slate mt-auto">
           <span className="font-mono text-[9px] sm:text-[10px] text-bone tracking-[0.15em]">
             RESEARCH USE ONLY
@@ -70,7 +100,7 @@ export default function ProductCard({ product }: { product: Product }) {
       </div>
 
       <div className="translate-y-full group-hover:translate-y-0 transition-transform duration-200 bg-accent text-obsidian font-semibold text-sm text-center py-3">
-        Select Options →
+        View Product →
       </div>
     </motion.div>
   );

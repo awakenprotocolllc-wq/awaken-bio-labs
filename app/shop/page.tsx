@@ -1,6 +1,7 @@
 import SiteShell from "@/components/SiteShell";
 import PageHeader from "@/components/PageHeader";
 import ProductGrid from "@/components/ProductGrid";
+import CategoryLandingCards from "@/components/CategoryLandingCards";
 
 export const metadata = {
   title: "Shop · Awaken Bio Labs",
@@ -13,8 +14,9 @@ export default function ShopPage() {
       <PageHeader
         eyebrow="CATALOG"
         title="The Full Catalog."
-        subtitle="Research-grade compounds. Filter by category, click any product for full details and Certificate of Analysis."
+        subtitle="Research-grade compounds. Browse by category or use the filters below to narrow your search."
       />
+      <CategoryLandingCards />
       <ProductGrid />
     </SiteShell>
   );

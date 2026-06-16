@@ -352,9 +352,39 @@ export default function ProductGrid() {
         {/* Product grid */}
         <motion.div layout className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
           <AnimatePresence mode="popLayout">
-            {filtered.map((p) => (
-              <ProductCard key={p.name} product={p} />
-            ))}
+            {filtered.flatMap((p, i) => {
+              const cards: React.ReactNode[] = [<ProductCard key={p.name} product={p} />];
+              if ((i + 1) % 10 === 0 && i + 1 < filtered.length) {
+                cards.push(
+                  <motion.div
+                    key={`trust-${Math.floor(i / 10)}`}
+                    layout
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="col-span-2 md:col-span-3 lg:col-span-4 border border-slate bg-carbon/50 px-6 py-5"
+                  >
+                    <div className="flex flex-wrap gap-6 sm:gap-10 items-center justify-center sm:justify-start">
+                      {[
+                        { label: "≥99% Purity", sub: "HPLC Verified" },
+                        { label: "US Manufactured", sub: "Domestic Production" },
+                        { label: "Third-Party Tested", sub: "Independent US Labs" },
+                        { label: "COA Available", sub: "Download Anytime" },
+                      ].map(({ label, sub }) => (
+                        <div key={label} className="flex items-center gap-3">
+                          <span className="text-accent text-lg font-mono">✓</span>
+                          <div>
+                            <p className="font-mono text-paper text-xs font-semibold tracking-wide">{label}</p>
+                            <p className="font-mono text-bone/50 text-[10px] tracking-wider">{sub}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                );
+              }
+              return cards;
+            })}
           </AnimatePresence>
         </motion.div>
       </div>

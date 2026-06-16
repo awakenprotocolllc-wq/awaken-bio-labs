@@ -82,7 +82,7 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
               <Detail label="Form" value="Lyophilized powder" />
               <Detail label="Purity" value="≥ 99% (HPLC verified)" />
               <Detail label="Storage" value="Refrigerate after reconstitution" />
-              <Detail label="Shipping" value="UPS 2-Day · Ships next business day" />
+              <Detail label="Shipping" value="Orders confirmed before 1:00 p.m. PT ship next business day when inventory is available. Carrier and delivery speed may vary." />
             </div>
 
             <div className="mt-8 bg-carbon border border-slate p-5">

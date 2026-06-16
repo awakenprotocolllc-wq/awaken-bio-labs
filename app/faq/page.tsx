@@ -42,7 +42,7 @@ const sections = [
       },
       {
         q: "How fast do orders ship?",
-        a: "All orders ship the next business day via UPS 2-Day. Orders placed on Fridays or over the weekend ship the following Monday — we do not ship on weekends. Cold-chain handling is applied where required.",
+        a: "Orders confirmed before 1:00 p.m. PT ship next business day when inventory is available. Carrier and delivery speed may vary by order, product, and destination. Orders placed on Fridays or over the weekend ship the following Monday — we do not ship on weekends. Cold-chain handling is applied where required.",
       },
       {
         q: "Do you ship internationally?",

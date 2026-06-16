@@ -5,28 +5,15 @@ import SiteShell from "@/components/SiteShell";
 import PageHeader from "@/components/PageHeader";
 import { products, slugify, getCoaForStrength } from "@/lib/products";
 
-// Flatten products into per-row entries (one per strength for products with coaMap)
-const coaRows = products.flatMap((p) => {
-  // Products with per-strength COAs → one row per strength
-  if (p.coaMap && Object.keys(p.coaMap).length > 0) {
-    return p.strengths.map((s) => ({
-      name: p.name,
-      category: p.category,
-      strength: s,
-      coa: getCoaForStrength(p, s),
-    }));
-  }
-  // Products with a single COA field
-  if (p.coa !== undefined) {
-    return p.strengths.map((s) => ({
-      name: p.name,
-      category: p.category,
-      strength: s,
-      coa: p.coa,
-    }));
-  }
-  return [];
-});
+// Flatten all products into per-row entries (one per strength)
+const coaRows = products.flatMap((p) =>
+  p.strengths.map((s) => ({
+    name: p.name,
+    category: p.category,
+    strength: s,
+    coa: getCoaForStrength(p, s),
+  }))
+);
 
 export default function COAsPage() {
   const [query, setQuery] = useState("");
@@ -46,7 +33,7 @@ export default function COAsPage() {
       <PageHeader
         eyebrow="TRANSPARENCY"
         title="Certificates of Analysis."
-        subtitle="Every batch independently tested by a US third-party laboratory. Full PDF reports published for every product we ship."
+        subtitle="Every batch independently tested by a US third-party laboratory. COAs are available for all current inventory — additional reports are published on a rolling basis as new batches are tested."
       />
 
       <section className="bg-obsidian py-12 md:py-16">
@@ -112,9 +99,9 @@ export default function COAsPage() {
 
                   <div className="col-span-12 sm:col-span-2 sm:text-right">
                     {!row.coa || row.coa === "pending" ? (
-                      <span className="inline-flex items-center gap-1.5 font-mono text-xs text-bone border border-slate px-3 h-9">
-                        <span className="w-1.5 h-1.5 rounded-full bg-accent/60 animate-pulse" />
-                        COMING SOON
+                      <span className="inline-flex items-center gap-1.5 font-mono text-xs text-bone/50 border border-slate px-3 h-9">
+                        <span className="w-1.5 h-1.5 rounded-full bg-bone/30" />
+                        COA PENDING
                       </span>
                     ) : (
                       <a
@@ -143,8 +130,9 @@ export default function COAsPage() {
 
           <p className="font-mono text-bone text-[11px] mt-6 leading-relaxed max-w-3xl">
             COAs are issued per batch. The PDF you download corresponds to the most recent
-            production run. For batch-specific COAs matching a previous order, contact
-            support with your order number.
+            production run. Products marked &ldquo;COA Pending&rdquo; have documentation in progress —
+            contact support if you need a COA before placing an order. For batch-specific
+            COAs matching a previous order, contact support with your order number.
           </p>
         </div>
       </section>

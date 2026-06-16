@@ -12,16 +12,16 @@ export default function ShippingPage() {
     >
       <h2>1. Processing Time</h2>
       <ul>
-        <li>All orders are sent out the next business day after the order is placed.</li>
+        <li>Orders confirmed before 1:00 p.m. PT ship next business day when inventory is available.</li>
         <li>Orders placed on Fridays or over the weekend will ship the following Monday — we do not ship on weekends.</li>
         <li>Custom or back-ordered items may require additional processing time — you will be notified by email.</li>
       </ul>
 
       <h2>2. Shipping Methods &amp; Transit Time</h2>
       <ul>
-        <li><strong>FedEx 2-Day:</strong> standard for all domestic orders</li>
-        <li><strong>FedEx Overnight:</strong> available at checkout for time-sensitive orders</li>
-        <li>Cold-chain handling (refrigerated/insulated packaging) is applied to compounds requiring it, at no extra cost</li>
+        <li>Carrier and delivery speed may vary by order, product, and destination.</li>
+        <li>Expedited service is available at checkout for time-sensitive orders.</li>
+        <li>Cold-chain handling (refrigerated/insulated packaging) is applied to compounds requiring it, at no extra cost.</li>
       </ul>
 
       <h2>3. Shipping Destinations</h2>
