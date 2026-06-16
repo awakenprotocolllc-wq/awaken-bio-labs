@@ -60,6 +60,7 @@ export async function POST(req: NextRequest) {
     const attackField = findAttack({
       name: typeof name === "string" ? name : undefined,
       platform: typeof platform === "string" ? platform : undefined,
+      username: typeof username === "string" ? username : undefined,
       audience: typeof audience === "string" ? audience : undefined,
       about: typeof about === "string" ? about : undefined,
     });

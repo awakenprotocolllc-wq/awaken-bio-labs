@@ -4,6 +4,7 @@ import { createOrder, calcSubtotal } from "@/lib/db";
 import { products, getPriceForStrength } from "@/lib/products";
 import { rateLimit, rateLimitBurst, clientIp } from "@/lib/rate-limit";
 import { apiError } from "@/lib/api-error";
+import { findAttack } from "@/lib/validate";
 
 const AFFILIATE_DISCOUNT = 0.30; // 30% off retail
 
@@ -33,6 +34,10 @@ export async function POST(req: NextRequest) {
     const account = await getAffiliateSession(token, { ip, ua: req.headers.get("user-agent") ?? "" });
     if (!account) return NextResponse.json({ ok: false, error: "Session expired. Please log in again." }, { status: 401 });
     if (account.status !== "active") return NextResponse.json({ ok: false, error: "Your account is not active." }, { status: 403 });
+
+    // Per-affiliate rate limit — prevents bypass via VPN/IP rotation
+    const { allowed: affOk } = await rateLimit(`aff:order:id:${account.id}`, 20, 60 * 60);
+    if (!affOk) return NextResponse.json({ ok: false, error: "Too many orders. Try again later." }, { status: 429 });
 
     const body = await req.json();
     const { items, shipping, notes } = body ?? {};
@@ -70,27 +75,34 @@ export async function POST(req: NextRequest) {
       }
       const qty_ = parseInt(String(qty), 10);
       if (isNaN(qty_) || qty_ < 1 || qty_ > 15) {
-        return NextResponse.json({ ok: false, error: `Quantity for ${productName} must be between 1 and 15.` }, { status: 400 });
+        // Use generic message — do not echo unvalidated productName back to the client
+        return NextResponse.json({ ok: false, error: "Quantity must be between 1 and 15 per item." }, { status: 400 });
       }
 
       const product = products.find((p) => p.name === productName);
       if (!product) {
-        return NextResponse.json({ ok: false, error: `Unknown product: ${productName}.` }, { status: 400 });
+        return NextResponse.json({ ok: false, error: "One or more items are not available." }, { status: 400 });
       }
       if (!product.strengths.includes(strength)) {
-        return NextResponse.json({ ok: false, error: `Invalid strength for ${productName}.` }, { status: 400 });
+        return NextResponse.json({ ok: false, error: "One or more items have an invalid strength." }, { status: 400 });
       }
       const retailPrice = getPriceForStrength(product, strength);
       if (!retailPrice || retailPrice === "Contact Seller" || retailPrice.includes("–")) {
-        return NextResponse.json({ ok: false, error: `${productName} is not available for online order.` }, { status: 400 });
+        return NextResponse.json({ ok: false, error: "One or more items are not available for online order." }, { status: 400 });
       }
 
       resolvedItems.push({
-        product: product.name,
+        product: product.name,  // use catalog name, not the client-supplied string
         strength,
         price: applyDiscount(retailPrice), // 30% off — computed server-side
         qty: qty_,
       });
+    }
+
+    // Scan notes for attack patterns before storage
+    const safeNotes = typeof notes === "string" ? notes.slice(0, 500) : undefined;
+    if (safeNotes && findAttack({ notes: safeNotes })) {
+      return NextResponse.json({ ok: false, error: "Submission rejected." }, { status: 400 });
     }
 
     const subtotal = calcSubtotal(resolvedItems);
@@ -107,7 +119,7 @@ export async function POST(req: NextRequest) {
       subtotal,
       orderTotal: subtotal, // no additional fees for affiliate orders
       paymentMethod: "card",
-      notes: typeof notes === "string" ? notes.slice(0, 500) : undefined,
+      notes: safeNotes,
       orderSource: "affiliate",
       affiliateId: account.id,
       affiliateOrderType: account.programType,

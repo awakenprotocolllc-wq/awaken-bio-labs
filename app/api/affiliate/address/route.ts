@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAffiliateSession, saveAffiliateAddress, getAffiliateAddress } from "@/lib/affiliate-db";
-import { clientIp } from "@/lib/rate-limit";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 import { apiError } from "@/lib/api-error";
 
 async function resolveAccount(req: NextRequest) {
@@ -23,6 +23,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const { allowed } = await rateLimit(`aff:address:${clientIp(req)}`, 20, 60 * 60);
+    if (!allowed) return NextResponse.json({ ok: false, error: "Too many requests. Try again later." }, { status: 429 });
+
     const account = await resolveAccount(req);
     if (!account) return NextResponse.json({ ok: false }, { status: 401 });
     if (account.status !== "active") return NextResponse.json({ ok: false, error: "Account not active." }, { status: 403 });
