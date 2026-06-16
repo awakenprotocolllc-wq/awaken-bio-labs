@@ -23,6 +23,7 @@ const OG_DESCRIPTION =
   "Made in the USA · Third-Party Tested · 99%+ Purity · Research Use Only";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://awakenbiolabs.com"),
   title: "Awaken Bio Labs — Research-Grade Peptide Compounds",
   description:
     "Research-grade peptide compounds for in-vitro laboratory use. Third-party tested, US-manufactured. In-vitro research use only.",
