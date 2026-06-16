@@ -145,18 +145,25 @@ export default function ProductGrid() {
         {/* Search bar */}
         <div ref={searchRef} className="relative mb-6">
           <div className="relative flex items-center">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="absolute left-4 text-bone/40 shrink-0 pointer-events-none">
+            <label htmlFor="catalog-search" className="sr-only">Search research compounds</label>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="absolute left-4 text-bone/40 shrink-0 pointer-events-none">
               <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.5" />
               <path d="M16.5 16.5L21 21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square" />
             </svg>
             <input
+              id="catalog-search"
               type="text"
+              role="combobox"
+              aria-expanded={showSuggestions && suggestions.length > 0}
+              aria-haspopup="listbox"
+              aria-autocomplete="list"
+              aria-controls="catalog-suggestions"
               value={search}
               onChange={(e) => { setSearch(e.target.value); setShowSuggestions(true); }}
               onFocus={() => setShowSuggestions(true)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
               placeholder="Search compounds — e.g. BPC-157, Semax, Ipamorelin..."
-              className="w-full bg-carbon border border-slate text-paper placeholder-bone/30 font-mono text-sm pl-11 pr-10 h-12 focus:outline-none focus:border-accent transition-colors"
+              className="w-full bg-carbon border border-slate text-paper placeholder-bone/50 font-mono text-sm pl-11 pr-10 h-12 focus:outline-none focus:border-accent transition-colors"
             />
             {search && (
               <button type="button" onClick={clearSearch} className="absolute right-4 text-bone/40 hover:text-accent transition-colors" aria-label="Clear search">
@@ -169,26 +176,28 @@ export default function ProductGrid() {
 
           {/* Autocomplete */}
           {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute top-full left-0 right-0 z-50 bg-carbon border border-accent/40 shadow-xl mt-1">
+            <ul id="catalog-suggestions" role="listbox" aria-label="Compound suggestions" className="absolute top-full left-0 right-0 z-50 bg-carbon border border-accent/40 shadow-xl mt-1 list-none m-0 p-0">
               {suggestions.map((name) => {
                 const q = search.trim().toLowerCase();
                 const idx = name.toLowerCase().indexOf(q);
                 return (
-                  <button key={name} type="button" onMouseDown={() => selectSuggestion(name)}
-                    className="w-full text-left px-4 py-3 font-mono text-sm text-bone hover:bg-accent/10 hover:text-accent transition-colors flex items-center gap-3 border-b border-slate last:border-0">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-accent/50 shrink-0">
-                      <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.5" />
-                      <path d="M16.5 16.5L21 21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square" />
-                    </svg>
-                    <span>
-                      {idx >= 0 ? (
-                        <>{name.slice(0, idx)}<span className="text-accent font-bold">{name.slice(idx, idx + q.length)}</span>{name.slice(idx + q.length)}</>
-                      ) : name}
-                    </span>
-                  </button>
+                  <li key={name} role="option" aria-selected={false}>
+                    <button type="button" onMouseDown={() => selectSuggestion(name)}
+                      className="w-full text-left px-4 py-3 font-mono text-sm text-bone hover:bg-accent/10 hover:text-accent transition-colors flex items-center gap-3 border-b border-slate last:border-0">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="text-accent/50 shrink-0">
+                        <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.5" />
+                        <path d="M16.5 16.5L21 21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square" />
+                      </svg>
+                      <span>
+                        {idx >= 0 ? (
+                          <>{name.slice(0, idx)}<span className="text-accent font-bold">{name.slice(idx, idx + q.length)}</span>{name.slice(idx + q.length)}</>
+                        ) : name}
+                      </span>
+                    </button>
+                  </li>
                 );
               })}
-            </div>
+            </ul>
           )}
         </div>
 
@@ -196,35 +205,40 @@ export default function ProductGrid() {
         {/* Mobile toggle */}
         <div className="md:hidden mb-4">
           <button
+            aria-expanded={filtersOpen}
+            aria-controls="filter-panel"
+            aria-label={filtersOpen ? "Close filters and sort" : "Open filters and sort"}
             onClick={() => setFiltersOpen(!filtersOpen)}
-            className="flex items-center gap-2 font-mono text-xs tracking-wider uppercase text-bone border border-slate px-4 h-10 hover:border-accent hover:text-accent transition-colors"
+            className="flex items-center gap-2 font-mono text-xs tracking-wider uppercase text-bone border border-slate px-4 h-11 min-h-[44px] hover:border-accent hover:text-accent transition-colors"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M3 6h18M7 12h10M11 18h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square" />
             </svg>
             Filters &amp; Sort
             {hasActiveFilters && (
-              <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+              <span aria-label="(filters active)" className="w-1.5 h-1.5 rounded-full bg-accent" />
             )}
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" className={`ml-auto transition-transform ${filtersOpen ? "rotate-180" : ""}`}>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={`ml-auto transition-transform ${filtersOpen ? "rotate-180" : ""}`}>
               <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="square" />
             </svg>
           </button>
         </div>
 
         {/* Filter panel — always visible on md+, collapsible on mobile */}
-        <div className={`${filtersOpen ? "block" : "hidden"} md:block mb-8`}>
+        <div id="filter-panel" className={`${filtersOpen ? "block" : "hidden"} md:block mb-8`}>
           <div className="bg-carbon border border-slate p-5 space-y-5">
             {/* Row 1: Category + Sort */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block font-mono text-bone/50 text-[10px] tracking-wider uppercase mb-2">Category</label>
+              <fieldset>
+                <legend className="block font-mono text-bone text-[10px] tracking-wider uppercase mb-2">Category</legend>
                 <div className="flex flex-wrap gap-2">
                   {categories.map((c) => {
                     const isActive = c === active;
                     return (
-                      <button key={c} onClick={() => { setActive(c); clearSearch(); }}
-                        className={`font-mono text-[10px] tracking-wider uppercase px-3 h-8 border transition-colors ${
+                      <button key={c}
+                        aria-pressed={isActive}
+                        onClick={() => { setActive(c); clearSearch(); }}
+                        className={`font-mono text-[10px] tracking-wider uppercase px-3 h-9 min-h-[36px] border transition-colors ${
                           isActive ? "border-accent text-accent bg-accent/10" : "border-slate text-bone hover:border-accent hover:text-accent"
                         }`}>
                         {c}
@@ -232,11 +246,12 @@ export default function ProductGrid() {
                     );
                   })}
                 </div>
-              </div>
+              </fieldset>
 
               <div>
-                <label className="block font-mono text-bone/50 text-[10px] tracking-wider uppercase mb-2">Sort By</label>
+                <label htmlFor="sort-select" className="block font-mono text-bone text-[10px] tracking-wider uppercase mb-2">Sort By</label>
                 <select
+                  id="sort-select"
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as SortBy)}
                   className="w-full bg-obsidian border border-slate text-paper font-mono text-xs px-3 h-9 focus:outline-none focus:border-accent transition-colors appearance-none"
@@ -253,8 +268,8 @@ export default function ProductGrid() {
 
             {/* Row 2: Price range + Size */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block font-mono text-bone/50 text-[10px] tracking-wider uppercase mb-2">Price Range</label>
+              <fieldset>
+                <legend className="block font-mono text-bone text-[10px] tracking-wider uppercase mb-2">Price Range</legend>
                 <div className="flex flex-wrap gap-2">
                   {([
                     { val: "all",      label: "All" },
@@ -262,43 +277,49 @@ export default function ProductGrid() {
                     { val: "50to100",  label: "$50–$100" },
                     { val: "over100",  label: "$100+" },
                   ] as { val: PriceRange; label: string }[]).map(({ val, label }) => (
-                    <button key={val} onClick={() => setPriceRange(val)}
-                      className={`font-mono text-[10px] tracking-wider uppercase px-3 h-8 border transition-colors ${
+                    <button key={val}
+                      aria-pressed={priceRange === val}
+                      onClick={() => setPriceRange(val)}
+                      className={`font-mono text-[10px] tracking-wider uppercase px-3 h-9 min-h-[36px] border transition-colors ${
                         priceRange === val ? "border-accent text-accent bg-accent/10" : "border-slate text-bone hover:border-accent hover:text-accent"
                       }`}>
                       {label}
                     </button>
                   ))}
                 </div>
-              </div>
+              </fieldset>
 
-              <div>
-                <label className="block font-mono text-bone/50 text-[10px] tracking-wider uppercase mb-2">MG / ML Size</label>
+              <fieldset>
+                <legend className="block font-mono text-bone text-[10px] tracking-wider uppercase mb-2">MG / ML Size</legend>
                 <div className="flex flex-wrap gap-2">
-                  <button onClick={() => setSizeFilter("")}
-                    className={`font-mono text-[10px] tracking-wider uppercase px-3 h-8 border transition-colors ${
+                  <button
+                    aria-pressed={sizeFilter === ""}
+                    onClick={() => setSizeFilter("")}
+                    className={`font-mono text-[10px] tracking-wider uppercase px-3 h-9 min-h-[36px] border transition-colors ${
                       sizeFilter === "" ? "border-accent text-accent bg-accent/10" : "border-slate text-bone hover:border-accent hover:text-accent"
                     }`}>
                     Any
                   </button>
                   {ALL_SIZES.map((s) => (
-                    <button key={s} onClick={() => setSizeFilter(sizeFilter === s ? "" : s)}
-                      className={`font-mono text-[10px] tracking-wider uppercase px-3 h-8 border transition-colors ${
+                    <button key={s}
+                      aria-pressed={sizeFilter === s}
+                      onClick={() => setSizeFilter(sizeFilter === s ? "" : s)}
+                      className={`font-mono text-[10px] tracking-wider uppercase px-3 h-9 min-h-[36px] border transition-colors ${
                         sizeFilter === s ? "border-accent text-accent bg-accent/10" : "border-slate text-bone hover:border-accent hover:text-accent"
                       }`}>
                       {s}
                     </button>
                   ))}
                 </div>
-              </div>
+              </fieldset>
             </div>
 
             {/* Reset */}
             {hasActiveFilters && (
               <div className="border-t border-slate pt-4">
                 <button onClick={resetAll}
-                  className="font-mono text-xs text-bone/50 hover:text-accent transition-colors tracking-wider uppercase flex items-center gap-2">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                  className="font-mono text-xs text-bone hover:text-accent transition-colors tracking-wider uppercase flex items-center gap-2">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="square" />
                   </svg>
                   Clear All Filters
@@ -309,12 +330,14 @@ export default function ProductGrid() {
         </div>
 
         {/* Category pill bar (desktop quick-access) */}
-        <div className="no-scrollbar -mx-4 sm:mx-0 overflow-x-auto mb-8 hidden md:block">
-          <div className="flex gap-3 px-4 sm:px-0 whitespace-nowrap">
+        <div className="no-scrollbar -mx-4 sm:mx-0 overflow-x-auto mb-8 hidden md:block" aria-label="Browse by category">
+          <div className="flex gap-3 px-4 sm:px-0 whitespace-nowrap" role="group" aria-label="Category filters">
             {categories.map((c) => {
               const isActive = c === active;
               return (
-                <button key={c} onClick={() => { setActive(c); clearSearch(); }}
+                <button key={c}
+                  aria-pressed={isActive}
+                  onClick={() => { setActive(c); clearSearch(); }}
                   className={`font-mono text-xs tracking-wider uppercase px-4 h-11 min-h-[44px] border transition-colors duration-200 ${
                     isActive ? "border-accent text-accent bg-carbon" : "border-slate text-bone hover:border-accent hover:text-accent"
                   }`}>
@@ -327,7 +350,12 @@ export default function ProductGrid() {
 
         {/* Results count + active filter summary */}
         <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
-          <p className="font-mono text-bone/40 text-[11px] tracking-wider uppercase">
+          <p
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            className="font-mono text-bone text-[11px] tracking-wider uppercase"
+          >
             {filtered.length} compound{filtered.length !== 1 ? "s" : ""} found
             {sortBy !== "default" && ` · sorted by ${sortBy.replace("-", " ").replace("asc", "↑").replace("desc", "↓")}`}
           </p>

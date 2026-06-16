@@ -40,7 +40,9 @@ export default function COAsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           {/* Search */}
           <div className="mb-10 relative max-w-xl">
+            <label htmlFor="coa-search" className="sr-only">Search COA documents by compound name or category</label>
             <input
+              id="coa-search"
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -48,6 +50,7 @@ export default function COAsPage() {
               className="w-full bg-carbon border border-slate text-paper placeholder:text-bone/60 font-sans px-4 h-12 min-h-[44px] focus:border-accent focus:outline-none transition-colors"
             />
             <svg
+              aria-hidden="true"
               className="absolute right-4 top-1/2 -translate-y-1/2 text-bone"
               width="18"
               height="18"
@@ -59,7 +62,7 @@ export default function COAsPage() {
             </svg>
           </div>
 
-          <p className="font-mono text-bone text-xs tracking-wider mb-6">
+          <p role="status" aria-live="polite" aria-atomic="true" className="font-mono text-bone text-xs tracking-wider mb-6">
             {filtered.length} {filtered.length === 1 ? "RESULT" : "RESULTS"}
           </p>
 

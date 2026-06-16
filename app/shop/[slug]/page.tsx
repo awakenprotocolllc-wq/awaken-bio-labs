@@ -35,12 +35,14 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
 
       <section className="bg-obsidian border-b border-slate">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-          <nav className="font-mono text-xs text-bone tracking-wider">
-            <Link href="/" className="hover:text-accent">Home</Link>
-            <span className="mx-2 text-slate">/</span>
-            <Link href="/shop" className="hover:text-accent">Shop</Link>
-            <span className="mx-2 text-slate">/</span>
-            <span className="text-paper">{product.name}</span>
+          <nav aria-label="Breadcrumb" className="font-mono text-xs text-bone tracking-wider">
+            <ol className="flex items-center gap-0 list-none p-0 m-0">
+              <li><Link href="/" className="hover:text-accent">Home</Link></li>
+              <li aria-hidden="true" className="mx-2 text-slate">/</li>
+              <li><Link href="/shop" className="hover:text-accent">Shop</Link></li>
+              <li aria-hidden="true" className="mx-2 text-slate">/</li>
+              <li><span aria-current="page" className="text-paper">{product.name}</span></li>
+            </ol>
           </nav>
         </div>
       </section>
@@ -51,7 +53,7 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
           <div className="relative aspect-square bg-white border border-slate overflow-hidden">
             <Image
               src={getProductImage(product)}
-              alt={product.name}
+              alt={`${product.name}${product.strengths.length === 1 ? ` ${product.strengths[0]}` : ""} research compound vial`}
               fill
               priority
               sizes="(max-width: 1024px) 100vw, 50vw"

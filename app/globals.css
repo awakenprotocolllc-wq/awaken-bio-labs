@@ -2,6 +2,41 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Skip-to-content link ─────────────────────────────────────────────────── */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 0;
+  z-index: 9999;
+  padding: 0.75rem 1.25rem;
+  background: #57C7D6;
+  color: #0A0B0D;
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.skip-link:focus {
+  top: 0;
+  outline: 3px solid #0A0B0D;
+  outline-offset: 2px;
+}
+
+/* ── Global focus-visible ring ────────────────────────────────────────────── */
+/* Applied to everything except elements that define their own focus style */
+:focus-visible {
+  outline: 2px solid #57C7D6;
+  outline-offset: 2px;
+}
+/* Inputs already highlight with border-accent; keep that + add ring */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #57C7D6;
+  outline-offset: 0;
+}
+
 html,
 body {
   background-color: #0a0b0d;
@@ -164,6 +199,52 @@ body {
 }
 .success-label {
   animation: labelFade 0.28s ease-out 0.82s both;
+}
+
+/* ── Respect prefers-reduced-motion ──────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .grain::before {
+    animation: none;
+  }
+  .loading-scan {
+    animation: none;
+  }
+  .loading-fade {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .success-overlay-in,
+  .success-overlay-out {
+    animation: none;
+    opacity: 1;
+  }
+  .success-circle,
+  .success-check {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .success-icon {
+    animation: none;
+    opacity: 1;
+    transform: scale(1);
+  }
+  .success-label {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .nav-link::after {
+    transition: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* ── Link underline slide-in */

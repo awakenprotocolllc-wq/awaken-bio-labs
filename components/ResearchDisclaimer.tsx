@@ -14,7 +14,7 @@ export default function ResearchDisclaimer({
   if (variant === "banner") {
     return (
       <div className={`w-full bg-obsidian ${className}`}>
-        <p className="font-mono text-[11px] text-white/40 tracking-widest uppercase text-center px-4 py-2 leading-relaxed">
+        <p className="font-mono text-[11px] text-bone/80 tracking-widest uppercase text-center px-4 py-2 leading-relaxed">
           {COPY}
         </p>
       </div>
@@ -23,7 +23,7 @@ export default function ResearchDisclaimer({
 
   return (
     <p
-      className={`font-mono text-[11px] text-white/30 leading-relaxed ${className}`}
+      className={`font-mono text-[11px] text-bone/70 leading-relaxed ${className}`}
     >
       {COPY}
     </p>

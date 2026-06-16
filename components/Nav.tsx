@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Logo from "./Logo";
 import { useCart } from "@/lib/cart";
@@ -17,6 +18,7 @@ export default function Nav() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const { totalItems, openDrawer } = useCart();
+  const pathname = usePathname();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 80);
@@ -30,6 +32,16 @@ export default function Nav() {
     document.body.style.overflow = open ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [open]);
+
+  // Close mobile menu on Escape
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+
+  // Close mobile menu when route changes
+  useEffect(() => { setOpen(false); }, [pathname]);
 
   return (
     <>
@@ -48,11 +60,12 @@ export default function Nav() {
           </a>
 
           {/* Desktop links */}
-          <nav className="hidden lg:flex items-center gap-8">
+          <nav aria-label="Main navigation" className="hidden lg:flex items-center gap-8">
             {links.map((l) => (
               <a
                 key={l.label}
                 href={l.href}
+                aria-current={pathname === l.href ? "page" : undefined}
                 className="nav-link font-sans text-sm text-paper hover:text-paper"
               >
                 {l.label}
@@ -105,8 +118,10 @@ export default function Nav() {
 
             {/* Hamburger */}
             <button
-              aria-label="Open menu"
-              onClick={() => setOpen(true)}
+              aria-label={open ? "Close menu" : "Open menu"}
+              aria-expanded={open}
+              aria-controls="mobile-nav"
+              onClick={() => setOpen(!open)}
               className="lg:hidden text-paper h-11 w-11 flex items-center justify-center"
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -125,6 +140,10 @@ export default function Nav() {
       <AnimatePresence>
         {open && (
           <motion.div
+            id="mobile-nav"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Navigation menu"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
@@ -145,12 +164,13 @@ export default function Nav() {
                 </svg>
               </button>
             </div>
-            <nav className="flex flex-col px-5 py-6 gap-2 overflow-y-auto">
+            <nav aria-label="Mobile navigation" className="flex flex-col px-5 py-6 gap-2 overflow-y-auto">
               {links.map((l, i) => (
                 <motion.a
                   key={l.label}
                   href={l.href}
                   onClick={() => setOpen(false)}
+                  aria-current={pathname === l.href ? "page" : undefined}
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1 + i * 0.05 }}

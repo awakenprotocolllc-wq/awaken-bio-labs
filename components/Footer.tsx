@@ -9,6 +9,7 @@ const quick = [
   { label: "FAQ", href: "/faq" },
   { label: "Affiliates", href: "/affiliates" },
   { label: "Contact", href: "/contact" },
+  { label: "Accessibility", href: "/accessibility" },
 ];
 
 const legal = [
@@ -29,14 +30,18 @@ export default function Footer() {
             Research-Grade Peptide Compounds. In-Vitro Use Only.
           </p>
           <div className="flex gap-3 mt-6">
-            {["IG", "X", "YT"].map((s) => (
+            {[
+              { abbr: "IG", label: "Instagram" },
+              { abbr: "X",  label: "X (Twitter)" },
+              { abbr: "YT", label: "YouTube" },
+            ].map((s) => (
               <a
-                key={s}
+                key={s.abbr}
                 href="#"
-                aria-label={s}
-                className="h-10 w-10 border border-slate flex items-center justify-center text-bone hover:text-accent hover:border-accent transition-colors font-mono text-xs"
+                aria-label={`Awaken Biolabs on ${s.label}`}
+                className="h-11 w-11 border border-slate flex items-center justify-center text-bone hover:text-accent hover:border-accent transition-colors font-mono text-xs"
               >
-                {s}
+                <span aria-hidden="true">{s.abbr}</span>
               </a>
             ))}
           </div>

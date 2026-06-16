@@ -10,7 +10,7 @@ export default function SiteShell({ children }: { children: React.ReactNode }) {
       <main className="bg-obsidian text-paper min-h-screen flex flex-col">
         <AnnouncementBar />
         <Nav />
-        <div className="flex-1">{children}</div>
+        <div id="main-content" className="flex-1">{children}</div>
         <Footer />
         <ScrollToTop />
       </main>

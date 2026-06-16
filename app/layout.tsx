@@ -48,6 +48,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${spaceGrotesk.variable} ${jetbrainsMono.variable}`}>
       <body className="bg-obsidian text-paper font-sans antialiased">
+        <a href="#main-content" className="skip-link">Skip to main content</a>
         <ResearchDisclaimer variant="banner" />
         {children}
         <AgeGate />

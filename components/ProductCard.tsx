@@ -49,7 +49,7 @@ export default function ProductCard({ product }: { product: Product }) {
               {product.name}
             </h3>
             {product.subtitle && (
-              <p className="font-mono text-bone/60 text-[10px] tracking-wider mt-0.5">
+              <p className="font-mono text-bone/80 text-[10px] tracking-wider mt-0.5">
                 {product.subtitle}
               </p>
             )}
@@ -75,16 +75,20 @@ export default function ProductCard({ product }: { product: Product }) {
             href={coaUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="relative z-20 inline-flex items-center gap-1.5 font-mono text-[10px] tracking-wider uppercase text-accent border border-accent/40 hover:border-accent hover:bg-accent/10 px-3 h-8 transition-colors self-start"
+            aria-label={`View COA for ${product.name}`}
+            className="relative z-20 inline-flex items-center gap-1.5 font-mono text-[10px] tracking-wider uppercase text-accent border border-accent/40 hover:border-accent hover:bg-accent/10 px-3 h-9 min-h-[36px] transition-colors self-start"
           >
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" strokeWidth="2" />
             </svg>
             View COA
           </a>
         ) : (
-          <span className="relative z-20 inline-flex items-center gap-1.5 font-mono text-[10px] tracking-wider uppercase text-bone/40 border border-slate px-3 h-8 self-start">
-            <span className="w-1.5 h-1.5 rounded-full bg-bone/30" />
+          <span
+            aria-label={`COA for ${product.name} coming soon`}
+            className="relative z-20 inline-flex items-center gap-1.5 font-mono text-[10px] tracking-wider uppercase text-bone/70 border border-slate px-3 h-9 min-h-[36px] self-start"
+          >
+            <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-bone/40" />
             COA Coming Soon
           </span>
         )}
@@ -99,7 +103,7 @@ export default function ProductCard({ product }: { product: Product }) {
         </div>
       </div>
 
-      <div className="translate-y-full group-hover:translate-y-0 transition-transform duration-200 bg-accent text-obsidian font-semibold text-sm text-center py-3">
+      <div aria-hidden="true" className="translate-y-full group-hover:translate-y-0 transition-transform duration-200 bg-accent text-obsidian font-semibold text-sm text-center py-3">
         View Product →
       </div>
     </motion.div>
