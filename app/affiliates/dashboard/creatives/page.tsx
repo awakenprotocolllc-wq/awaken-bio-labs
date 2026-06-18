@@ -3,12 +3,22 @@
 import AffiliateDashboardShell from "@/components/AffiliateDashboardShell";
 
 const creatives = [
-  { name: "Brand Logo Pack", desc: "Light + dark variants, SVG + PNG", count: 6, type: "Brand Assets" },
-  { name: "Product Hero Shots", desc: "Studio photography of every compound", count: 47, type: "Photography" },
-  { name: "Instagram Stories", desc: "9:16 templates ready for export", count: 12, type: "Social" },
-  { name: "Instagram Posts", desc: "1:1 product spotlight cards", count: 18, type: "Social" },
-  { name: "YouTube Banner Pack", desc: "Channel art + thumbnail templates", count: 8, type: "Video" },
-  { name: "Email Header Templates", desc: "For newsletter integrations", count: 5, type: "Email" },
+  {
+    name: "Brand Logo Pack",
+    desc: "PNG logo for use across digital platforms",
+    count: 1,
+    type: "Brand Assets",
+    href: "/logo.png",
+    download: "awaken-biolabs-logo.png",
+  },
+  {
+    name: "Product Hero Shots",
+    desc: "High-res PNG photography of every compound",
+    count: 33,
+    type: "Photography",
+    href: "/api/download/products",
+    download: "awaken-biolabs-product-images.zip",
+  },
 ];
 
 const copyTemplates = [
@@ -38,7 +48,7 @@ export default function CreativesPage() {
       </p>
 
       {/* Asset packs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-slate mb-12">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-slate mb-12 max-w-2xl">
         {creatives.map((c) => (
           <div key={c.name} className="bg-carbon p-6 hover:bg-obsidian transition-colors">
             <div className="flex items-start justify-between gap-4 mb-3">
@@ -50,12 +60,16 @@ export default function CreativesPage() {
                 <p className="text-bone text-sm mt-1">{c.desc}</p>
               </div>
               <span className="font-mono text-xs text-bone bg-slate px-2 py-1 flex-shrink-0">
-                {c.count} files
+                {c.count} {c.count === 1 ? "file" : "files"}
               </span>
             </div>
-            <button className="font-mono text-xs tracking-wider uppercase border border-accent/40 text-accent hover:border-accent hover:bg-accent/10 px-3 h-9 transition-colors mt-2">
+            <a
+              href={c.href}
+              download={c.download}
+              className="inline-block font-mono text-xs tracking-wider uppercase border border-accent/40 text-accent hover:border-accent hover:bg-accent/10 px-3 h-9 leading-[2.25rem] transition-colors mt-2"
+            >
               Download Pack →
-            </button>
+            </a>
           </div>
         ))}
       </div>
