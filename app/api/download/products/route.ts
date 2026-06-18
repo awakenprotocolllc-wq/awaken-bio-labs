@@ -1,7 +1,9 @@
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import { readdir, readFile } from "fs/promises";
 import path from "path";
-import { zipSync, strToU8 } from "fflate";
+import { zipSync } from "fflate";
 
 export async function GET() {
   const dir = path.join(process.cwd(), "public", "products");
