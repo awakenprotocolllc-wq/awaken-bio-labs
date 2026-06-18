@@ -15,17 +15,17 @@ const copyTemplates = [
   {
     title: "Long-form Caption",
     body:
-      "I've been using Awaken Bio Labs for my research compounds — verified 99%+ purity, third-party tested, every product ships with its own COA. If you take this work seriously, this is the supplier. Use my code [YOUR-CODE] for 10% off.",
+      "Awaken Bio Labs manufactures and tests research peptide compounds domestically — every batch is third-party verified at 99%+ purity with a COA available for download. For in-vitro research use only. Use code [YOUR-CODE] for 10% off research orders.",
   },
   {
     title: "Story / Quick Hit",
     body:
-      "Not all peptide suppliers are equal. Awaken Bio Labs is the only one I trust — full transparency, lab-verified, fast shipping. Code [YOUR-CODE] for 10% off →",
+      "Domestic manufacturing. Third-party lab verified. COA on every batch. Awaken Bio Labs — research compounds, done right. Code [YOUR-CODE] for 10% off. Research use only. →",
   },
   {
     title: "Email Pitch",
     body:
-      "Subject: The supplier I actually use\n\nQuick one — if you've been asking what I use for research compounds, the answer is Awaken Bio Labs. Third-party tested, 99%+ purity, COA on every product. Use code [YOUR-CODE] for 10% off your first order.",
+      "Subject: A research compound supplier worth knowing\n\nQuick one — Awaken Bio Labs manufactures research peptide compounds in the US, with independent third-party testing and a COA available for every batch at 99%+ purity. For in-vitro research use only. Code [YOUR-CODE] gets 10% off.",
   },
 ];
 
