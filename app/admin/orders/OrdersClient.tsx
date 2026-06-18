@@ -357,7 +357,7 @@ export default function OrdersClient({ initialOrders }: { initialOrders: Order[]
     });
     const data = await res.json();
     if (data.ok) {
-      setOrders((prev) => prev.map((o) => (o.id === id ? data.order : o)));
+      setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: data.order.status } : o)));
     }
     setUpdating(null);
   }
