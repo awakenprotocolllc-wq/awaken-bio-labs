@@ -31,6 +31,18 @@ export async function PATCH(
       if (!code) {
         return NextResponse.json({ ok: false, error: "Code is required" }, { status: 400 });
       }
+      if (code.length > 50) {
+        return NextResponse.json({ ok: false, error: "Invalid code" }, { status: 400 });
+      }
+
+      // Guard: load the order first so we can reject if a code is already applied
+      const existingOrder = await getOrder(params.id);
+      if (!existingOrder) {
+        return NextResponse.json({ ok: false, error: "Order not found" }, { status: 404 });
+      }
+      if (existingOrder.discountCode) {
+        return NextResponse.json({ ok: false, error: "A discount code has already been applied to this order" }, { status: 409 });
+      }
 
       const affiliate = await getAffiliateByCode(code);
       if (!affiliate || affiliate.status !== "active") {
