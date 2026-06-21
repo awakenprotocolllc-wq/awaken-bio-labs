@@ -359,15 +359,15 @@ export async function sendDiscountAppliedEmail(order: Order) {
       Name: <strong style="color:#F4F4F2;">AWAKEN BIOLABS LLC</strong>
     </p>
   </div>` : `
-  <!-- Card — refund notice -->
+  <!-- Card — manual refund notice -->
   <div style="background:#1a2a3a;border:1px solid #1a4a7a;padding:16px 20px;margin:0 0 28px;">
     <p style="font-family:'Courier New',monospace;color:#57C7D6;font-size:12px;letter-spacing:0.15em;text-transform:uppercase;margin:0 0 8px;">
-      Refund Information
+      Next Steps — Discount Adjustment
     </p>
     <p style="font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;line-height:1.6;margin:0;">
-      Your card was originally charged before this code was applied.
-      A refund of <strong style="color:#57C7D6;">${escape(order.discountAmount ?? "")}</strong> will be issued
-      to your original payment method within 3–5 business days. If you have questions, reply to this email.
+      Your card was charged before this code was applied. To receive your
+      <strong style="color:#57C7D6;">${escape(order.discountAmount ?? "")}</strong> discount adjustment,
+      please reply to this email and we will process it manually. Allow 7–10 business days for the adjustment to reflect.
     </p>
   </div>`}
 
