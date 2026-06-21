@@ -110,3 +110,29 @@ export async function updateOrderStatus(
   await kv.set(`order:${id}`, updated);
   return updated;
 }
+
+export async function applyAffiliateCodeToOrder(
+  id: string,
+  affiliateCode: string,
+  discountRate: number = 0.10
+): Promise<Order | null> {
+  const order = await getOrder(id);
+  if (!order) return null;
+
+  const code = affiliateCode.toUpperCase();
+  const subtotalNum = parsePrice(order.subtotal);
+  const discountNum = Math.round(subtotalNum * discountRate * 100) / 100;
+  const oldTotalNum = parsePrice(order.orderTotal ?? order.subtotal);
+  const newTotalNum = Math.max(0, oldTotalNum - discountNum);
+
+  const updated: Order = {
+    ...order,
+    refCode: code,
+    discountCode: code,
+    discountAmount: `$${discountNum.toFixed(2)}`,
+    orderTotal: `$${newTotalNum.toFixed(2)}`,
+  };
+
+  await kv.set(`order:${id}`, updated);
+  return updated;
+}

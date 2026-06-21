@@ -58,14 +58,19 @@ function currentMonthKey() {
 // ── Single order row (shared between list and month views) ───────────────────
 
 function OrderRow({
-  order, expandedId, setExpandedId, updating, updateStatus,
+  order, expandedId, setExpandedId, updating, updateStatus, applyCode,
 }: {
   order: Order;
   expandedId: string | null;
   setExpandedId: (id: string | null) => void;
   updating: string | null;
   updateStatus: (id: string, status: OrderStatus) => void;
+  applyCode: (id: string, code: string) => Promise<{ error?: string }>;
 }) {
+  const [codeInput, setCodeInput] = useState("");
+  const [applyingCode, setApplyingCode] = useState(false);
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [codeSuccess, setCodeSuccess] = useState(false);
   const isExpanded = expandedId === order.id;
   const orderCogs    = calcOrderCogs(order.items);
   const orderRevenue = parseAmount(order.orderTotal ?? order.subtotal);
@@ -325,6 +330,57 @@ function OrderRow({
             </div>
           )}
 
+          {/* ── Apply ambassador code (only when no discount code yet) ── */}
+          {!order.discountCode && (
+            <div className="bg-obsidian border border-slate/40 p-4">
+              <p className="font-mono text-accent text-[10px] tracking-[0.2em] mb-3">
+                APPLY AMBASSADOR CODE
+              </p>
+              {codeSuccess ? (
+                <p className="font-mono text-green-400 text-xs tracking-wider">
+                  ✓ Code applied — customer notification sent.
+                </p>
+              ) : (
+                <div className="flex items-center gap-3 flex-wrap">
+                  <input
+                    type="text"
+                    value={codeInput}
+                    onChange={(e) => { setCodeInput(e.target.value.toUpperCase()); setCodeError(null); }}
+                    placeholder="AMBASSADOR CODE"
+                    maxLength={32}
+                    className="bg-carbon border border-slate text-paper font-mono text-xs px-3 h-9 w-48 focus:outline-none focus:border-accent placeholder:text-bone/30 tracking-wider uppercase"
+                  />
+                  <button
+                    disabled={applyingCode || !codeInput.trim()}
+                    onClick={async () => {
+                      setApplyingCode(true);
+                      setCodeError(null);
+                      const result = await applyCode(order.id, codeInput.trim());
+                      setApplyingCode(false);
+                      if (result.error) {
+                        setCodeError(result.error);
+                      } else {
+                        setCodeSuccess(true);
+                        setCodeInput("");
+                      }
+                    }}
+                    className="font-mono text-xs tracking-wider uppercase border border-accent/40 text-accent hover:border-accent hover:bg-accent/10 px-4 h-9 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {applyingCode ? "Applying…" : "Apply & Notify Customer"}
+                  </button>
+                  {codeError && (
+                    <p className="font-mono text-red-400 text-[10px] tracking-wider w-full mt-1">
+                      ✗ {codeError}
+                    </p>
+                  )}
+                </div>
+              )}
+              <p className="font-mono text-bone/40 text-[10px] mt-3 leading-relaxed">
+                Validates the code, applies 10% off the subtotal, recalculates the order total, and emails the customer automatically.
+              </p>
+            </div>
+          )}
+
           {order.notes && (
             <div>
               <p className="font-mono text-accent text-[10px] tracking-[0.2em] mb-2">NOTES</p>
@@ -360,6 +416,20 @@ export default function OrdersClient({ initialOrders }: { initialOrders: Order[]
       setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: data.order.status } : o)));
     }
     setUpdating(null);
+  }
+
+  async function applyCode(id: string, code: string): Promise<{ error?: string }> {
+    const res = await fetch(`/api/orders/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ applyCode: code }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      setOrders((prev) => prev.map((o) => (o.id === id ? data.order : o)));
+      return {};
+    }
+    return { error: data.error ?? "Failed to apply code" };
   }
 
   async function handleLogout() {
@@ -408,7 +478,7 @@ export default function OrdersClient({ initialOrders }: { initialOrders: Order[]
     });
   }
 
-  const sharedRowProps = { expandedId, setExpandedId, updating, updateStatus };
+  const sharedRowProps = { expandedId, setExpandedId, updating, updateStatus, applyCode };
 
   return (
     <div className="min-h-screen bg-obsidian text-paper">

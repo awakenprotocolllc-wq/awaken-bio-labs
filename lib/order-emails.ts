@@ -297,3 +297,144 @@ export async function sendAdminOrderEmail(order: Order) {
     html,
   });
 }
+
+// ---------------------------------------------------------------------------
+// Customer notification — ambassador discount applied retroactively by admin
+// ---------------------------------------------------------------------------
+
+export async function sendDiscountAppliedEmail(order: Order) {
+  const newTotal = order.orderTotal ?? order.subtotal;
+  const isZelle  = order.paymentMethod === "zelle";
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head>
+<body style="margin:0;padding:0;background:#0A0B0D;">
+<div style="background:#0A0B0D;color:#F4F4F2;font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:40px 24px;">
+
+  <!-- Header -->
+  <div style="border-bottom:1px solid #2A2D33;padding-bottom:24px;margin-bottom:32px;">
+    <p style="font-family:'Courier New',monospace;color:#57C7D6;font-size:11px;letter-spacing:0.25em;text-transform:uppercase;margin:0 0 12px;">AWAKEN BIO LABS</p>
+    <h1 style="color:#F4F4F2;font-size:26px;margin:0 0 8px;font-weight:700;">Discount Applied to Your Order</h1>
+    <p style="font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;margin:0;">
+      Order <strong style="color:#57C7D6;">#${escape(order.id.toUpperCase())}</strong>
+    </p>
+  </div>
+
+  <!-- Message -->
+  <p style="color:#D9D9DC;font-size:15px;line-height:1.7;margin:0 0 24px;">
+    Hi <strong style="color:#F4F4F2;">${escape(order.customer.name)}</strong>,<br /><br />
+    Good news — an ambassador discount code (<strong style="color:#57C7D6;">${escape(order.discountCode ?? "")}</strong>)
+    has been applied to your order. Your updated total is below.
+  </p>
+
+  <!-- Discount highlight -->
+  <div style="background:#0d2e1a;border:1px solid #1a5c35;padding:16px 20px;margin:0 0 28px;">
+    <p style="font-family:'Courier New',monospace;color:#2ecc71;font-size:12px;letter-spacing:0.15em;text-transform:uppercase;margin:0 0 6px;">
+      ✓ &nbsp;Ambassador discount applied
+    </p>
+    <p style="font-family:'Courier New',monospace;color:#D9D9DC;font-size:13px;margin:0;">
+      Code: <strong style="color:#57C7D6;">${escape(order.discountCode ?? "")}</strong>
+      &nbsp;·&nbsp;
+      Savings: <strong style="color:#2ecc71;">${escape(order.discountAmount ?? "")}</strong>
+      &nbsp;·&nbsp;
+      New total: <strong style="color:#F4F4F2;">${escape(newTotal)}</strong>
+    </p>
+  </div>
+
+  ${isZelle ? `
+  <!-- Zelle updated amount notice -->
+  <div style="background:#1a2a3a;border:1px solid #1a4a7a;padding:16px 20px;margin:0 0 28px;">
+    <p style="font-family:'Courier New',monospace;color:#57C7D6;font-size:12px;letter-spacing:0.15em;text-transform:uppercase;margin:0 0 10px;">
+      📲 &nbsp;Updated Zelle Amount
+    </p>
+    <p style="font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;margin:0 0 6px;">
+      Please send the updated amount: <strong style="color:#57C7D6;">${escape(newTotal)}</strong>
+    </p>
+    <p style="font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;margin:0 0 6px;">
+      Zelle ID: <strong style="color:#F4F4F2;">awakenbiolabs</strong>
+    </p>
+    <p style="font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;margin:0;">
+      Name: <strong style="color:#F4F4F2;">AWAKEN BIOLABS LLC</strong>
+    </p>
+  </div>` : `
+  <!-- Card — refund notice -->
+  <div style="background:#1a2a3a;border:1px solid #1a4a7a;padding:16px 20px;margin:0 0 28px;">
+    <p style="font-family:'Courier New',monospace;color:#57C7D6;font-size:12px;letter-spacing:0.15em;text-transform:uppercase;margin:0 0 8px;">
+      Refund Information
+    </p>
+    <p style="font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;line-height:1.6;margin:0;">
+      Your card was originally charged before this code was applied.
+      A refund of <strong style="color:#57C7D6;">${escape(order.discountAmount ?? "")}</strong> will be issued
+      to your original payment method within 3–5 business days. If you have questions, reply to this email.
+    </p>
+  </div>`}
+
+  <!-- Order summary -->
+  <div style="background:#141518;border:1px solid #2A2D33;margin:0 0 24px;">
+    <div style="padding:14px 16px;border-bottom:1px solid #2A2D33;">
+      <p style="font-family:'Courier New',monospace;color:#57C7D6;font-size:10px;letter-spacing:0.25em;text-transform:uppercase;margin:0;">— UPDATED ORDER SUMMARY —</p>
+    </div>
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="background:#0A0B0D;">
+          <th style="padding:10px 14px;text-align:left;color:#D9D9DC;font-size:10px;font-family:'Courier New',monospace;font-weight:normal;letter-spacing:0.15em;text-transform:uppercase;">Product</th>
+          <th style="padding:10px 14px;text-align:center;color:#D9D9DC;font-size:10px;font-family:'Courier New',monospace;font-weight:normal;letter-spacing:0.15em;text-transform:uppercase;">Strength</th>
+          <th style="padding:10px 14px;text-align:center;color:#D9D9DC;font-size:10px;font-family:'Courier New',monospace;font-weight:normal;letter-spacing:0.15em;text-transform:uppercase;">Qty</th>
+          <th style="padding:10px 14px;text-align:right;color:#D9D9DC;font-size:10px;font-family:'Courier New',monospace;font-weight:normal;letter-spacing:0.15em;text-transform:uppercase;">Price</th>
+        </tr>
+      </thead>
+      <tbody>${itemsRowsCustomer(order.items)}</tbody>
+    </table>
+    <div style="padding:12px 14px;border-top:1px solid #2A2D33;">
+      <table style="width:100%;border-collapse:collapse;">
+        <tr>
+          <td style="padding:4px 0;font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;">Subtotal</td>
+          <td style="padding:4px 0;font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;text-align:right;">${escape(order.subtotal)}</td>
+        </tr>
+        <tr>
+          <td style="padding:4px 0;font-family:'Courier New',monospace;color:#2ecc71;font-size:12px;">Discount (${escape(order.discountCode ?? "")})</td>
+          <td style="padding:4px 0;font-family:'Courier New',monospace;color:#2ecc71;font-size:12px;text-align:right;">−${escape(order.discountAmount ?? "")}</td>
+        </tr>
+        ${order.shippingCost ? `
+        <tr>
+          <td style="padding:4px 0;font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;">Shipping</td>
+          <td style="padding:4px 0;font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;text-align:right;">${escape(order.shippingCost)}</td>
+        </tr>` : ""}
+        ${order.processingFee ? `
+        <tr>
+          <td style="padding:4px 0;font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;">Card Processing (4%)</td>
+          <td style="padding:4px 0;font-family:'Courier New',monospace;color:#D9D9DC;font-size:12px;text-align:right;">${escape(order.processingFee)}</td>
+        </tr>` : ""}
+        <tr>
+          <td style="padding:10px 0 4px;border-top:1px solid #57C7D6;font-family:'Courier New',monospace;color:#D9D9DC;font-size:13px;font-weight:bold;text-transform:uppercase;letter-spacing:0.1em;">Updated Total</td>
+          <td style="padding:10px 0 4px;border-top:1px solid #57C7D6;font-family:'Courier New',monospace;color:#57C7D6;font-size:20px;font-weight:bold;text-align:right;">${escape(newTotal)}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div style="border-top:1px solid #2A2D33;padding-top:24px;margin-top:8px;">
+    <p style="font-family:'Courier New',monospace;color:#D9D9DC;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;margin:0 0 8px;">Questions?</p>
+    <p style="font-family:'Courier New',monospace;color:#57C7D6;font-size:11px;margin:0 0 16px;">
+      Reply to this email or contact <a href="mailto:support@awakenbiolabs.com" style="color:#57C7D6;">support@awakenbiolabs.com</a>
+    </p>
+    <p style="font-family:'Courier New',monospace;color:#2A2D33;font-size:10px;line-height:1.6;margin:0;">
+      FOR RESEARCH USE ONLY. NOT FOR HUMAN OR VETERINARY USE. IN-VITRO USE ONLY.<br />
+      Awaken Biolabs LLC · Las Vegas, NV
+    </p>
+  </div>
+
+</div>
+</body>
+</html>`;
+
+  return sendEmail({
+    to: order.customer.email,
+    subject: `Discount Applied — Order #${order.id.toUpperCase()} Updated | Awaken Bio Labs`,
+    html,
+    replyTo: "support@awakenbiolabs.com",
+  });
+}

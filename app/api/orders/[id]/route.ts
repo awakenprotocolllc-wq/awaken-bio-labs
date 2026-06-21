@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOrder, updateOrderStatus, type OrderStatus } from "@/lib/db";
+import { getOrder, updateOrderStatus, applyAffiliateCodeToOrder, type OrderStatus } from "@/lib/db";
+import { getAffiliateByCode } from "@/lib/affiliate-db";
 import { createShipStationOrder } from "@/lib/shipstation";
 import { validateAdminSession } from "@/lib/admin-auth";
 import { apiError } from "@/lib/api-error";
+import { sendDiscountAppliedEmail } from "@/lib/order-emails";
 
 const VALID_STATUSES: OrderStatus[] = [
   "pending_payment",
@@ -10,8 +12,6 @@ const VALID_STATUSES: OrderStatus[] = [
   "fulfilled",
   "cancelled",
 ];
-
-
 
 // PATCH /api/orders/[id] — update order status (admin only)
 export async function PATCH(
@@ -23,7 +23,34 @@ export async function PATCH(
       return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    const { status } = (await req.json()) ?? {};
+    const body = (await req.json()) ?? {};
+
+    // ── Apply affiliate code retroactively ───────────────────────────────────
+    if (body.applyCode !== undefined) {
+      const code = String(body.applyCode).trim().toUpperCase();
+      if (!code) {
+        return NextResponse.json({ ok: false, error: "Code is required" }, { status: 400 });
+      }
+
+      const affiliate = await getAffiliateByCode(code);
+      if (!affiliate || affiliate.status !== "active") {
+        return NextResponse.json({ ok: false, error: "Affiliate code not found or inactive" }, { status: 404 });
+      }
+
+      const updated = await applyAffiliateCodeToOrder(params.id, code, affiliate.discountRate);
+      if (!updated) {
+        return NextResponse.json({ ok: false, error: "Order not found" }, { status: 404 });
+      }
+
+      sendDiscountAppliedEmail(updated).catch((err) =>
+        console.error("[email] discount-applied email failed for", params.id, err)
+      );
+
+      return NextResponse.json({ ok: true, order: updated });
+    }
+
+    // ── Update status ────────────────────────────────────────────────────────
+    const { status } = body;
 
     if (!VALID_STATUSES.includes(status)) {
       return NextResponse.json({ ok: false, error: "Invalid status" }, { status: 400 });
