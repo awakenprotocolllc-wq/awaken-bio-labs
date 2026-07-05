@@ -1,5 +1,6 @@
 import Link from "next/link";
 import SiteShell from "@/components/SiteShell";
+import ResendEmailButton from "@/components/ResendEmailButton";
 
 export const metadata = {
   title: "Order Confirmed · Awaken Bio Labs",
@@ -82,6 +83,13 @@ export default function OrderConfirmationPage({
               ))}
             </ol>
           </div>
+
+          {/* Resend email — shown for all orders; especially useful for Zelle */}
+          {orderId && (
+            <div className="mb-10 text-left">
+              <ResendEmailButton orderId={searchParams.id ?? ""} />
+            </div>
+          )}
 
           <p className="text-bone text-sm mb-8">
             Questions?{" "}

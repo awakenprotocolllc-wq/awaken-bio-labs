@@ -209,10 +209,18 @@ export async function POST(req: NextRequest) {
       });
 
       // Send emails immediately — customer gets Zelle instructions
-      await Promise.allSettled([
+      const [customerEmailResult, adminEmailResult] = await Promise.allSettled([
         sendCustomerOrderEmail(order),
         sendAdminOrderEmail(order),
       ]);
+      if (customerEmailResult.status === "rejected") {
+        console.error("[orders/zelle] Customer email FAILED for", order.id, customerEmailResult.reason);
+      } else if (customerEmailResult.value?.fallback) {
+        console.warn("[orders/zelle] Customer email suppressed — RESEND_API_KEY not set. Order:", order.id);
+      }
+      if (adminEmailResult.status === "rejected") {
+        console.error("[orders/zelle] Admin email FAILED for", order.id, adminEmailResult.reason);
+      }
 
       console.log("[orders/zelle] Order created, awaiting Zelle payment:", order.id);
       return NextResponse.json({ ok: true, orderId: order.id, zelle: true });
