@@ -21,7 +21,11 @@ export async function middleware(req: NextRequest) {
   if (
     ["POST", "PATCH", "PUT", "DELETE"].includes(req.method) &&
     pathname.startsWith("/api/") &&
-    !pathname.startsWith("/api/webhooks/")
+    !pathname.startsWith("/api/webhooks/") &&
+    // RFC 8058 one-click unsubscribe: mail providers POST server-to-server
+    // with no browser Origin. Safe to exempt — token-gated, idempotent, and
+    // can only ever remove an address from marketing.
+    pathname !== "/api/marketing/unsubscribe"
   ) {
     const origin = req.headers.get("origin");
     if (origin) {

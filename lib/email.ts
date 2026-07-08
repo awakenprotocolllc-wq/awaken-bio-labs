@@ -12,12 +12,16 @@ type SendArgs = {
   subject: string;
   html: string;
   replyTo?: string;
+  /** Custom SMTP headers (e.g. List-Unsubscribe). Passed through to Resend. */
+  headers?: Record<string, string>;
+  /** Override the From identity (e.g. dedicated marketing sender). */
+  fromOverride?: string;
 };
 
-export async function sendEmail({ to, subject, html, replyTo }: SendArgs) {
+export async function sendEmail({ to, subject, html, replyTo, headers, fromOverride }: SendArgs) {
   const apiKey = process.env.RESEND_API_KEY;
   const recipient = to || process.env.EMAIL_TO || "support@awakenbiolabs.com";
-  const from = process.env.EMAIL_FROM || "onboarding@resend.dev";
+  const from = fromOverride || process.env.EMAIL_FROM || "onboarding@resend.dev";
 
   if (!apiKey) {
     console.log("[email:fallback] No RESEND_API_KEY set — email suppressed (set env var to enable delivery)");
@@ -36,6 +40,7 @@ export async function sendEmail({ to, subject, html, replyTo }: SendArgs) {
       subject,
       html,
       reply_to: replyTo,
+      ...(headers && Object.keys(headers).length > 0 ? { headers } : {}),
     }),
   });
 

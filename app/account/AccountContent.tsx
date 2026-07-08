@@ -431,15 +431,25 @@ export default function AccountContent() {
                     className="w-full bg-carbon border border-slate text-bone/40 font-sans text-sm px-4 h-11 cursor-not-allowed"
                   />
                 </div>
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={marketingOptIn}
-                    onChange={(e) => setMarketingOptIn(e.target.checked)}
-                    className="w-4 h-4 accent-accent"
-                  />
-                  <span className="font-sans text-bone text-sm">Email me about new products and promotions</span>
-                </label>
+                <div>
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={marketingOptIn}
+                      onChange={(e) => setMarketingOptIn(e.target.checked)}
+                      className="w-4 h-4 accent-accent mt-0.5"
+                    />
+                    <span className="font-sans text-bone text-sm">
+                      Email me about new products and promotions
+                    </span>
+                  </label>
+                  <p className="text-bone/50 text-xs leading-relaxed mt-2 ml-7">
+                    By checking this box, you agree to receive marketing emails from Awaken
+                    Biolabs LLC. You can unsubscribe at any time using the link in any
+                    marketing email or by unchecking this box. Order and account emails are
+                    unaffected.
+                  </p>
+                </div>
                 <button
                   onClick={handleSaveProfile}
                   disabled={settingsWorking}

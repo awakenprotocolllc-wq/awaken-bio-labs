@@ -39,14 +39,26 @@ export default function CustomersClient({ initialCustomers }: { initialCustomers
     });
   }, [customers, search, sortKey, optedInOnly]);
 
-  function handleExport() {
+  async function handleExport() {
     setExporting(true);
+
+    // Marketing eligibility comes from the central consent model, not the
+    // profile boolean — an unsubscribed/suppressed/bounced/complained address
+    // must never be exported as a sendable marketing contact.
+    let eligibleSet: Set<string> | null = null;
+    try {
+      const res = await fetch("/api/admin/marketing-eligible");
+      const data = await res.json();
+      if (data.ok) eligibleSet = new Set<string>(data.eligible);
+    } catch { /* fail closed below */ }
+
     const rows = [
-      ["Name", "Email", "Marketing Opt-In", "Orders", "Total Spend", "Joined"].join(","),
+      ["Name", "Email", "Marketing Eligible", "Orders", "Total Spend", "Joined"].join(","),
       ...filtered.map((c) => [
         `"${c.name.replace(/"/g, '""')}"`,
         `"${c.email.replace(/"/g, '""')}"`,
-        c.marketingOptIn ? "Yes" : "No",
+        // Fail closed: if eligibility couldn't be fetched, mark nobody eligible
+        eligibleSet?.has(c.email.toLowerCase()) ? "Yes" : "No",
         c.orderCount,
         c.totalSpend.toFixed(2),
         fmtDate(c.createdAt),

@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCustomerSession, updateCustomer, changeCustomerPassword } from "@/lib/customer-db";
+import { subscribeMarketing, unsubscribeMarketing } from "@/lib/marketing-consent";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
 import { apiError } from "@/lib/api-error";
+
+// Bump when the marketing consent disclosure wording in AccountContent changes
+const CONSENT_DISCLOSURE_VERSION = "2026-06-account-settings-v1";
 
 export async function PATCH(req: NextRequest) {
   try {
@@ -19,13 +23,45 @@ export async function PATCH(req: NextRequest) {
       if (trimmedName !== undefined && (trimmedName.length === 0 || trimmedName.length > 120)) {
         return NextResponse.json({ ok: false, error: "Name must be between 1 and 120 characters." }, { status: 400 });
       }
+
+      // Sync the marketing consent source of truth BEFORE flipping the UI
+      // boolean, so the profile flag never disagrees with the central record.
+      let effectiveOptIn: boolean | undefined =
+        typeof marketingOptIn === "boolean" ? marketingOptIn : undefined;
+      let consentNotice: string | undefined;
+
+      if (effectiveOptIn === true) {
+        // Owner-initiated opt-in from their authenticated account. May restore
+        // a prior "unsubscribed" state, but never overrides bounce/complaint/
+        // admin suppression.
+        const result = await subscribeMarketing(customer.email, {
+          source: "account_settings",
+          customerId: customer.id,
+          ip: context.ip,
+          userAgent: context.ua,
+          consentDisclosureVersion: CONSENT_DISCLOSURE_VERSION,
+          resubscribe: true,
+          actor: `customer:${customer.id}`,
+        });
+        if (!result.ok) {
+          effectiveOptIn = false; // keep the profile flag consistent with reality
+          consentNotice =
+            "Marketing emails could not be re-enabled for this address. Contact support if you believe this is an error.";
+        }
+      } else if (effectiveOptIn === false) {
+        await unsubscribeMarketing(customer.email, {
+          source: "account_settings",
+          actor: `customer:${customer.id}`,
+        });
+      }
+
       const updated = await updateCustomer(customer.id, {
         ...(trimmedName ? { name: trimmedName } : {}),
-        ...(typeof marketingOptIn === "boolean" ? { marketingOptIn } : {}),
+        ...(typeof effectiveOptIn === "boolean" ? { marketingOptIn: effectiveOptIn } : {}),
       });
       // Strip adminNote — must not be visible to the customer
       const { adminNote: _adminNote, ...updatedPublic } = updated ?? {};
-      return NextResponse.json({ ok: true, customer: updatedPublic });
+      return NextResponse.json({ ok: true, customer: updatedPublic, consentNotice });
     }
 
     if (action === "change_password") {
