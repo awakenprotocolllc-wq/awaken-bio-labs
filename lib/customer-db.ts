@@ -499,7 +499,12 @@ export async function deleteCustomerAccount(customerId: string): Promise<{ keysD
     `cust:email:${raw.email}`,
     `cust:payment:${customerId}`,
     `cust:orders:${customerId}`,
+    `acr:cart:${customerId}`, // abandoned-cart record — deleted accounts get no reminders
   ];
+
+  // Remove from abandoned-cart scheduling indexes (best-effort)
+  try { await kv.zrem("acr:active", customerId); } catch { /* best-effort */ }
+  try { await kv.zrem("acr:index", customerId); } catch { /* best-effort */ }
 
   // Session tokens from reverse-index
   try {

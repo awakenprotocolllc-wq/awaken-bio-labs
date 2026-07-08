@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 
 export type CartItem = {
   product: string;
@@ -15,6 +15,8 @@ type CartContextValue = {
   removeItem: (product: string, strength: string) => void;
   updateQty: (product: string, strength: string, qty: number) => void;
   clearCart: () => void;
+  /** Replace the entire cart (used by cross-device cart restore). */
+  replaceCart: (items: CartItem[]) => void;
   totalItems: number;
   subtotal: string;
   /** Controls the slide-in drawer */
@@ -58,6 +60,27 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [items, hydrated]);
 
+  // Mirror the cart server-side for abandoned-cart tracking (authenticated
+  // customers only — the endpoint 401s for guests and we silently ignore it).
+  // Debounced so rapid qty changes produce one sync. Every synced mutation
+  // counts as "meaningful activity" and resets the abandonment timer.
+  const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const firstSync = useRef(true);
+  useEffect(() => {
+    if (!hydrated) return;
+    // Skip the initial hydration pass — only real mutations sync
+    if (firstSync.current) { firstSync.current = false; return; }
+    if (syncTimer.current) clearTimeout(syncTimer.current);
+    syncTimer.current = setTimeout(() => {
+      fetch("/api/cart/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items }),
+      }).catch(() => { /* guest or offline — ignore */ });
+    }, 2000);
+    return () => { if (syncTimer.current) clearTimeout(syncTimer.current); };
+  }, [items, hydrated]);
+
   const addItem = useCallback((newItem: Omit<CartItem, "qty">) => {
     setItems((prev) => {
       const existing = prev.find(
@@ -94,6 +117,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
   }, []);
 
+  const replaceCart = useCallback((newItems: CartItem[]) => {
+    setItems(newItems.filter((i) => i && i.product && i.strength && i.qty >= 1));
+  }, []);
+
   const totalItems = items.reduce((s, i) => s + i.qty, 0);
 
   const subtotal =
@@ -110,6 +137,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         removeItem,
         updateQty,
         clearCart,
+        replaceCart,
         totalItems,
         subtotal,
         drawerOpen,

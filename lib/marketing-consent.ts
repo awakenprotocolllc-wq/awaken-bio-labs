@@ -82,7 +82,11 @@ export type MarketingAuditEvent = {
     | "admin_override"
     | "marketing_send"
     | "marketing_send_skipped"
-    | "provider_sync_failed";
+    | "provider_sync_failed"
+    | "acr_reminder_sent"
+    | "acr_cancelled"
+    | "acr_converted"
+    | "acr_click";
   email: string;
   source?: string;
   actor?: string;   // "customer:<id>", "admin", "provider:resend", "system"

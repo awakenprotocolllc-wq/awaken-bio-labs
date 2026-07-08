@@ -84,6 +84,15 @@ export async function createOrder(
   if (order.customerId) {
     const { linkOrderToCustomer } = await import("./customer-db");
     await linkOrderToCustomer(order.customerId, order.id);
+
+    // Completed checkout — immediately and durably stop any abandoned-cart
+    // reminder sequence for this customer. Never let this fail the order.
+    try {
+      const { markCartConverted } = await import("./abandoned-cart");
+      await markCartConverted(order.customerId, order.id);
+    } catch (err) {
+      console.error("[createOrder] abandoned-cart conversion hook failed:", err);
+    }
   }
 
   return order;
