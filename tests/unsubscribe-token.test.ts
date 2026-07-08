@@ -48,13 +48,23 @@ describe("unsubscribe token", () => {
     const email = "old@example.com";
     const issuedAt = Math.floor(Date.now() / 1000) - 60 * 60 * 24 * 401;
     const sig = createHmac("sha256", process.env.UNSUBSCRIBE_TOKEN_SECRET!)
-      .update(`${email}.${issuedAt}`).digest("base64")
+      .update(`unsub.${email}.${issuedAt}`).digest("base64")
       .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
     const payload = Buffer.from(email, "utf8").toString("base64")
       .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
     const result = verifyUnsubscribeToken(`v1.${payload}.${issuedAt}.${sig}`);
     expect(result.valid).toBe(false);
     if (!result.valid) expect(result.reason).toBe("expired");
+  });
+
+  it("purpose binding: a confirm token cannot be used to unsubscribe (and vice versa)", () => {
+    const confirmToken = createUnsubscribeToken("a@b.com", "confirm")!;
+    expect(verifyUnsubscribeToken(confirmToken, "confirm").valid).toBe(true);
+    expect(verifyUnsubscribeToken(confirmToken, "unsub").valid).toBe(false);
+
+    const unsubToken = createUnsubscribeToken("a@b.com", "unsub")!;
+    expect(verifyUnsubscribeToken(unsubToken, "unsub").valid).toBe(true);
+    expect(verifyUnsubscribeToken(unsubToken, "confirm").valid).toBe(false);
   });
 
   it("fails closed when secret is not configured", () => {

@@ -178,6 +178,35 @@ export async function subscribeMarketing(
 }
 
 // ---------------------------------------------------------------------------
+// Pending confirmation — used by re-permission campaigns. Only applies when
+// the address has no record yet (or is already pending); never touches any
+// established state.
+// ---------------------------------------------------------------------------
+
+export async function markPendingConfirmation(
+  email: string,
+  opts: { source: string; customerId?: string; actor?: string }
+): Promise<boolean> {
+  const norm = normalizeEmail(email);
+  const now = new Date().toISOString();
+  const existing = await getMarketingConsent(norm);
+  if (existing && existing.status !== "pending_confirmation") return false;
+
+  const record: MarketingConsent = {
+    ...(existing ?? { createdAt: now }),
+    email: norm,
+    customerId: opts.customerId ?? existing?.customerId,
+    status: "pending_confirmation",
+    source: opts.source,
+    lastConsentUpdateAt: now,
+    createdAt: existing?.createdAt ?? now,
+    updatedAt: now,
+  };
+  await kv.set(consentKey(norm), record);
+  return true;
+}
+
+// ---------------------------------------------------------------------------
 // Unsubscribe — idempotent; never fails a valid opt-out.
 // ---------------------------------------------------------------------------
 

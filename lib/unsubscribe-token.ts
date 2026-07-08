@@ -30,18 +30,23 @@ function fromB64url(s: string): Buffer {
   return Buffer.from(padded, "base64");
 }
 
-function sign(email: string, issuedAt: number, secret: string): Buffer {
-  return createHmac("sha256", secret).update(`${email}.${issuedAt}`).digest();
+// Purpose is bound into the signature so a token minted for one action can
+// never be replayed against another (e.g. a subscribe-confirmation token can
+// not be used to unsubscribe, and vice versa).
+export type TokenPurpose = "unsub" | "confirm";
+
+function sign(email: string, issuedAt: number, secret: string, purpose: TokenPurpose): Buffer {
+  return createHmac("sha256", secret).update(`${purpose}.${email}.${issuedAt}`).digest();
 }
 
 /** Returns null when UNSUBSCRIBE_TOKEN_SECRET is not configured. */
-export function createUnsubscribeToken(email: string): string | null {
+export function createUnsubscribeToken(email: string, purpose: TokenPurpose = "unsub"): string | null {
   const secret = getSecret();
   if (!secret) return null;
   const norm = String(email ?? "").trim().toLowerCase();
   if (!norm) return null;
   const issuedAt = Math.floor(Date.now() / 1000);
-  const sig = sign(norm, issuedAt, secret);
+  const sig = sign(norm, issuedAt, secret, purpose);
   return `v1.${b64url(Buffer.from(norm, "utf8"))}.${issuedAt}.${b64url(sig)}`;
 }
 
@@ -49,7 +54,7 @@ export type TokenVerification =
   | { valid: true; email: string }
   | { valid: false; reason: "malformed" | "bad_signature" | "expired" | "not_configured" };
 
-export function verifyUnsubscribeToken(token: string): TokenVerification {
+export function verifyUnsubscribeToken(token: string, purpose: TokenPurpose = "unsub"): TokenVerification {
   const secret = getSecret();
   if (!secret) return { valid: false, reason: "not_configured" };
 
@@ -69,7 +74,7 @@ export function verifyUnsubscribeToken(token: string): TokenVerification {
     return { valid: false, reason: "malformed" };
   }
 
-  const expected = sign(email, issuedAt, secret);
+  const expected = sign(email, issuedAt, secret, purpose);
   if (providedSig.length !== expected.length || !timingSafeEqual(providedSig, expected)) {
     return { valid: false, reason: "bad_signature" };
   }

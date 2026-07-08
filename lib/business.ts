@@ -12,8 +12,8 @@ export const business = {
   affiliateEmail: "affiliates@awakenbiolabs.com",
   wholesaleEmail: "wholesale@awakenbiolabs.com",
 
-  // TODO: replace with real business phone before submitting to ChargX/Link.money
-  phone: "(702) 555-0100",
+  // No publicly listed phone number — support is email-only. Leave empty.
+  phone: "",
 
   // Principal business address (from NV Initial List filing, 04/22/2026)
   address: {

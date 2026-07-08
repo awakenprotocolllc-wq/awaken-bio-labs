@@ -23,6 +23,8 @@ export default function CustomersClient({ initialCustomers }: { initialCustomers
   const [sortKey, setSortKey]       = useState<SortKey>("createdAt");
   const [optedInOnly, setOptedInOnly] = useState(false);
   const [exporting, setExporting]   = useState(false);
+  const [repermissionBusy, setRepermissionBusy] = useState(false);
+  const [repermissionResult, setRepermissionResult] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     let list = customers;
@@ -73,6 +75,69 @@ export default function CustomersClient({ initialCustomers }: { initialCustomers
     a.click();
     URL.revokeObjectURL(url);
     setTimeout(() => setExporting(false), 500);
+  }
+
+  async function handleRepermission() {
+    setRepermissionResult(null);
+
+    // Dry run first so the admin confirms with an accurate recipient count
+    setRepermissionBusy(true);
+    let count = 0;
+    try {
+      const dry = await fetch("/api/admin/repermission", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dryRun: true }),
+      });
+      const dryData = await dry.json();
+      if (!dryData.ok) {
+        setRepermissionResult(`✗ ${dryData.error ?? "Could not start campaign."}`);
+        setRepermissionBusy(false);
+        return;
+      }
+      count = dryData.summary.sent;
+    } catch {
+      setRepermissionResult("✗ Network error.");
+      setRepermissionBusy(false);
+      return;
+    }
+
+    if (count === 0) {
+      setRepermissionResult("No customers need re-permission — everyone with the opt-in flag already has a confirmed status.");
+      setRepermissionBusy(false);
+      return;
+    }
+
+    if (!window.confirm(
+      `Send the re-permission email to ${count} customer${count !== 1 ? "s" : ""}?\n\n` +
+      `Each will get ONE email asking them to confirm their marketing subscription. ` +
+      `Anyone who doesn't confirm stays ineligible for marketing.`
+    )) {
+      setRepermissionBusy(false);
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/admin/repermission", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        const s = data.summary;
+        setRepermissionResult(
+          `✓ Campaign sent: ${s.sent} emailed · ${s.skippedAlreadySubscribed} already confirmed · ` +
+          `${s.skippedOptedOutOrSuppressed} opted-out/suppressed (never contacted) · ` +
+          `${s.skippedPending} already pending · ${s.skippedUnverified} unverified · ${s.failed} failed`
+        );
+      } else {
+        setRepermissionResult(`✗ ${data.error ?? "Campaign failed."}`);
+      }
+    } catch {
+      setRepermissionResult("✗ Network error — check Vercel logs before retrying.");
+    }
+    setRepermissionBusy(false);
   }
 
   async function handleLogout() {
@@ -152,7 +217,21 @@ export default function CustomersClient({ initialCustomers }: { initialCustomers
           >
             {exporting ? "Exporting…" : `Export CSV (${filtered.length})`}
           </button>
+
+          <button
+            onClick={handleRepermission}
+            disabled={repermissionBusy}
+            className="border border-accent/40 text-accent font-mono text-xs px-5 h-10 hover:border-accent hover:bg-accent/10 transition-colors disabled:opacity-40 tracking-wider uppercase"
+          >
+            {repermissionBusy ? "Sending…" : "Re-permission Campaign"}
+          </button>
         </div>
+
+        {repermissionResult && (
+          <div className="bg-carbon border border-accent/30 px-4 py-3 mb-6">
+            <p className="font-mono text-accent text-xs tracking-wider">{repermissionResult}</p>
+          </div>
+        )}
 
         {/* Table */}
         <div className="space-y-1">
