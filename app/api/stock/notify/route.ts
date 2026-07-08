@@ -22,6 +22,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Sign in required" }, { status: 401 });
     }
 
+    // Require a verified email — otherwise someone could sign up with a third
+    // party's address and subscribe it to restock emails without consent.
+    if (!customer.emailVerified) {
+      return NextResponse.json(
+        { ok: false, error: "Please verify your email address first — check your inbox for the verification link." },
+        { status: 403 }
+      );
+    }
+
     const body = (await req.json().catch(() => ({}))) ?? {};
     const slug = typeof body.slug === "string" ? body.slug.trim() : "";
     if (!slug || slug.length > 100) {
