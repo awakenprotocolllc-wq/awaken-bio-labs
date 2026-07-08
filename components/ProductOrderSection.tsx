@@ -2,10 +2,17 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { type Product, getPriceForStrength, isOrderable, getCoaForStrength } from "@/lib/products";
+import { type Product, getPriceForStrength, isOrderable, getCoaForStrength, slugify } from "@/lib/products";
 import { useCart } from "@/lib/cart";
+import RestockNotify from "@/components/RestockNotify";
 
-export default function ProductOrderSection({ product }: { product: Product }) {
+export default function ProductOrderSection({
+  product,
+  outOfStock = false,
+}: {
+  product: Product;
+  outOfStock?: boolean;
+}) {
   const [selectedStrength, setSelectedStrength] = useState(product.strengths[0]);
   const [added, setAdded] = useState(false);
   const { addItem, openDrawer } = useCart();
@@ -66,9 +73,26 @@ export default function ProductOrderSection({ product }: { product: Product }) {
         </span>
       </div>
 
+      {/* Out of stock — notice + restock notification signup */}
+      {outOfStock && (
+        <div className="mt-6 space-y-4">
+          <div className="bg-carbon border border-red-500/40 px-5 py-4 flex items-center gap-3">
+            <span className="w-2 h-2 rounded-full bg-red-400 shrink-0" />
+            <p className="font-mono text-red-400 text-xs tracking-[0.15em] uppercase">
+              Currently Out of Stock
+            </p>
+          </div>
+          <RestockNotify slug={slugify(product.name)} productName={product.name} />
+        </div>
+      )}
+
       {/* CTA buttons */}
       <div className="mt-6 grid grid-cols-1 xs:grid-cols-2 gap-3">
-        {canOrder ? (
+        {outOfStock ? (
+          <span className="bg-slate/60 text-bone/50 font-semibold h-12 min-h-[44px] flex items-center justify-center cursor-not-allowed select-none">
+            Out of Stock
+          </span>
+        ) : canOrder ? (
           <button
             onClick={handleAddToCart}
             className={`h-12 min-h-[44px] flex items-center justify-center font-semibold transition-colors ${

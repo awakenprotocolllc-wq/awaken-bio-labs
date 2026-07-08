@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { categories, products } from "@/lib/products";
+import { categories, products, slugify } from "@/lib/products";
 import ProductCard from "./ProductCard";
 
 // ---------------------------------------------------------------------------
@@ -47,7 +47,7 @@ const ALL_SIZES = Array.from(new Set(products.flatMap((p) => p.strengths)))
 type SortBy = "default" | "popularity" | "price-asc" | "price-desc" | "size-asc" | "size-desc";
 type PriceRange = "all" | "under50" | "50to100" | "over100";
 
-export default function ProductGrid() {
+export default function ProductGrid({ outOfStock = [] }: { outOfStock?: string[] }) {
   const [active, setActive]           = useState<(typeof categories)[number]>("All");
   const [search, setSearch]           = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -381,7 +381,9 @@ export default function ProductGrid() {
         <motion.div layout className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
           <AnimatePresence mode="popLayout">
             {filtered.flatMap((p, i) => {
-              const cards: React.ReactNode[] = [<ProductCard key={p.name} product={p} />];
+              const cards: React.ReactNode[] = [
+                <ProductCard key={p.name} product={p} outOfStock={outOfStock.includes(slugify(p.name))} />,
+              ];
               if ((i + 1) % 10 === 0 && i + 1 < filtered.length) {
                 cards.push(
                   <motion.div

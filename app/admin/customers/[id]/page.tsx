@@ -42,6 +42,7 @@ export default async function AdminCustomerDetailPage({ params }: { params: { id
           <Link href="/admin/customers" className="font-mono text-accent text-xs tracking-wider hover:underline">← Customers</Link>
           <div className="flex gap-4">
             <Link href="/admin/orders"    className="font-mono text-bone text-xs tracking-wider hover:text-accent transition-colors">Orders</Link>
+            <Link href="/admin/products" className="font-mono text-bone text-xs tracking-wider hover:text-accent transition-colors">Products</Link>
             <Link href="/admin/affiliates" className="font-mono text-bone text-xs tracking-wider hover:text-accent transition-colors">Partners</Link>
             <Link href="/admin/payouts"   className="font-mono text-bone text-xs tracking-wider hover:text-accent transition-colors">Payouts</Link>
             <span className="font-mono text-accent text-xs tracking-wider">Customers</span>

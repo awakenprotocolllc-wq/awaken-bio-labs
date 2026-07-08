@@ -492,6 +492,8 @@ export default function OrdersClient({ initialOrders }: { initialOrders: Order[]
           <div className="hidden sm:flex items-center gap-3">
             <span className="font-mono text-accent text-xs tracking-wider">Orders</span>
             <span className="text-slate">·</span>
+            <Link href="/admin/products" className="font-mono text-bone text-xs tracking-wider hover:text-accent transition-colors">Products</Link>
+            <span className="text-slate">·</span>
             <Link href="/admin/affiliates" className="font-mono text-bone text-xs tracking-wider hover:text-accent transition-colors">Partners</Link>
             <span className="text-slate">·</span>
             <Link href="/admin/payouts" className="font-mono text-bone text-xs tracking-wider hover:text-accent transition-colors">Payouts</Link>

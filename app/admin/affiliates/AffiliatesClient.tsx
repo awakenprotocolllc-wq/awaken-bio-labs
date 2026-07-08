@@ -600,6 +600,8 @@ export default function AffiliatesClient({
           <div className="hidden sm:flex items-center gap-3">
             <Link href="/admin/orders" className="font-mono text-bone text-xs tracking-wider hover:text-accent transition-colors">Orders</Link>
             <span className="text-slate">·</span>
+            <Link href="/admin/products" className="font-mono text-bone text-xs tracking-wider hover:text-accent transition-colors">Products</Link>
+            <span className="text-slate">·</span>
             <span className="font-mono text-accent text-xs tracking-wider">Partners</span>
             <span className="text-slate">·</span>
             <Link href="/admin/payouts" className="font-mono text-bone text-xs tracking-wider hover:text-accent transition-colors">Payouts</Link>

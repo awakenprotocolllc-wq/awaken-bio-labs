@@ -14,7 +14,13 @@ function getFirstCoaUrl(product: Product): string | undefined {
   return undefined;
 }
 
-export default function ProductCard({ product }: { product: Product }) {
+export default function ProductCard({
+  product,
+  outOfStock = false,
+}: {
+  product: Product;
+  outOfStock?: boolean;
+}) {
   const coaUrl = getFirstCoaUrl(product);
 
   return (
@@ -38,8 +44,13 @@ export default function ProductCard({ product }: { product: Product }) {
           alt={product.name}
           fill
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-          className="object-contain p-4 sm:p-5 transition-transform duration-300 group-hover:scale-105"
+          className={`object-contain p-4 sm:p-5 transition-transform duration-300 group-hover:scale-105 ${outOfStock ? "opacity-50 grayscale" : ""}`}
         />
+        {outOfStock && (
+          <span className="absolute top-2 left-2 bg-obsidian/90 text-red-400 border border-red-500/50 font-mono text-[9px] tracking-[0.15em] uppercase px-2 py-1">
+            Out of Stock
+          </span>
+        )}
       </div>
 
       <div className="p-5 sm:p-6 flex flex-col gap-4 flex-1">

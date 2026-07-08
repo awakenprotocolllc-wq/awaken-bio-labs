@@ -113,6 +113,10 @@ export default function SystemClient({ envVars, shipstation, rotationStatus }: P
               Orders
             </Link>
             <span className="text-slate">·</span>
+            <Link href="/admin/products" className="font-mono text-bone text-xs tracking-wider hover:text-accent transition-colors">
+              Products
+            </Link>
+            <span className="text-slate">·</span>
             <Link href="/admin/affiliates" className="font-mono text-bone text-xs tracking-wider hover:text-accent transition-colors">
               Partners
             </Link>

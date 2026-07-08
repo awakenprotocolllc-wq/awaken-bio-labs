@@ -6,6 +6,10 @@ import ResearchDisclaimer from "@/components/ResearchDisclaimer";
 import ProductOrderSection from "@/components/ProductOrderSection";
 import RecentlyViewedTracker from "@/components/RecentlyViewedTracker";
 import { getProductBySlug, getProductImage, products, slugify } from "@/lib/products";
+import { isOutOfStock } from "@/lib/stock-db";
+
+// Re-render at most every 60s so admin stock toggles reach the storefront quickly
+export const revalidate = 60;
 
 export function generateStaticParams() {
   return products.map((p) => ({ slug: slugify(p.name) }));
@@ -20,9 +24,11 @@ export function generateMetadata({ params }: { params: { slug: string } }) {
   };
 }
 
-export default function ProductPage({ params }: { params: { slug: string } }) {
+export default async function ProductPage({ params }: { params: { slug: string } }) {
   const product = getProductBySlug(params.slug);
   if (!product) notFound();
+
+  const outOfStock = await isOutOfStock(params.slug);
 
   const related = products
     .filter((p) => p.category === product.category && p.name !== product.name)
@@ -76,7 +82,7 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
             )}
 
             {/* Interactive: strength selector + CTA — client component */}
-            <ProductOrderSection product={product} />
+            <ProductOrderSection product={product} outOfStock={outOfStock} />
 
             <ResearchDisclaimer variant="inline" className="mt-4" />
 

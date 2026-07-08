@@ -3,7 +3,8 @@ import { kv } from "@vercel/kv";
 import { createOrder, updateOrderStatus, listOrders, calcSubtotal, type OrderItem } from "@/lib/db";
 import { sendCustomerOrderEmail, sendAdminOrderEmail } from "@/lib/order-emails";
 import { createShipStationOrder } from "@/lib/shipstation";
-import { products, getPriceForStrength, isOrderable } from "@/lib/products";
+import { products, getPriceForStrength, isOrderable, slugify } from "@/lib/products";
+import { getOutOfStockSlugs } from "@/lib/stock-db";
 import { validateDiscountCode } from "@/lib/affiliate-db";
 import { rateLimit, rateLimitBurst, clientIp } from "@/lib/rate-limit";
 import { findAttack } from "@/lib/validate";
@@ -140,6 +141,7 @@ export async function POST(req: NextRequest) {
     if (items.length > 20) {
       return NextResponse.json({ ok: false, error: "Too many items in order (max 20 lines)" }, { status: 400 });
     }
+    const outOfStockSlugs = new Set(await getOutOfStockSlugs());
     const validatedItems: OrderItem[] = [];
     for (const item of items) {
       const { product: productName, strength, qty } = item ?? {};
@@ -153,6 +155,9 @@ export async function POST(req: NextRequest) {
       const catalogPrice = getPriceForStrength(catalogProduct, strength);
       if (!catalogPrice || !isOrderable(catalogProduct, strength)) {
         return NextResponse.json({ ok: false, error: `Product not available: ${productName} ${strength}` }, { status: 400 });
+      }
+      if (outOfStockSlugs.has(slugify(catalogProduct.name))) {
+        return NextResponse.json({ ok: false, error: `Out of stock: ${productName}. Please remove it from your cart.` }, { status: 409 });
       }
       validatedItems.push({ product: productName, strength, price: catalogPrice, qty });
     }

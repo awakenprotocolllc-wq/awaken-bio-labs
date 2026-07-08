@@ -76,6 +76,7 @@ export default function CustomersClient({ initialCustomers }: { initialCustomers
           <h1 className="font-sans font-bold text-paper text-xl">Customer List</h1>
           <div className="flex gap-4">
             <Link href="/admin/orders"    className="font-mono text-bone text-xs tracking-wider hover:text-accent transition-colors">Orders</Link>
+            <Link href="/admin/products" className="font-mono text-bone text-xs tracking-wider hover:text-accent transition-colors">Products</Link>
             <Link href="/admin/affiliates" className="font-mono text-bone text-xs tracking-wider hover:text-accent transition-colors">Partners</Link>
             <Link href="/admin/payouts"   className="font-mono text-bone text-xs tracking-wider hover:text-accent transition-colors">Payouts</Link>
             <span className="font-mono text-accent text-xs tracking-wider">Customers</span>
