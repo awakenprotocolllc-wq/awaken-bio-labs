@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { useCart } from "@/lib/cart";
+import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import SuccessTransition from "@/components/SuccessTransition";
 import CheckoutUpsell from "@/components/CheckoutUpsell";
 import type { CustomerAccount, SavedPayment } from "@/lib/customer-db";
@@ -67,8 +68,10 @@ export default function CheckoutForm() {
   const [otpError, setOtpError] = useState("");
   const [otpLoading, setOtpLoading] = useState(false);
 
-  // Payment method
-  const [paymentMethod, setPaymentMethod] = useState<"card" | "zelle">("card");
+  // Payment method — Zelle-only while card payments are disabled (lib/payments.ts)
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "zelle">(
+    CARD_PAYMENTS_ENABLED ? "card" : "zelle"
+  );
 
   // Honeypot — hidden from real users; bots fill it; backend rejects non-empty
   const [honeypot, setHoneypot] = useState("");
@@ -606,22 +609,24 @@ export default function CheckoutForm() {
       {/* ── Payment method ── */}
       <div>
         <p className="font-mono text-accent text-xs tracking-[0.25em] mb-6">— PAYMENT METHOD —</p>
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={() => setPaymentMethod("card")}
-            className={`border p-4 text-left transition-colors ${
-              paymentMethod === "card"
-                ? "border-accent bg-accent/10"
-                : "border-slate hover:border-accent/50"
-            }`}
-          >
-            <p className={`font-mono text-xs tracking-wider uppercase mb-1 ${paymentMethod === "card" ? "text-accent" : "text-bone"}`}>
-              💳 Credit / Debit Card
-            </p>
-            <p className="font-sans text-bone/50 text-xs">Visa, Mastercard, Amex</p>
-            <p className="font-mono text-bone/40 text-[10px] mt-1">+4% processing fee</p>
-          </button>
+        <div className={`grid ${CARD_PAYMENTS_ENABLED ? "grid-cols-2" : "grid-cols-1"} gap-3`}>
+          {CARD_PAYMENTS_ENABLED && (
+            <button
+              type="button"
+              onClick={() => setPaymentMethod("card")}
+              className={`border p-4 text-left transition-colors ${
+                paymentMethod === "card"
+                  ? "border-accent bg-accent/10"
+                  : "border-slate hover:border-accent/50"
+              }`}
+            >
+              <p className={`font-mono text-xs tracking-wider uppercase mb-1 ${paymentMethod === "card" ? "text-accent" : "text-bone"}`}>
+                💳 Credit / Debit Card
+              </p>
+              <p className="font-sans text-bone/50 text-xs">Visa, Mastercard, Amex</p>
+              <p className="font-mono text-bone/40 text-[10px] mt-1">+4% processing fee</p>
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setPaymentMethod("zelle")}
@@ -637,6 +642,11 @@ export default function CheckoutForm() {
             <p className="font-sans text-bone/50 text-xs">No processing fee</p>
           </button>
         </div>
+        {!CARD_PAYMENTS_ENABLED && (
+          <p className="font-mono text-bone/50 text-[10px] tracking-wider mt-3">
+            Card payments are temporarily unavailable — we currently accept Zelle only.
+          </p>
+        )}
       </div>
 
       {/* ── Payment details (card only) ── */}

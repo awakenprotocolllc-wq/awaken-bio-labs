@@ -5,6 +5,7 @@ import { sendCustomerOrderEmail, sendAdminOrderEmail } from "@/lib/order-emails"
 import { createShipStationOrder } from "@/lib/shipstation";
 import { products, getPriceForStrength, isOrderable, slugify } from "@/lib/products";
 import { getOutOfStockSlugs } from "@/lib/stock-db";
+import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import { validateDiscountCode } from "@/lib/affiliate-db";
 import { rateLimit, rateLimitBurst, clientIp } from "@/lib/rate-limit";
 import { findAttack } from "@/lib/validate";
@@ -65,6 +66,14 @@ export async function POST(req: NextRequest) {
     // ── Payment method enum ───────────────────────────────────────────────────
     if (paymentMethod !== "card" && paymentMethod !== "zelle") {
       return NextResponse.json({ ok: false, error: "Invalid payment method" }, { status: 400 });
+    }
+    // Zelle-only mode: card processing is temporarily disabled (lib/payments.ts).
+    // Enforced server-side so a crafted request cannot reach the card path.
+    if (paymentMethod === "card" && !CARD_PAYMENTS_ENABLED) {
+      return NextResponse.json(
+        { ok: false, error: "Card payments are temporarily unavailable. Please pay with Zelle." },
+        { status: 400 }
+      );
     }
 
     // ── Customer field validation ─────────────────────────────────────────────

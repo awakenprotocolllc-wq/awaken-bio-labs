@@ -5,6 +5,7 @@ import { products, getPriceForStrength } from "@/lib/products";
 import { rateLimit, rateLimitBurst, clientIp } from "@/lib/rate-limit";
 import { apiError } from "@/lib/api-error";
 import { findAttack } from "@/lib/validate";
+import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 
 const AFFILIATE_DISCOUNT = 0.30; // 30% off retail
 
@@ -118,7 +119,9 @@ export async function POST(req: NextRequest) {
       items: resolvedItems,
       subtotal,
       orderTotal: subtotal, // no additional fees for affiliate orders
-      paymentMethod: "card",
+      // Zelle-only mode: affiliates pay via Zelle while card processing is
+      // disabled (lib/payments.ts). Card-on-file infrastructure stays intact.
+      paymentMethod: CARD_PAYMENTS_ENABLED ? "card" : "zelle",
       notes: safeNotes,
       orderSource: "affiliate",
       affiliateId: account.id,

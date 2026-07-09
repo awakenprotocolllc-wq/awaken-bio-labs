@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import AffiliateDashboardShell from "@/components/AffiliateDashboardShell";
+import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import { products, categories, getPriceForStrength } from "@/lib/products";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -192,7 +193,9 @@ export default function AffiliateOrderPage() {
       setError("Complete shipping address is required."); return;
     }
 
-    if (!useSavedCard) {
+    // Card details only apply when card payments are enabled (Zelle-only mode
+    // skips this entirely — payment is sent after the order is placed)
+    if (CARD_PAYMENTS_ENABLED && !useSavedCard) {
       const digits = newCard.number.replace(/\D/g, "");
       if (digits.length < 13) { setError("Valid card number required."); return; }
       if (!newCard.holderName.trim()) { setError("Cardholder name required."); return; }
@@ -249,6 +252,16 @@ export default function AffiliateOrderPage() {
           <p className="text-bone text-sm">
             Order <span className="font-mono text-accent uppercase">#{confirmedOrderId}</span> has been received and is being processed.
           </p>
+          {!CARD_PAYMENTS_ENABLED && (
+            <div className="bg-obsidian border border-accent/40 px-4 py-3 font-mono text-sm space-y-1">
+              <p className="text-accent text-[10px] uppercase tracking-wider">📲 Send Zelle Payment</p>
+              <p className="text-paper font-bold">awakenbiolabs</p>
+              <p className="text-bone text-xs">AWAKEN BIOLABS LLC</p>
+              <p className="text-bone/60 text-[10px] mt-2 leading-relaxed">
+                Include order #{confirmedOrderId.toUpperCase()} in the memo. Your order ships once payment is verified.
+              </p>
+            </div>
+          )}
           <p className="text-bone/60 text-xs font-mono">
             Your 30% partner discount has been applied. You&apos;ll receive shipping confirmation at your email on file.
           </p>
@@ -448,7 +461,29 @@ export default function AffiliateOrderPage() {
             </div>
           </div>
 
-          {/* Payment */}
+          {/* Payment — Zelle-only while card payments are disabled (lib/payments.ts) */}
+          {!CARD_PAYMENTS_ENABLED ? (
+            <div className="bg-carbon border border-slate">
+              <div className="px-5 py-4 border-b border-slate">
+                <p className="font-mono text-[10px] tracking-[0.2em] text-accent">— PAYMENT · ZELLE —</p>
+              </div>
+              <div className="px-5 py-4 space-y-3">
+                <p className="text-bone text-sm leading-relaxed">
+                  Card payments are temporarily unavailable. After placing your order, send the
+                  order total via Zelle:
+                </p>
+                <div className="bg-obsidian border border-slate px-4 py-3 font-mono text-sm space-y-1">
+                  <p className="text-bone/60 text-[10px] uppercase tracking-wider">Send Zelle To</p>
+                  <p className="text-paper font-bold">awakenbiolabs</p>
+                  <p className="text-bone text-xs">AWAKEN BIOLABS LLC</p>
+                </div>
+                <p className="font-mono text-bone/50 text-[10px] leading-relaxed">
+                  Include your order number in the Zelle memo. Your order ships once payment is
+                  verified.
+                </p>
+              </div>
+            </div>
+          ) : (
           <div className="bg-carbon border border-slate">
             <div className="px-5 py-4 border-b border-slate">
               <p className="font-mono text-[10px] tracking-[0.2em] text-accent">— PAYMENT —</p>
@@ -548,6 +583,7 @@ export default function AffiliateOrderPage() {
               )}
             </div>
           </div>
+          )}
 
           {/* Place order */}
           {error && (
