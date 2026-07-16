@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAffiliateSession, saveAffiliatePayoutInfo, getAffiliatePayoutInfo } from "@/lib/affiliate-db";
+import { isEncryptionConfigured } from "@/lib/encryption";
 import { clientIp } from "@/lib/rate-limit";
 import { apiError } from "@/lib/api-error";
 
@@ -63,6 +64,19 @@ export async function POST(req: NextRequest) {
     }
     if (!["checking", "savings"].includes(accountType)) {
       return NextResponse.json({ ok: false, error: "Account type must be checking or savings." }, { status: 400 });
+    }
+
+    // Fail fast with a clear message if the encryption key is missing/malformed,
+    // instead of a generic 500 from encryptField throwing mid-save.
+    if (!isEncryptionConfigured()) {
+      console.error(
+        "[POST /api/affiliate/payout-info] PAYOUT_ENCRYPTION_KEY is missing or malformed — " +
+        "must be exactly 64 hex characters. Check Vercel env vars (no quotes, no whitespace, Production scope)."
+      );
+      return NextResponse.json(
+        { ok: false, error: "Payout updates are temporarily unavailable. Please try again later or contact support." },
+        { status: 503 }
+      );
     }
 
     await saveAffiliatePayoutInfo(account.id, {

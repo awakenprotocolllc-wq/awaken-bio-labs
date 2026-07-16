@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 
-type EnvEntry = { status: "set" | "missing"; chars: number };
+type EnvEntry = { status: "set" | "missing" | "invalid"; chars: number };
 type ShipStationStatus = { ok: boolean; status?: number; error?: string };
 
 type PushResult = {
@@ -152,9 +152,15 @@ export default function SystemClient({ envVars, shipstation, rotationStatus }: P
                 <span className={`font-mono text-[10px] px-2 py-1 border tracking-wider ${
                   val.status === "set"
                     ? "bg-green-500/10 text-green-400 border-green-500/30"
+                    : val.status === "invalid"
+                    ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
                     : "bg-red-500/10 text-red-400 border-red-500/30"
                 }`}>
-                  {val.status === "set" ? `SET · ${val.chars} chars` : "MISSING"}
+                  {val.status === "set"
+                    ? `SET · ${val.chars} chars`
+                    : val.status === "invalid"
+                    ? `INVALID FORMAT · ${val.chars} chars (need 64 hex)`
+                    : "MISSING"}
                 </span>
               </div>
             ))}

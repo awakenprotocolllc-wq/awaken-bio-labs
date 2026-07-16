@@ -77,3 +77,13 @@ export function decryptField(value: string): string {
 export function isEncrypted(value: string): boolean {
   return value.startsWith(PREFIX);
 }
+
+/**
+ * Returns true when PAYOUT_ENCRYPTION_KEY is present and correctly formatted
+ * (64 hex chars = 32 bytes). Use to fail fast with a clear error instead of
+ * letting encryptField throw mid-request.
+ */
+export function isEncryptionConfigured(): boolean {
+  const hex = process.env.PAYOUT_ENCRYPTION_KEY ?? "";
+  return hex.length === 64 && /^[0-9a-f]+$/i.test(hex);
+}

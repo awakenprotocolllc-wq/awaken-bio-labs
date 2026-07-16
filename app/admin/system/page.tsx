@@ -12,6 +12,17 @@ function envStatus(key: string) {
   return { status: "set" as const, chars: val.length };
 }
 
+// PAYOUT_ENCRYPTION_KEY must be exactly 64 hex chars — flag it as invalid
+// (not just "set") when the format is wrong, since that breaks payout saves.
+function encryptionKeyStatus() {
+  const val = process.env.PAYOUT_ENCRYPTION_KEY;
+  if (!val) return { status: "missing" as const, chars: 0 };
+  if (val.length !== 64 || !/^[0-9a-f]+$/i.test(val)) {
+    return { status: "invalid" as const, chars: val.length };
+  }
+  return { status: "set" as const, chars: val.length };
+}
+
 async function testShipStation() {
   const key = process.env.SHIPSTATION_API_KEY ?? "";
   const secret = process.env.SHIPSTATION_API_SECRET ?? "";
@@ -44,6 +55,7 @@ export default async function AdminSystemPage() {
     ADMIN_SESSION_TOKEN: envStatus("ADMIN_SESSION_TOKEN"),
     KV_REST_API_URL: envStatus("KV_REST_API_URL"),
     KV_REST_API_TOKEN: envStatus("KV_REST_API_TOKEN"),
+    PAYOUT_ENCRYPTION_KEY: encryptionKeyStatus(),
   };
 
   const [shipstation, rotationStatus] = await Promise.all([
