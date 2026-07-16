@@ -9,21 +9,19 @@ const programs = [
   {
     type: "ambassador" as const,
     label: "Ambassador",
-    commission: "20%",
-    description: "Share your code. Earn 20% commission on every sale you refer. Customers get 10% off.",
+    description: "Share your code. Earn commission on every sale you refer. Customers get 10% off.",
     ideal: "Content creators, coaches, practitioners, influencers.",
   },
   {
     type: "licensee" as const,
     label: "Licensee",
-    commission: "50%",
-    description: "Private label partner program. Earn 50% commission on gross sales using your code. Customers get 10% off.",
+    description: "Private label partner program. Earn commission on gross sales using your code. Customers get 10% off.",
     ideal: "Clinics, practitioners, and resellers with established clientele.",
   },
 ];
 
 const ambassadorBenefits = [
-  { title: "20% Per Sale", body: "Paid out twice monthly. No caps, no minimums." },
+  { title: "Commission On Every Sale", body: "Paid out twice monthly. No caps, no minimums." },
   { title: "Real-Time Dashboard", body: "Track clicks, conversions, and earnings as they happen." },
   { title: "Unique Tracking Code", body: "Your code gives customers 10% off. 60-day cookie window." },
   { title: "Creative Library", body: "On-brand graphics, copy, and product imagery — ready on day one." },
@@ -92,17 +90,11 @@ export default function AffiliatesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-slate">
             {programs.map((p) => (
               <div key={p.type} className="bg-carbon p-8 sm:p-10">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <p className="font-mono text-accent text-[10px] tracking-[0.2em] uppercase mb-1">
-                      {p.type === "licensee" ? "— PRIVATE LABEL —" : "— CONTENT & COMMUNITY —"}
-                    </p>
-                    <h3 className="font-sans font-bold text-paper text-3xl">{p.label}</h3>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-mono text-accent text-3xl font-bold">{p.commission}</p>
-                    <p className="font-mono text-bone text-[10px] tracking-wider">commission</p>
-                  </div>
+                <div className="mb-4">
+                  <p className="font-mono text-accent text-[10px] tracking-[0.2em] uppercase mb-1">
+                    {p.type === "licensee" ? "— PRIVATE LABEL —" : "— CONTENT & COMMUNITY —"}
+                  </p>
+                  <h3 className="font-sans font-bold text-paper text-3xl">{p.label}</h3>
                 </div>
                 <p className="text-bone text-sm leading-relaxed mb-3">{p.description}</p>
                 <p className="font-mono text-bone/50 text-[10px] tracking-wider">{p.ideal}</p>
@@ -170,11 +162,8 @@ export default function AffiliatesPage() {
                           : "border-slate hover:border-accent/50"
                       }`}
                     >
-                      <div className="flex items-center justify-between mb-1">
+                      <div className="mb-1">
                         <span className="font-sans font-bold text-paper text-sm">{p.label}</span>
-                        <span className={`font-mono text-sm font-bold ${programType === p.type ? "text-accent" : "text-bone"}`}>
-                          {p.commission}
-                        </span>
                       </div>
                       <p className="font-mono text-bone text-[10px] leading-relaxed">{p.ideal}</p>
                       {programType === p.type && (
