@@ -20,13 +20,6 @@ const programs = [
   },
 ];
 
-const ambassadorBenefits = [
-  { title: "Commission On Every Sale", body: "Paid out twice monthly. No caps, no minimums." },
-  { title: "Real-Time Dashboard", body: "Track clicks, conversions, and earnings as they happen." },
-  { title: "Unique Tracking Code", body: "Your code gives customers 10% off. 60-day cookie window." },
-  { title: "Creative Library", body: "On-brand graphics, copy, and product imagery — ready on day one." },
-];
-
 export default function AffiliatesPage() {
   const [programType, setProgramType] = useState<"ambassador" | "licensee">("ambassador");
   const [submitted, setSubmitted] = useState(false);
@@ -98,16 +91,6 @@ export default function AffiliatesPage() {
                 </div>
                 <p className="text-bone text-sm leading-relaxed mb-3">{p.description}</p>
                 <p className="font-mono text-bone/50 text-[10px] tracking-wider">{p.ideal}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Ambassador benefits */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-slate mt-px">
-            {ambassadorBenefits.map((b) => (
-              <div key={b.title} className="bg-obsidian p-6">
-                <h4 className="font-sans font-bold text-paper text-sm mb-2">{b.title}</h4>
-                <p className="text-bone text-xs leading-relaxed">{b.body}</p>
               </div>
             ))}
           </div>
